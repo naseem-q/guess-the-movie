@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Guess The...</title>
+<title>The Ultimate Party Game</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -12,15 +12,17 @@ html,body{height:100%;overflow:hidden}
 body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%);color:var(--text);display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
 .screen{display:none;flex-direction:column;height:100vh;height:100dvh;overflow-y:auto}.screen.active{display:flex}
 .home{align-items:center;justify-content:space-between;padding:16px 24px;position:relative}
-.home-top{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;gap:8px;width:100%}
-.hero-img{width:260px;height:auto;max-height:280px;object-fit:contain;filter:drop-shadow(0 8px 30px rgba(255,230,109,0.15));animation:float 3s ease-in-out infinite}
-.logo-title{font-family:'Space Mono',monospace;font-size:28px;font-weight:700;line-height:1.15;text-align:center;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.home-top{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;gap:6px;width:100%}
+.hero-img{width:320px;height:auto;max-height:340px;object-fit:contain;filter:drop-shadow(0 10px 40px rgba(255,230,109,0.18));animation:float 3s ease-in-out infinite}
+.logo-title{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;line-height:1.15;text-align:center;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .logo-sub{font-size:11px;color:var(--text2);letter-spacing:3px;text-transform:uppercase;text-align:center}
-.quote-banner{min-height:54px;text-align:center;padding:10px 20px;max-width:500px;width:100%}
-.quote-text{font-size:14px;color:rgba(255,255,255,0.6);font-weight:500;line-height:1.5;font-style:italic;transition:opacity 0.4s ease}
-.home-bottom{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:8px}
-.home-row{display:flex;gap:10px;width:100%;justify-content:center}
-.home-row .btn-side{flex:1;max-width:200px;padding:14px 10px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);color:var(--text);font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.quote-banner{text-align:center;padding:14px 24px;max-width:480px;width:100%;margin-top:4px;background:rgba(255,230,109,0.04);border:1px solid rgba(255,230,109,0.1);border-radius:14px;position:relative}
+.quote-banner::before{content:'"';position:absolute;top:4px;left:14px;font-size:28px;color:var(--gold);opacity:0.3;font-family:Georgia,serif}
+.quote-banner::after{content:'"';position:absolute;bottom:0;right:14px;font-size:28px;color:var(--gold);opacity:0.3;font-family:Georgia,serif}
+.quote-text{font-size:14px;color:rgba(255,255,255,0.7);font-weight:500;line-height:1.6;font-style:italic;transition:opacity 0.4s ease;padding:0 12px}
+.home-bottom{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:8px}
+.home-row{display:flex;gap:10px;width:100%;max-width:420px;justify-content:center}
+.home-row .btn-side{flex:1;padding:14px 10px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);color:var(--text);font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .home-row .btn-side:active{transform:scale(0.97)}
 .home-row .btn-side.tv{border-color:rgba(96,165,250,0.3);color:var(--blue);background:rgba(96,165,250,0.06)}
 .btn-join{width:100%;max-width:420px;padding:18px 24px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:18px;font-weight:900;font-family:'Outfit',sans-serif;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 30px rgba(255,230,109,0.3);display:flex;align-items:center;justify-content:center;gap:12px;letter-spacing:1px}
@@ -116,9 +118,9 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
 <div id="s-home" class="screen active">
   <div class="home">
     <div class="home-top">
-      <img src="/hero.png" class="hero-img" alt="Guess The...">
-      <h1 class="logo-title">GUESS THE...</h1>
-      <p class="logo-sub">The Ultimate Party Game</p>
+      <img src="/hero.png" class="hero-img" alt="Party Game">
+      <h1 class="logo-title">THE ULTIMATE<br>PARTY GAME</h1>
+      <p class="logo-sub">Guess &bull; Compete &bull; Win</p>
       <div class="quote-banner">
         <div class="quote-text" id="quote-text">Gather your friends, pick a category, and start guessing!</div>
       </div>
