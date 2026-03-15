@@ -200,6 +200,7 @@
 <div class="tv-footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year"></span></div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/audio.js"></script>
 <script>
 (function(){
   document.getElementById('footer-year').textContent = new Date().getFullYear();
@@ -212,108 +213,13 @@
   let socket=null, roomCode='', timerInterval=null, timerDuration=50, timerStart=0;
   let difficulty={}, animFrame=null, circlePos={x:50,y:50}, circleVel={x:0.3,y:0.2};
   let playerList=[], currentImage=null, currentType='';
-  let isMuted=false;
 
-  // ─── Music System (Web Audio API - Jazz/Lounge) ────
-  let audioCtx=null, musicGain=null, musicPlaying=false;
-
-  function initAudio(){
-    if(audioCtx) return;
-    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    musicGain=audioCtx.createGain();
-    musicGain.gain.value=0.12;
-    musicGain.connect(audioCtx.destination);
-  }
-
-  function playNote(freq,startTime,duration,type='sine',vol=0.08){
-    const o=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    const f=audioCtx.createBiquadFilter();
-    f.type='lowpass';f.frequency.value=800;
-    o.connect(f);f.connect(g);g.connect(musicGain);
-    o.type=type;o.frequency.value=freq;
-    g.gain.setValueAtTime(0,startTime);
-    g.gain.linearRampToValueAtTime(vol,startTime+0.05);
-    g.gain.linearRampToValueAtTime(vol*0.6,startTime+duration*0.7);
-    g.gain.linearRampToValueAtTime(0,startTime+duration);
-    o.start(startTime);o.stop(startTime+duration);
-  }
-
-  function playChord(notes,startTime,duration,type='sine',vol=0.04){
-    notes.forEach(n=>playNote(n,startTime,duration,type,vol));
-  }
-
-  // Jazz chord progressions
-  const JAZZ_CHORDS=[
-    [[261.6,329.6,392,466.2],[293.7,370,440,523.3],[349.2,440,523.3,659.3],[392,493.9,587.3,698.5]],  // Cmaj7-Dm7-Fmaj7-G7
-    [[220,277.2,329.6,415.3],[246.9,311.1,370,466.2],[277.2,349.2,415.3,523.3],[293.7,370,440,554.4]], // Am7-Bm7b5-C#dim-Dm7
-    [[196,246.9,293.7,370],[220,277.2,329.6,415.3],[233.1,293.7,349.2,440],[261.6,329.6,392,493.9]],  // Gmaj7-Am7-Bbmaj7-Cmaj7
-    [[174.6,220,261.6,329.6],[196,246.9,293.7,370],[220,277.2,329.6,415.3],[246.9,311.1,370,466.2]]   // Fmaj7-Gmaj7-Am7-Bm7
-  ];
-
-  let currentChordSet=0, loopTimer=null;
-
-  function playMusicLoop(){
-    if(!audioCtx||isMuted)return;
-    const now=audioCtx.currentTime;
-    const chords=JAZZ_CHORDS[currentChordSet%JAZZ_CHORDS.length];
-    const beatDur=2.2;
-
-    chords.forEach((chord,i)=>{
-      // Pad
-      playChord(chord,now+i*beatDur,beatDur*0.95,'sine',0.025);
-      // Bass
-      playNote(chord[0]/2,now+i*beatDur,beatDur*0.8,'triangle',0.05);
-      // Soft melodic hits
-      if(Math.random()>0.3) playNote(chord[2]*2,now+i*beatDur+beatDur*0.5,beatDur*0.3,'sine',0.015);
-      if(Math.random()>0.5) playNote(chord[3]*2,now+i*beatDur+beatDur*0.25,beatDur*0.2,'sine',0.01);
-    });
-
-    loopTimer=setTimeout(()=>{
-      currentChordSet++;
-      if(musicPlaying)playMusicLoop();
-    },beatDur*chords.length*1000);
-  }
-
-  function startMusic(trackIdx){
-    initAudio();
-    if(audioCtx.state==='suspended')audioCtx.resume();
-    currentChordSet=trackIdx||0;
-    musicPlaying=true;
-    playMusicLoop();
-  }
-
-  function stopMusic(){musicPlaying=false;clearTimeout(loopTimer)}
-
+  // ─── Audio (uses GameAudio from audio.js) ────
   window.toggleMute=function(){
-    isMuted=!isMuted;
-    document.getElementById('mute-btn').textContent=isMuted?'🔇':'🔊';
-    document.getElementById('mute-btn').classList.toggle('muted',isMuted);
-    if(isMuted){stopMusic();if(musicGain)musicGain.gain.value=0}
-    else{if(musicGain)musicGain.gain.value=0.12;if(musicPlaying)playMusicLoop();else startMusic(currentChordSet)}
+    const m = GameAudio.toggleMute();
+    document.getElementById('mute-btn').textContent = m ? '🔇' : '🔊';
+    document.getElementById('mute-btn').classList.toggle('muted', m);
   };
-
-  // ─── Sound Effects ─────────────────────────────────
-  function playTickSound(){
-    if(!audioCtx||isMuted)return;
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.connect(g);g.connect(audioCtx.destination);
-    o.frequency.value=880;g.gain.value=0.03;
-    o.start();g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.06);
-    o.stop(audioCtx.currentTime+0.06);
-  }
-
-  function playRevealSound(){
-    if(!audioCtx||isMuted)return;
-    [523,659,784,1047].forEach((f,i)=>{
-      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-      o.connect(g);g.connect(audioCtx.destination);
-      o.type='sine';o.frequency.value=f;g.gain.value=0.06;
-      o.start(audioCtx.currentTime+i*0.1);
-      g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+i*0.1+0.4);
-      o.stop(audioCtx.currentTime+i*0.1+0.4);
-    });
-  }
 
   // ─── Canvas Reveal Animation ───────────────────────
   const canvas=document.getElementById('poster-canvas');
@@ -428,7 +334,8 @@
       document.getElementById('ri-count').textContent=`${data.questionsCount} Questions`;
       showScreen('round-intro-screen');
       // Start music for this round
-      startMusic(data.musicTrack||0);
+      GameAudio.roundStart();
+      GameAudio.startMusic(data.musicTrack||0);
     });
 
     socket.on('question-start',(data)=>{
@@ -485,7 +392,7 @@
       // Show full clear image on canvas
       if(currentImage) drawFullReveal(currentImage);
 
-      playRevealSound();
+      GameAudio.reveal();
 
       // Show overlay with full poster + name + results
       const overlay=document.getElementById('reveal-overlay');
@@ -523,10 +430,11 @@
       });
       showScreen('leaderboard-screen');
       playerList=data.leaderboard;
+      GameAudio.roundComplete();
     });
 
     socket.on('final-results',(data)=>{
-      stopRevealAnimation();stopMusic();
+      stopRevealAnimation();GameAudio.stopMusic();
       const w=data.leaderboard[0];
       document.getElementById('final-winner').textContent=w?`${w.name} Wins!`:'Game Over!';
       document.getElementById('final-sub').textContent=w?`${w.score} points`:'';
@@ -539,6 +447,7 @@
       });
       showScreen('final-screen');
       spawnConfetti();
+      GameAudio.winner();
     });
 
     socket.on('game-paused',()=>{clearInterval(timerInterval);stopRevealAnimation()});
@@ -554,7 +463,7 @@
       const el=(Date.now()-timerStart)/1000, rem=Math.max(0,timerDuration-el);
       tEl.textContent=Math.ceil(rem);
       bEl.style.width=(rem/timerDuration)*100+'%';
-      if(rem<=5){tEl.classList.add('urgent');bEl.classList.add('urgent');if(Math.ceil(rem)!==Math.ceil(rem+0.2))playTickSound()}
+      if(rem<=5){tEl.classList.add('urgent');bEl.classList.add('urgent');if(Math.ceil(rem)!==Math.ceil(rem+0.2))GameAudio.tick()}
       if(rem<=0)clearInterval(timerInterval);
     },200);
   }
