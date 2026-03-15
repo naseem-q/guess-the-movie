@@ -1,0 +1,128 @@
+{
+  "movie_scenes": [
+    { "title": "The Dark Knight", "tmdb_id": 155, "year": "2008", "wrong": ["Batman Begins", "The Batman", "Batman v Superman"] },
+    { "title": "Inception", "tmdb_id": 27205, "year": "2010", "wrong": ["Interstellar", "Tenet", "Shutter Island"] },
+    { "title": "The Avengers", "tmdb_id": 24428, "year": "2012", "wrong": ["Age of Ultron", "Infinity War", "Endgame"] },
+    { "title": "Titanic", "tmdb_id": 597, "year": "1997", "wrong": ["Pearl Harbor", "The Great Gatsby", "Poseidon"] },
+    { "title": "Jurassic Park", "tmdb_id": 329, "year": "1993", "wrong": ["The Lost World", "Jurassic World", "Congo"] },
+    { "title": "The Matrix", "tmdb_id": 603, "year": "1999", "wrong": ["Blade Runner", "Tron", "The Terminator"] },
+    { "title": "Forrest Gump", "tmdb_id": 13, "year": "1994", "wrong": ["Cast Away", "The Green Mile", "Big"] },
+    { "title": "Gladiator", "tmdb_id": 98, "year": "2000", "wrong": ["Troy", "300", "Ben-Hur"] },
+    { "title": "The Lord of the Rings: The Fellowship of the Ring", "tmdb_id": 120, "year": "2001", "wrong": ["The Two Towers", "The Hobbit", "Narnia"] },
+    { "title": "Harry Potter and the Sorcerer's Stone", "tmdb_id": 671, "year": "2001", "wrong": ["Chamber of Secrets", "Prisoner of Azkaban", "Goblet of Fire"] },
+    { "title": "Pirates of the Caribbean: The Curse of the Black Pearl", "tmdb_id": 22, "year": "2003", "wrong": ["Dead Man's Chest", "At World's End", "Master and Commander"] },
+    { "title": "The Shawshank Redemption", "tmdb_id": 278, "year": "1994", "wrong": ["The Green Mile", "Escape from Alcatraz", "Cool Hand Luke"] },
+    { "title": "Iron Man", "tmdb_id": 1726, "year": "2008", "wrong": ["Iron Man 2", "Iron Man 3", "The Avengers"] },
+    { "title": "Pulp Fiction", "tmdb_id": 680, "year": "1994", "wrong": ["Kill Bill", "Reservoir Dogs", "Jackie Brown"] },
+    { "title": "Fight Club", "tmdb_id": 550, "year": "1999", "wrong": ["Se7en", "American History X", "Memento"] },
+    { "title": "Back to the Future", "tmdb_id": 105, "year": "1985", "wrong": ["Back to the Future II", "Back to the Future III", "Bill & Ted"] },
+    { "title": "Spider-Man", "tmdb_id": 557, "year": "2002", "wrong": ["Spider-Man 2", "The Amazing Spider-Man", "Spider-Man 3"] },
+    { "title": "The Lion King", "tmdb_id": 8587, "year": "1994", "wrong": ["Aladdin", "The Jungle Book", "Bambi"] },
+    { "title": "Avatar", "tmdb_id": 19995, "year": "2009", "wrong": ["Avatar: The Way of Water", "Tron: Legacy", "Valerian"] },
+    { "title": "Interstellar", "tmdb_id": 157336, "year": "2014", "wrong": ["Gravity", "The Martian", "Arrival"] }
+  ],
+  "tv_scenes": [
+    { "title": "Friends", "tmdb_id": 1668, "year": "1994", "wrong": ["Seinfeld", "How I Met Your Mother", "New Girl"] },
+    { "title": "Breaking Bad", "tmdb_id": 1396, "year": "2008", "wrong": ["Better Call Saul", "Ozark", "Narcos"] },
+    { "title": "Game of Thrones", "tmdb_id": 1399, "year": "2011", "wrong": ["The Witcher", "House of the Dragon", "Vikings"] },
+    { "title": "Stranger Things", "tmdb_id": 66732, "year": "2016", "wrong": ["Dark", "The OA", "Locke & Key"] },
+    { "title": "The Office", "tmdb_id": 2316, "year": "2005", "wrong": ["Parks and Recreation", "Brooklyn Nine-Nine", "30 Rock"] },
+    { "title": "The Walking Dead", "tmdb_id": 1402, "year": "2010", "wrong": ["Fear the Walking Dead", "The Last of Us", "Station Eleven"] },
+    { "title": "Squid Game", "tmdb_id": 93405, "year": "2021", "wrong": ["Alice in Borderland", "The Hunger Games", "Battle Royale"] },
+    { "title": "The Crown", "tmdb_id": 65494, "year": "2016", "wrong": ["Downton Abbey", "The Queen's Gambit", "Bridgerton"] },
+    { "title": "Wednesday", "tmdb_id": 119051, "year": "2022", "wrong": ["Chilling Adventures of Sabrina", "The Haunting of Hill House", "American Horror Story"] },
+    { "title": "The Big Bang Theory", "tmdb_id": 1418, "year": "2007", "wrong": ["Silicon Valley", "Young Sheldon", "Community"] },
+    { "title": "Grey's Anatomy", "tmdb_id": 1416, "year": "2005", "wrong": ["House", "ER", "Scrubs"] },
+    { "title": "Sherlock", "tmdb_id": 19885, "year": "2010", "wrong": ["Elementary", "Luther", "Peaky Blinders"] },
+    { "title": "The Mandalorian", "tmdb_id": 82856, "year": "2019", "wrong": ["Andor", "Obi-Wan Kenobi", "The Book of Boba Fett"] },
+    { "title": "Peaky Blinders", "tmdb_id": 60574, "year": "2013", "wrong": ["Boardwalk Empire", "Downton Abbey", "Sherlock"] },
+    { "title": "Money Heist", "tmdb_id": 71446, "year": "2017", "wrong": ["Lupin", "Elite", "Vis a Vis"] },
+    { "title": "The Last of Us", "tmdb_id": 100088, "year": "2023", "wrong": ["The Walking Dead", "Station Eleven", "The 100"] },
+    { "title": "Ted Lasso", "tmdb_id": 97546, "year": "2020", "wrong": ["Shrinking", "Mythic Quest", "The Morning Show"] },
+    { "title": "House of the Dragon", "tmdb_id": 94997, "year": "2022", "wrong": ["Game of Thrones", "The Rings of Power", "The Witcher"] },
+    { "title": "Succession", "tmdb_id": 76331, "year": "2018", "wrong": ["Billions", "Industry", "The Morning Show"] },
+    { "title": "Black Mirror", "tmdb_id": 42009, "year": "2011", "wrong": ["Love, Death & Robots", "Westworld", "The Twilight Zone"] }
+  ],
+  "characters": [
+    {
+      "character": "Chandler Bing", "show": "Friends", "tmdb_person_id": 20904, "gender": "male",
+      "wrong": ["Ross Geller", "Joey Tribbiani", "Mike Hannigan"]
+    },
+    {
+      "character": "Rachel Green", "show": "Friends", "tmdb_person_id": 4491, "gender": "female",
+      "wrong": ["Monica Geller", "Phoebe Buffay", "Emily Waltham"]
+    },
+    {
+      "character": "Walter White", "show": "Breaking Bad", "tmdb_person_id": 17419, "gender": "male",
+      "wrong": ["Jesse Pinkman", "Hank Schrader", "Gus Fring"]
+    },
+    {
+      "character": "Daenerys Targaryen", "show": "Game of Thrones", "tmdb_person_id": 1223786, "gender": "female",
+      "wrong": ["Cersei Lannister", "Sansa Stark", "Arya Stark"]
+    },
+    {
+      "character": "Jon Snow", "show": "Game of Thrones", "tmdb_person_id": 239019, "gender": "male",
+      "wrong": ["Jaime Lannister", "Tyrion Lannister", "Robb Stark"]
+    },
+    {
+      "character": "Michael Scott", "show": "The Office", "tmdb_person_id": 12073, "gender": "male",
+      "wrong": ["Dwight Schrute", "Jim Halpert", "Andy Bernard"]
+    },
+    {
+      "character": "Eleven", "show": "Stranger Things", "tmdb_person_id": 1589495, "gender": "female",
+      "wrong": ["Nancy Wheeler", "Max Mayfield", "Joyce Byers"]
+    },
+    {
+      "character": "Tony Stark", "show": "Iron Man", "tmdb_person_id": 3223, "gender": "male",
+      "wrong": ["Steve Rogers", "Thor Odinson", "Bruce Banner"]
+    },
+    {
+      "character": "Jack Sparrow", "show": "Pirates of the Caribbean", "tmdb_person_id": 85, "gender": "male",
+      "wrong": ["Will Turner", "Hector Barbossa", "Davy Jones"]
+    },
+    {
+      "character": "Hermione Granger", "show": "Harry Potter", "tmdb_person_id": 10990, "gender": "female",
+      "wrong": ["Ginny Weasley", "Luna Lovegood", "Bellatrix Lestrange"]
+    },
+    {
+      "character": "The Joker", "show": "The Dark Knight", "tmdb_person_id": 1810, "gender": "male",
+      "wrong": ["Batman", "Harvey Dent", "Bane"]
+    },
+    {
+      "character": "Sheldon Cooper", "show": "The Big Bang Theory", "tmdb_person_id": 5765, "gender": "male",
+      "wrong": ["Leonard Hofstadter", "Howard Wolowitz", "Raj Koothrappali"]
+    },
+    {
+      "character": "Katniss Everdeen", "show": "The Hunger Games", "tmdb_person_id": 72129, "gender": "female",
+      "wrong": ["Primrose Everdeen", "Effie Trinket", "Johanna Mason"]
+    },
+    {
+      "character": "Gandalf", "show": "The Lord of the Rings", "tmdb_person_id": 48, "gender": "male",
+      "wrong": ["Aragorn", "Legolas", "Frodo Baggins"]
+    },
+    {
+      "character": "Rick Grimes", "show": "The Walking Dead", "tmdb_person_id": 8655, "gender": "male",
+      "wrong": ["Daryl Dixon", "Negan", "Glenn Rhee"]
+    },
+    {
+      "character": "Darth Vader", "show": "Star Wars", "tmdb_person_id": 2, "gender": "male",
+      "wrong": ["Luke Skywalker", "Han Solo", "Obi-Wan Kenobi"]
+    },
+    {
+      "character": "Wednesday Addams", "show": "Wednesday", "tmdb_person_id": 1397778, "gender": "female",
+      "wrong": ["Enid Sinclair", "Morticia Addams", "Bianca Barclay"]
+    },
+    {
+      "character": "Thomas Shelby", "show": "Peaky Blinders", "tmdb_person_id": 2037, "gender": "male",
+      "wrong": ["Arthur Shelby", "Alfie Solomons", "Polly Gray"]
+    },
+    {
+      "character": "Sherlock Holmes", "show": "Sherlock", "tmdb_person_id": 71580, "gender": "male",
+      "wrong": ["John Watson", "Mycroft Holmes", "Jim Moriarty"]
+    },
+    {
+      "character": "Meredith Grey", "show": "Grey's Anatomy", "tmdb_person_id": 27972, "gender": "female",
+      "wrong": ["Cristina Yang", "Izzie Stevens", "Miranda Bailey"]
+    }
+  ]
+}
