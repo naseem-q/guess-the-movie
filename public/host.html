@@ -372,11 +372,16 @@
     document.getElementById(id).classList.add('active');
   }
 
-  // ─── Auto-fill from URL ────────────────────────────
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('code')) {
-    document.getElementById('connect-code').value = params.get('code');
-    setTimeout(connectHost, 300);
+  // ─── Status message ─────────────────────────────────
+  function showStatus(msg) {
+    let el = document.getElementById('connect-status');
+    if (!el) {
+      el = document.createElement('p');
+      el.id = 'connect-status';
+      el.style.cssText = 'color: var(--gold); font-size: 16px; text-align: center; margin-top: 16px; font-weight: 700;';
+      document.querySelector('.connect-screen').appendChild(el);
+    }
+    el.textContent = msg;
   }
 
   // ─── Connect as Host ──────────────────────────────
@@ -384,15 +389,40 @@
     const code = document.getElementById('connect-code').value.trim().toUpperCase();
     if (!code || code.length !== 4) return alert('Enter a 4-character room code');
 
-    socket = io();
+    showStatus('Connecting to server...');
     roomCode = code;
 
-    socket.emit('host-connect', { code }, (res) => {
-      if (res.error) return alert(res.error);
-      document.getElementById('lobby-code').textContent = roomCode;
-      document.getElementById('lobby-url').textContent = `or visit ${location.origin}/?code=${roomCode}`;
-      renderLobbyPlayers(res.players);
-      showScreen('lobby-screen');
+    // Create socket and WAIT for connection before emitting
+    socket = io({ reconnection: true, reconnectionAttempts: 10, timeout: 10000 });
+
+    socket.on('connect', () => {
+      console.log('[Host] Socket connected, joining room:', roomCode);
+      showStatus('Connected! Joining room ' + roomCode + '...');
+
+      socket.emit('host-connect', { code: roomCode }, (res) => {
+        if (!res) {
+          showStatus('Error: No response from server. Try again.');
+          return;
+        }
+        if (res.error) {
+          showStatus('Error: ' + res.error);
+          return;
+        }
+        console.log('[Host] Joined room successfully');
+        document.getElementById('lobby-code').textContent = roomCode;
+        document.getElementById('lobby-url').textContent = `or visit ${location.origin}/?code=${roomCode}`;
+        renderLobbyPlayers(res.players);
+        showScreen('lobby-screen');
+      });
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('[Host] Connection error:', err);
+      showStatus('Connection failed. Retrying...');
+    });
+
+    socket.on('disconnect', () => {
+      showStatus('Disconnected. Reconnecting...');
     });
 
     // ── Events ───────────────────────────────────────
@@ -649,6 +679,17 @@
       container.appendChild(piece);
     }
     setTimeout(() => container.innerHTML = '', 5000);
+  }
+
+  // ─── Auto-fill from URL (must be after connectHost is defined) ──
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('code')) {
+    document.getElementById('connect-code').value = params.get('code');
+    // Wait a moment for page to fully load, then connect
+    setTimeout(() => {
+      console.log('[Host] Auto-connecting with code from URL:', params.get('code'));
+      connectHost();
+    }, 500);
   }
 
 })();
