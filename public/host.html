@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess The Movie — Host Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #08081a;
+    --bg2: #101028;
+    --gold: #FFE66D;
+    --orange: #FB923C;
+    --green: #34D399;
+    --red: #FF6B6B;
+    --blue: #60A5FA;
+    --text: #E8E8F0;
+    --text2: rgba(232,232,240,0.45);
+  }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: radial-gradient(ellipse at 30% 50%, #12122e 0%, var(--bg) 70%);
+    color: var(--text);
+  }
+
+  /* ─── Screens ────────────────────────────────────── */
+  .screen { display: none; width: 100vw; height: 100vh; position: relative; }
+  .screen.active { display: flex; }
+
+  /* ─── Connect Screen ─────────────────────────────── */
+  .connect-screen { align-items: center; justify-content: center; flex-direction: column; gap: 24px; }
+  .connect-screen .icon { font-size: 64px; animation: float 3s ease-in-out infinite; }
+  .connect-screen h1 { font-family: 'Space Mono', monospace; font-size: 36px; color: var(--gold); }
+  .connect-screen p { color: var(--text2); font-size: 16px; }
+  .connect-input {
+    padding: 16px 24px; border-radius: 14px; border: 2px solid rgba(255,230,109,0.3);
+    background: rgba(255,255,255,0.05); color: var(--gold); font-size: 48px;
+    font-family: 'Space Mono', monospace; text-align: center; letter-spacing: 14px;
+    outline: none; width: 280px; text-transform: uppercase;
+  }
+  .connect-input:focus { border-color: var(--gold); }
+  .connect-btn {
+    padding: 14px 40px; border-radius: 14px; border: none;
+    background: linear-gradient(135deg, var(--gold), var(--orange));
+    color: var(--bg); font-size: 18px; font-weight: 800;
+    font-family: 'Outfit', sans-serif; cursor: pointer; letter-spacing: 1px;
+  }
+
+  /* ─── Lobby Screen ───────────────────────────────── */
+  .lobby-screen { flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+  .lobby-code {
+    font-family: 'Space Mono', monospace; font-size: 96px; font-weight: 700;
+    color: var(--gold); letter-spacing: 20px;
+    text-shadow: 0 0 40px rgba(255,230,109,0.3);
+    animation: glow 2.5s ease-in-out infinite;
+  }
+  .lobby-subtitle { font-size: 18px; color: var(--text2); letter-spacing: 4px; text-transform: uppercase; }
+  .lobby-players-grid {
+    display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+    max-width: 800px; margin-top: 10px;
+  }
+  .lobby-player {
+    padding: 14px 24px; border-radius: 14px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px;
+    animation: popIn 0.4s ease both;
+  }
+  .lobby-player .master-badge {
+    font-size: 11px; padding: 3px 8px; border-radius: 6px;
+    background: rgba(255,230,109,0.15); color: var(--gold);
+  }
+
+  /* ─── Game Screen ────────────────────────────────── */
+  .game-screen { flex-direction: column; }
+
+  /* Header */
+  .game-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; z-index: 10;
+  }
+  .round-badge {
+    font-size: 15px; font-weight: 800; padding: 8px 18px;
+    border-radius: 24px; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1); letter-spacing: 1px;
+  }
+  .category-badge {
+    font-size: 14px; font-weight: 700; color: var(--gold);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .timer-text {
+    font-family: 'Space Mono', monospace; font-size: 52px; font-weight: 700; color: var(--gold);
+    transition: color 0.3s;
+  }
+  .timer-text.urgent { color: var(--red); animation: pulse 0.5s ease infinite; }
+
+  /* Timer bar */
+  .timer-bar-bg {
+    height: 5px; background: rgba(255,255,255,0.06);
+    margin: 0 32px; border-radius: 3px; overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%; border-radius: 3px; transition: width 1s linear;
+    background: linear-gradient(90deg, var(--gold), var(--orange));
+  }
+  .timer-bar.urgent { background: linear-gradient(90deg, var(--red), #FF4444); }
+
+  /* Poster area */
+  .poster-area {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 24px; position: relative;
+  }
+  .poster-frame {
+    position: relative; width: 100%; max-width: 520px;
+    aspect-ratio: 2/3; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 10px 80px rgba(0,0,0,0.7), 0 0 60px rgba(255,230,109,0.06);
+    background: #111;
+  }
+  .poster-frame.scene { aspect-ratio: 16/9; max-width: 720px; }
+  .poster-frame.character { aspect-ratio: 2/3; max-width: 420px; }
+  .poster-img {
+    position: absolute; width: 100%; height: 100%; object-fit: cover;
+    transition: filter 0.3s linear;
+  }
+  .poster-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.02) 3px, rgba(0,0,0,0.02) 6px);
+  }
+
+  /* Options display on TV */
+  .tv-options {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+    padding: 0 32px; margin-bottom: 8px;
+  }
+  .tv-option {
+    padding: 10px 22px; border-radius: 12px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+  }
+  .tv-option .letter {
+    width: 28px; height: 28px; border-radius: 7px; background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+  }
+
+  /* Answer progress */
+  .answer-progress {
+    text-align: center; padding: 8px; font-size: 14px; color: var(--text2);
+  }
+
+  /* Players sidebar */
+  .players-sidebar {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 6px; z-index: 10;
+  }
+  .sidebar-player {
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s;
+  }
+  .sidebar-player .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2);
+    transition: background 0.3s;
+  }
+  .sidebar-player .dot.answered { background: var(--blue); }
+  .sidebar-player .score { margin-left: auto; color: var(--gold); font-size: 13px; }
+
+  /* ─── Reveal Overlay ─────────────────────────────── */
+  .reveal-overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 50;
+    background: rgba(8,8,26,0.7); backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease;
+  }
+  .reveal-card {
+    text-align: center; padding: 30px 50px; border-radius: 24px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    animation: popIn 0.4s ease;
+  }
+  .reveal-emoji { font-size: 56px; margin-bottom: 10px; }
+  .reveal-title { font-size: 32px; font-weight: 900; color: var(--gold); }
+  .reveal-year { font-size: 18px; color: var(--text2); margin-top: 4px; }
+  .reveal-results { margin-top: 16px; display: flex; flex-direction: column; gap: 4px; min-width: 300px; }
+  .reveal-row {
+    display: flex; justify-content: space-between; padding: 8px 16px;
+    border-radius: 8px; background: rgba(255,255,255,0.04);
+    font-size: 16px; animation: slideUp 0.3s ease both;
+  }
+  .reveal-row .name { font-weight: 700; }
+  .reveal-row .pts { font-weight: 800; }
+  .reveal-row .pts.correct { color: var(--green); }
+  .reveal-row .pts.wrong { color: var(--red); }
+
+  /* ─── Round Intro ───────────────────────────────── */
+  .round-intro-screen {
+    flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  }
+  .ri-icon { font-size: 80px; animation: popIn 0.5s ease; }
+  .ri-label { font-size: 20px; color: var(--text2); letter-spacing: 4px; text-transform: uppercase; }
+  .ri-name { font-size: 44px; font-weight: 900; color: var(--gold); }
+  .ri-count { font-size: 18px; color: var(--text2); }
+
+  /* ─── Leaderboard Screen ─────────────────────────── */
+  .leaderboard-screen {
+    flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    padding: 40px;
+  }
+  .lb-title { font-size: 28px; font-weight: 900; color: var(--gold); display: flex; align-items: center; gap: 10px; }
+  .lb-subtitle { font-size: 16px; color: var(--text2); margin-bottom: 12px; }
+  .lb-row {
+    display: flex; align-items: center; width: 100%; max-width: 500px;
+    padding: 14px 20px; border-radius: 14px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 6px; animation: slideUp 0.4s ease both;
+  }
+  .lb-row.first { background: rgba(255,230,109,0.08); border-color: rgba(255,230,109,0.2); }
+  .lb-rank { font-size: 24px; width: 40px; text-align: center; }
+  .lb-name { flex: 1; font-weight: 700; font-size: 20px; margin-left: 12px; }
+  .lb-score { font-weight: 800; font-size: 24px; color: var(--gold); }
+
+  /* ─── Final Results ──────────────────────────────── */
+  .final-screen { flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 40px; }
+  .final-trophy { font-size: 72px; animation: float 2s ease-in-out infinite; }
+  .final-winner { font-size: 42px; font-weight: 900; color: var(--gold); }
+  .final-sub { font-size: 18px; color: var(--text2); margin-bottom: 16px; }
+
+  /* ─── Confetti ───────────────────────────────────── */
+  .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 999; }
+  .confetti-piece {
+    position: absolute; top: -10px; border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+
+  /* ─── Footer ─────────────────────────────────────── */
+  .tv-footer {
+    position: absolute; bottom: 8px; left: 0; right: 0;
+    text-align: center; font-size: 11px; color: rgba(255,255,255,0.15);
+    z-index: 5;
+  }
+
+  /* ─── Particles ──────────────────────────────────── */
+  .particles {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  }
+  .particle {
+    position: absolute; border-radius: 50%; background: var(--gold); opacity: 0.08;
+    animation: particleFloat linear infinite alternate;
+  }
+
+  /* ─── Animations ─────────────────────────────────── */
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @keyframes glow { 0%, 100% { text-shadow: 0 0 40px rgba(255,230,109,0.3); } 50% { text-shadow: 0 0 80px rgba(255,230,109,0.6); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+  @keyframes particleFloat { 0% { transform: translate(0,0); } 100% { transform: translate(40px,-50px); } }
+</style>
+</head>
+<body>
+
+<!-- Particles BG -->
+<div class="particles" id="particles-bg"></div>
+
+<!-- ═══ CONNECT SCREEN ═══ -->
+<div id="connect-screen" class="screen active connect-screen">
+  <div class="icon">📺</div>
+  <h1>TV DISPLAY</h1>
+  <p>Enter the room code from the game master's phone</p>
+  <input type="text" id="connect-code" class="connect-input" maxlength="4" placeholder="CODE">
+  <button class="connect-btn" onclick="connectHost()">CONNECT</button>
+</div>
+
+<!-- ═══ LOBBY SCREEN ═══ -->
+<div id="lobby-screen" class="screen lobby-screen">
+  <div class="lobby-subtitle">JOIN WITH CODE</div>
+  <div class="lobby-code" id="lobby-code">----</div>
+  <div class="lobby-subtitle" id="lobby-url"></div>
+  <div class="lobby-players-grid" id="lobby-players"></div>
+  <div class="lobby-subtitle" style="margin-top:10px;">Waiting for host to start...</div>
+</div>
+
+<!-- ═══ ROUND INTRO SCREEN ═══ -->
+<div id="round-intro-screen" class="screen round-intro-screen">
+  <div class="ri-icon" id="ri-icon">🎬</div>
+  <div class="ri-label" id="ri-label">ROUND 1 OF 5</div>
+  <div class="ri-name" id="ri-name">Movie Posters</div>
+  <div class="ri-count" id="ri-count">10 Questions</div>
+</div>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<div id="game-screen" class="screen game-screen">
+  <div class="game-header">
+    <div class="round-badge" id="g-round">Round 1/5</div>
+    <div class="category-badge" id="g-category">Movie Posters</div>
+    <div class="timer-text" id="g-timer">45</div>
+  </div>
+  <div class="timer-bar-bg"><div class="timer-bar" id="g-timer-bar" style="width:100%"></div></div>
+
+  <div class="poster-area">
+    <div class="poster-frame" id="poster-frame">
+      <img id="poster-img" class="poster-img" src="" alt="" crossorigin="anonymous">
+      <div class="poster-overlay"></div>
+    </div>
+    <div class="players-sidebar" id="players-sidebar"></div>
+  </div>
+
+  <div class="tv-options" id="tv-options"></div>
+  <div class="answer-progress" id="answer-progress"></div>
+
+  <!-- Reveal overlay -->
+  <div id="reveal-overlay" class="reveal-overlay" style="display:none;"></div>
+</div>
+
+<!-- ═══ LEADERBOARD SCREEN ═══ -->
+<div id="leaderboard-screen" class="screen leaderboard-screen">
+  <div class="lb-title" id="lb-title">🏆 Leaderboard</div>
+  <div class="lb-subtitle" id="lb-subtitle"></div>
+  <div id="lb-rows"></div>
+</div>
+
+<!-- ═══ FINAL RESULTS SCREEN ═══ -->
+<div id="final-screen" class="screen final-screen">
+  <div class="final-trophy">🏆</div>
+  <div class="final-winner" id="final-winner">Winner!</div>
+  <div class="final-sub" id="final-sub">Final Scores</div>
+  <div id="final-rows" style="width:100%; max-width:500px;"></div>
+</div>
+
+<!-- Confetti -->
+<div class="confetti-container" id="confetti"></div>
+
+<!-- Footer -->
+<div class="tv-footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year"></span></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function() {
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+  // ─── Particles ─────────────────────────────────────
+  const particlesBg = document.getElementById('particles-bg');
+  for (let i = 0; i < 25; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 2 + Math.random() * 4;
+    p.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${size}px;height:${size}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;
+    particlesBg.appendChild(p);
+  }
+
+  // ─── State ─────────────────────────────────────────
+  let socket = null;
+  let roomCode = '';
+  let timerInterval = null;
+  let timerDuration = 50;
+  let timerStart = 0;
+  let difficulty = {};
+  let circleInterval = null;
+  let circlePos = { x: 50, y: 50 };
+  let playerList = [];
+  let answeredSet = new Set();
+
+  // ─── Screen Management ─────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // ─── Auto-fill from URL ────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('code')) {
+    document.getElementById('connect-code').value = params.get('code');
+    setTimeout(connectHost, 300);
+  }
+
+  // ─── Connect as Host ──────────────────────────────
+  window.connectHost = function() {
+    const code = document.getElementById('connect-code').value.trim().toUpperCase();
+    if (!code || code.length !== 4) return alert('Enter a 4-character room code');
+
+    socket = io();
+    roomCode = code;
+
+    socket.emit('host-connect', { code }, (res) => {
+      if (res.error) return alert(res.error);
+      document.getElementById('lobby-code').textContent = roomCode;
+      document.getElementById('lobby-url').textContent = `or visit ${location.origin}/?code=${roomCode}`;
+      renderLobbyPlayers(res.players);
+      showScreen('lobby-screen');
+    });
+
+    // ── Events ───────────────────────────────────────
+    socket.on('player-list-update', (players) => {
+      playerList = players;
+      renderLobbyPlayers(players);
+      renderSidebar(players);
+    });
+
+    socket.on('round-intro', (data) => {
+      document.getElementById('ri-icon').textContent = data.roundIcon;
+      document.getElementById('ri-label').textContent = `ROUND ${data.roundNumber} OF ${data.totalRounds}`;
+      document.getElementById('ri-name').textContent = data.roundLabel;
+      document.getElementById('ri-count').textContent = `${data.questionsCount} Questions`;
+      showScreen('round-intro-screen');
+    });
+
+    socket.on('question-start', (data) => {
+      showScreen('game-screen');
+      document.getElementById('reveal-overlay').style.display = 'none';
+      answeredSet = new Set();
+
+      // Header
+      document.getElementById('g-round').textContent = `Round ${data.roundNumber}/${data.totalRounds} • Q${data.questionNumber}/${data.totalQuestions}`;
+      document.getElementById('g-category').textContent = data.category;
+
+      // Poster
+      const frame = document.getElementById('poster-frame');
+      frame.className = 'poster-frame';
+      if (data.type === 'movie_scene' || data.type === 'tv_scene') frame.classList.add('scene');
+      if (data.type === 'character') frame.classList.add('character');
+
+      const img = document.getElementById('poster-img');
+      img.src = data.image;
+      difficulty = data.difficulty || {};
+      timerDuration = data.timer;
+      timerStart = Date.now();
+
+      // Options on TV
+      const optDiv = document.getElementById('tv-options');
+      optDiv.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D'];
+      data.options.forEach((opt, i) => {
+        const el = document.createElement('div');
+        el.className = 'tv-option';
+        el.id = `tv-opt-${i}`;
+        el.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
+        optDiv.appendChild(el);
+      });
+
+      // Sidebar
+      renderSidebar(playerList);
+
+      // Start blur/reveal animation
+      startRevealAnimation();
+
+      // Timer
+      startTimer();
+    });
+
+    socket.on('answer-progress', (data) => {
+      document.getElementById('answer-progress').textContent = `${data.answered} / ${data.total} answered`;
+    });
+
+    socket.on('question-reveal', (data) => {
+      clearInterval(timerInterval);
+      clearInterval(circleInterval);
+
+      // Full reveal
+      const img = document.getElementById('poster-img');
+      img.style.filter = 'blur(0px)';
+      img.style.clipPath = 'circle(100% at 50% 50%)';
+
+      // Show overlay
+      const overlay = document.getElementById('reveal-overlay');
+      overlay.style.display = 'flex';
+
+      let resultsHtml = '';
+      const sortedResults = Object.entries(data.results).sort((a, b) => b[1].points - a[1].points);
+      sortedResults.forEach(([name, r], i) => {
+        resultsHtml += `
+          <div class="reveal-row" style="animation-delay:${i*0.06}s">
+            <span class="name">${name}</span>
+            <span class="pts ${r.correct ? 'correct' : 'wrong'}">${r.correct ? '+' + r.points : '✗'}</span>
+          </div>`;
+      });
+
+      overlay.innerHTML = `
+        <div class="reveal-card">
+          <div class="reveal-emoji">🎬</div>
+          <div class="reveal-title">${data.answer}</div>
+          <div class="reveal-year">${data.year || ''}</div>
+          <div class="reveal-results">${resultsHtml}</div>
+        </div>`;
+
+      // Update player scores in sidebar
+      if (data.leaderboard) {
+        playerList = data.leaderboard;
+        renderSidebar(playerList);
+      }
+    });
+
+    socket.on('round-results', (data) => {
+      document.getElementById('lb-title').innerHTML = `🏆 ${data.roundLabel} Complete!`;
+      document.getElementById('lb-subtitle').textContent = `Round ${data.roundNumber} of ${data.totalRounds}`;
+      const rows = document.getElementById('lb-rows');
+      rows.innerHTML = '';
+      data.leaderboard.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = `lb-row ${i === 0 ? 'first' : ''}`;
+        div.style.animationDelay = `${i * 0.08}s`;
+        const rank = i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+        div.innerHTML = `
+          <span class="lb-rank">${rank}</span>
+          <span class="lb-name">${p.name}</span>
+          <span class="lb-score">${p.score}</span>`;
+        rows.appendChild(div);
+      });
+      showScreen('leaderboard-screen');
+      playerList = data.leaderboard;
+    });
+
+    socket.on('final-results', (data) => {
+      const winner = data.leaderboard[0];
+      document.getElementById('final-winner').textContent = winner ? `${winner.name} Wins!` : 'Game Over!';
+      document.getElementById('final-sub').textContent = winner ? `${winner.score} points` : '';
+      const rows = document.getElementById('final-rows');
+      rows.innerHTML = '';
+      data.leaderboard.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = `lb-row ${i === 0 ? 'first' : ''}`;
+        div.style.animationDelay = `${i * 0.1}s`;
+        const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+        div.innerHTML = `
+          <span class="lb-rank">${rank}</span>
+          <span class="lb-name">${p.name}</span>
+          <span class="lb-score">${p.score}</span>`;
+        rows.appendChild(div);
+      });
+      showScreen('final-screen');
+      spawnConfetti();
+    });
+
+    socket.on('game-paused', () => {
+      clearInterval(timerInterval);
+      clearInterval(circleInterval);
+    });
+
+    socket.on('game-resumed', () => {
+      startRevealAnimation();
+      startTimer();
+    });
+  };
+
+  // ─── Render Lobby Players ──────────────────────────
+  function renderLobbyPlayers(players) {
+    const grid = document.getElementById('lobby-players');
+    if (!grid) return;
+    grid.innerHTML = '';
+    players.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'lobby-player';
+      div.style.animationDelay = `${i * 0.08}s`;
+      div.innerHTML = `<span style="font-size:22px;">🎮</span> ${p.name} ${p.isMaster ? '<span class="master-badge">HOST</span>' : ''}`;
+      grid.appendChild(div);
+    });
+  }
+
+  // ─── Render Sidebar ────────────────────────────────
+  function renderSidebar(players) {
+    const sidebar = document.getElementById('players-sidebar');
+    if (!sidebar) return;
+    sidebar.innerHTML = '';
+    players.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'sidebar-player';
+      div.innerHTML = `
+        <span class="dot ${answeredSet.has(p.name) ? 'answered' : ''}"></span>
+        <span>${p.name}</span>
+        <span class="score">${p.score}</span>`;
+      sidebar.appendChild(div);
+    });
+  }
+
+  // ─── Timer ─────────────────────────────────────────
+  function startTimer() {
+    clearInterval(timerInterval);
+    const timerEl = document.getElementById('g-timer');
+    const barEl = document.getElementById('g-timer-bar');
+    timerEl.classList.remove('urgent');
+    barEl.classList.remove('urgent');
+
+    timerInterval = setInterval(() => {
+      const elapsed = (Date.now() - timerStart) / 1000;
+      const remaining = Math.max(0, timerDuration - elapsed);
+      timerEl.textContent = Math.ceil(remaining);
+
+      const pct = (remaining / timerDuration) * 100;
+      barEl.style.width = pct + '%';
+
+      if (remaining <= 5) {
+        timerEl.classList.add('urgent');
+        barEl.classList.add('urgent');
+      }
+      if (remaining <= 0) clearInterval(timerInterval);
+    }, 200);
+  }
+
+  // ─── Blur / Reveal Animation ───────────────────────
+  function startRevealAnimation() {
+    clearInterval(circleInterval);
+    const img = document.getElementById('poster-img');
+    const startBlur = difficulty.startBlur || 45;
+    const startRadius = difficulty.startRadius || 10;
+    circlePos = { x: 35 + Math.random() * 30, y: 35 + Math.random() * 30 };
+
+    circleInterval = setInterval(() => {
+      const elapsed = (Date.now() - timerStart) / 1000;
+      const progress = Math.min(elapsed / timerDuration, 1);
+      const power = difficulty.blurDecayPower || 1.8;
+
+      const blur = startBlur * (1 - Math.pow(progress, power));
+      const radius = startRadius + (52 - startRadius) * progress;
+
+      // Drift circle
+      circlePos.x += (Math.random() - 0.5) * 3;
+      circlePos.y += (Math.random() - 0.5) * 3;
+      circlePos.x = Math.max(15, Math.min(85, circlePos.x));
+      circlePos.y = Math.max(15, Math.min(85, circlePos.y));
+
+      img.style.filter = `blur(${blur}px)`;
+      img.style.clipPath = `circle(${radius}% at ${circlePos.x}% ${circlePos.y}%)`;
+    }, 150);
+  }
+
+  // ─── Confetti ──────────────────────────────────────
+  function spawnConfetti() {
+    const container = document.getElementById('confetti');
+    container.innerHTML = '';
+    const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A78BFA', '#F472B6', '#34D399', '#FB923C'];
+    for (let i = 0; i < 60; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const size = 6 + Math.random() * 10;
+      const dur = 2 + Math.random() * 2;
+      piece.style.cssText = `
+        left: ${Math.random()*100}%;
+        width: ${size}px; height: ${size*1.5}px;
+        background: ${colors[i % colors.length]};
+        animation-duration: ${dur}s;
+        animation-delay: ${Math.random()*0.8}s;
+        transform: rotate(${Math.random()*360}deg);
+      `;
+      container.appendChild(piece);
+    }
+    setTimeout(() => container.innerHTML = '', 5000);
+  }
+
+})();
+</script>
+</body>
+</html>
