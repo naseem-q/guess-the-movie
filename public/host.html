@@ -71,6 +71,8 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .conf{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
 .particles{position:fixed;inset:0;pointer-events:none;z-index:0}
 .particle{position:absolute;border-radius:50%;background:var(--gold);opacity:0.08;animation:pFloat linear infinite alternate}
+.fullscreen-btn{margin-top:12px;padding:12px 28px;border-radius:12px;border:1px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.08);color:var(--green);font-size:15px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.fullscreen-btn:hover{background:rgba(52,211,153,0.15)}
 .tv-footer{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.15);z-index:5}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @keyframes glow{0%,100%{text-shadow:0 0 40px rgba(255,230,109,0.3)}50%{text-shadow:0 0 80px rgba(255,230,109,0.6)}}
@@ -87,9 +89,10 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 <button class="mute-btn" id="mute-btn" onclick="GameAudio.toggleMute();this.textContent=GameAudio.isMuted()?'🔇':'🔊';this.classList.toggle('muted',GameAudio.isMuted())">🔊</button>
 
 <div id="s-connect" class="screen active connect-screen">
-  <div class="icon">❓</div><h1>GUESS THE...</h1><p>Enter the room code from the game master's phone</p>
+  <div class="icon">📺</div><h1>TV DISPLAY</h1><p>Enter the room code from the game master's phone</p>
   <input type="text" id="connect-code" class="connect-input" maxlength="4" placeholder="CODE">
   <button class="connect-btn" onclick="connectHost()">CONNECT</button>
+  <button class="fullscreen-btn" onclick="goFullscreen()">⛶ Go Fullscreen</button>
   <div id="connect-status"></div>
 </div>
 
@@ -146,6 +149,16 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 <script>
 (function(){
   document.getElementById('yr').textContent=new Date().getFullYear();
+
+  // ═══ FULLSCREEN ════════════════════════════════════
+  window.goFullscreen=function(){
+    const el=document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen();
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if(el.msRequestFullscreen) el.msRequestFullscreen();
+    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+  };
+
   const pbg=document.getElementById('pbg');for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=2+Math.random()*4;p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;pbg.appendChild(p)}
 
   let socket=null,roomCode='',timerInt=null,timerDur=50,timerStart=0;
