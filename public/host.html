@@ -122,7 +122,16 @@
   .poster-frame.character { aspect-ratio: 2/3; max-width: 420px; }
   .poster-img {
     position: absolute; width: 100%; height: 100%; object-fit: cover;
-    transition: filter 0.3s linear;
+  }
+  .poster-layer {
+    position: absolute; width: 100%; height: 100%; object-fit: cover;
+    transition: none;
+  }
+  .poster-layer:first-child {
+    z-index: 1; /* blurred background */
+  }
+  .poster-layer:nth-child(2) {
+    z-index: 2; /* clear circle on top */
   }
   .poster-overlay {
     position: absolute; inset: 0; pointer-events: none;
@@ -171,8 +180,22 @@
   .reveal-overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 50;
-    background: rgba(8,8,26,0.7); backdrop-filter: blur(8px);
-    animation: fadeIn 0.3s ease;
+    background: rgba(8,8,26,0.85); backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease; gap: 16px; padding: 30px;
+  }
+  .reveal-poster-full {
+    max-height: 50vh; max-width: 60vw; border-radius: 16px;
+    box-shadow: 0 10px 60px rgba(0,0,0,0.6);
+    animation: popIn 0.5s ease;
+    object-fit: contain;
+  }
+  .reveal-poster-title {
+    font-size: 36px; font-weight: 900; color: var(--gold);
+    text-align: center; animation: slideUp 0.4s ease 0.2s both;
+  }
+  .reveal-poster-year {
+    font-size: 18px; color: var(--text2); margin-top: -8px;
+    animation: slideUp 0.4s ease 0.3s both;
   }
   .reveal-card {
     text-align: center; padding: 30px 50px; border-radius: 24px;
@@ -305,7 +328,10 @@
 
   <div class="poster-area">
     <div class="poster-frame" id="poster-frame">
-      <img id="poster-img" class="poster-img" src="" alt="" crossorigin="anonymous">
+      <!-- Layer 1: Blurred background (entire image, blurred) -->
+      <img id="poster-blur" class="poster-img poster-layer" src="" alt="" crossorigin="anonymous" style="filter: blur(50px);">
+      <!-- Layer 2: Clear reveal (same image, clipped to circle) -->
+      <img id="poster-clear" class="poster-img poster-layer" src="" alt="" crossorigin="anonymous" style="clip-path: circle(8% at 50% 50%);">
       <div class="poster-overlay"></div>
     </div>
     <div class="players-sidebar" id="players-sidebar"></div>
@@ -314,7 +340,7 @@
   <div class="tv-options" id="tv-options"></div>
   <div class="answer-progress" id="answer-progress"></div>
 
-  <!-- Reveal overlay -->
+  <!-- Reveal overlay (shows after answer) -->
   <div id="reveal-overlay" class="reveal-overlay" style="display:none;"></div>
 </div>
 
@@ -365,6 +391,7 @@
   let circlePos = { x: 50, y: 50 };
   let playerList = [];
   let answeredSet = new Set();
+  let currentImageUrl = '';
 
   // ─── Screen Management ─────────────────────────────
   function showScreen(id) {
@@ -449,14 +476,21 @@
       document.getElementById('g-round').textContent = `Round ${data.roundNumber}/${data.totalRounds} • Q${data.questionNumber}/${data.totalQuestions}`;
       document.getElementById('g-category').textContent = data.category;
 
-      // Poster
+      // Poster frame shape
       const frame = document.getElementById('poster-frame');
       frame.className = 'poster-frame';
       if (data.type === 'movie_scene' || data.type === 'tv_scene') frame.classList.add('scene');
       if (data.type === 'character') frame.classList.add('character');
 
-      const img = document.getElementById('poster-img');
-      img.src = data.image;
+      // Set BOTH images to the same source
+      const blurImg = document.getElementById('poster-blur');
+      const clearImg = document.getElementById('poster-clear');
+      blurImg.src = data.image;
+      clearImg.src = data.image;
+
+      // Store current image URL for the reveal overlay
+      currentImageUrl = data.image;
+
       difficulty = data.difficulty || {};
       timerDuration = data.timer;
       timerStart = Date.now();
@@ -491,32 +525,35 @@
       clearInterval(timerInterval);
       clearInterval(circleInterval);
 
-      // Full reveal
-      const img = document.getElementById('poster-img');
-      img.style.filter = 'blur(0px)';
-      img.style.clipPath = 'circle(100% at 50% 50%)';
+      // Full reveal — remove blur, show entire image clear
+      const blurImg = document.getElementById('poster-blur');
+      const clearImg = document.getElementById('poster-clear');
+      blurImg.style.filter = 'blur(0px)';
+      blurImg.style.transition = 'filter 0.8s ease';
+      clearImg.style.clipPath = 'circle(100% at 50% 50%)';
+      clearImg.style.transition = 'clip-path 0.8s ease';
 
-      // Show overlay
-      const overlay = document.getElementById('reveal-overlay');
-      overlay.style.display = 'flex';
+      // Show reveal overlay with full poster + name + results
+      setTimeout(() => {
+        const overlay = document.getElementById('reveal-overlay');
+        overlay.style.display = 'flex';
 
-      let resultsHtml = '';
-      const sortedResults = Object.entries(data.results).sort((a, b) => b[1].points - a[1].points);
-      sortedResults.forEach(([name, r], i) => {
-        resultsHtml += `
-          <div class="reveal-row" style="animation-delay:${i*0.06}s">
-            <span class="name">${name}</span>
-            <span class="pts ${r.correct ? 'correct' : 'wrong'}">${r.correct ? '+' + r.points : '✗'}</span>
-          </div>`;
-      });
+        let resultsHtml = '';
+        const sortedResults = Object.entries(data.results).sort((a, b) => b[1].points - a[1].points);
+        sortedResults.forEach(([name, r], i) => {
+          resultsHtml += `
+            <div class="reveal-row" style="animation-delay:${i*0.06}s">
+              <span class="name">${name}</span>
+              <span class="pts ${r.correct ? 'correct' : 'wrong'}">${r.correct ? '+' + r.points : '✗'}</span>
+            </div>`;
+        });
 
-      overlay.innerHTML = `
-        <div class="reveal-card">
-          <div class="reveal-emoji">🎬</div>
-          <div class="reveal-title">${data.answer}</div>
-          <div class="reveal-year">${data.year || ''}</div>
-          <div class="reveal-results">${resultsHtml}</div>
-        </div>`;
+        overlay.innerHTML = `
+          <img src="${data.image}" class="reveal-poster-full" alt="">
+          <div class="reveal-poster-title">${data.answer}</div>
+          ${data.year ? `<div class="reveal-poster-year">${data.year}</div>` : ''}
+          <div class="reveal-results" style="max-width:400px; width:100%;">${resultsHtml}</div>`;
+      }, 1000);
 
       // Update player scores in sidebar
       if (data.leaderboard) {
@@ -632,29 +669,63 @@
   }
 
   // ─── Blur / Reveal Animation ───────────────────────
+  // Two layers:
+  //   poster-blur = entire image, heavily blurred, gets clearer over time
+  //   poster-clear = entire image, NO blur, clipped to a small circle that moves & grows
   function startRevealAnimation() {
     clearInterval(circleInterval);
-    const img = document.getElementById('poster-img');
+    const blurImg = document.getElementById('poster-blur');
+    const clearImg = document.getElementById('poster-clear');
     const startBlur = difficulty.startBlur || 45;
-    const startRadius = difficulty.startRadius || 10;
-    circlePos = { x: 35 + Math.random() * 30, y: 35 + Math.random() * 30 };
+    const startRadius = difficulty.startRadius || 8;
+
+    // Reset transitions so it snaps immediately
+    blurImg.style.transition = 'none';
+    clearImg.style.transition = 'none';
+
+    // Initial state: background fully blurred, clear circle tiny
+    blurImg.style.filter = `blur(${startBlur}px)`;
+    clearImg.style.clipPath = `circle(${startRadius}% at 50% 50%)`;
+
+    // Random starting position for the clear circle
+    circlePos = { x: 30 + Math.random() * 40, y: 30 + Math.random() * 40 };
+
+    // Drift direction (changes periodically)
+    let driftX = (Math.random() - 0.5) * 4;
+    let driftY = (Math.random() - 0.5) * 4;
+    let driftChangeCounter = 0;
 
     circleInterval = setInterval(() => {
       const elapsed = (Date.now() - timerStart) / 1000;
       const progress = Math.min(elapsed / timerDuration, 1);
       const power = difficulty.blurDecayPower || 1.8;
 
+      // Background blur decreases over time
       const blur = startBlur * (1 - Math.pow(progress, power));
-      const radius = startRadius + (52 - startRadius) * progress;
+      blurImg.style.filter = `blur(${blur}px)`;
 
-      // Drift circle
-      circlePos.x += (Math.random() - 0.5) * 3;
-      circlePos.y += (Math.random() - 0.5) * 3;
-      circlePos.x = Math.max(15, Math.min(85, circlePos.x));
-      circlePos.y = Math.max(15, Math.min(85, circlePos.y));
+      // Clear circle grows over time
+      const radius = startRadius + (55 - startRadius) * progress;
 
-      img.style.filter = `blur(${blur}px)`;
-      img.style.clipPath = `circle(${radius}% at ${circlePos.x}% ${circlePos.y}%)`;
+      // Smooth continuous drift movement
+      driftChangeCounter++;
+      if (driftChangeCounter % 20 === 0) {
+        // Change drift direction every ~3 seconds
+        driftX = (Math.random() - 0.5) * 5;
+        driftY = (Math.random() - 0.5) * 5;
+      }
+
+      circlePos.x += driftX * 0.3;
+      circlePos.y += driftY * 0.3;
+
+      // Bounce off edges
+      if (circlePos.x < 12 || circlePos.x > 88) driftX *= -1;
+      if (circlePos.y < 12 || circlePos.y > 88) driftY *= -1;
+      circlePos.x = Math.max(10, Math.min(90, circlePos.x));
+      circlePos.y = Math.max(10, Math.min(90, circlePos.y));
+
+      // Apply clip-path to clear image (the see-through window)
+      clearImg.style.clipPath = `circle(${radius}% at ${circlePos.x}% ${circlePos.y}%)`;
     }, 150);
   }
 
