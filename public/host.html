@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Party Game — TV Display</title>
+<title>Guess The... — TV Display</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -11,7 +11,6 @@
 html,body{height:100%;overflow:hidden}
 body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 50%,#12122e 0%,var(--bg) 70%);color:var(--text)}
 .screen{display:none;width:100vw;height:100vh;position:relative}.screen.active{display:flex}
-
 .connect-screen{align-items:center;justify-content:center;flex-direction:column;gap:24px}
 .connect-screen .icon{font-size:64px;animation:float 3s ease-in-out infinite}
 .connect-screen h1{font-family:'Space Mono',monospace;font-size:36px;color:var(--gold)}
@@ -20,77 +19,59 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .connect-input:focus{border-color:var(--gold)}
 .connect-btn{padding:14px 40px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:18px;font-weight:800;font-family:'Outfit',sans-serif;cursor:pointer}
 #connect-status{color:var(--gold);font-size:16px;text-align:center;margin-top:12px;font-weight:700}
-
 .lobby-screen{flex-direction:column;align-items:center;justify-content:center;gap:30px}
 .lobby-code{font-family:'Space Mono',monospace;font-size:96px;font-weight:700;color:var(--gold);letter-spacing:20px;text-shadow:0 0 40px rgba(255,230,109,0.3);animation:glow 2.5s ease-in-out infinite}
-.lobby-subtitle{font-size:18px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
-.lobby-players-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:800px}
-.lobby-player{padding:14px 24px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;animation:popIn 0.4s ease both}
-.lobby-player .badge{font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(255,230,109,0.15);color:var(--gold)}
-
+.lobby-sub{font-size:18px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
+.lobby-pg{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:800px}
+.lobby-p{padding:14px 24px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;animation:popIn 0.4s ease both}
+.lobby-p .badge{font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(255,230,109,0.15);color:var(--gold)}
 .game-screen{flex-direction:column}
 .game-header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;z-index:10}
 .round-badge{font-size:15px;font-weight:800;padding:8px 18px;border-radius:24px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)}
-.category-badge{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
-.q-text{font-size:16px;text-align:center;padding:4px 32px;color:var(--text2);font-weight:600;font-style:italic;z-index:10;position:relative}
+.cat-badge{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.q-text{font-size:15px;text-align:center;padding:4px 32px;color:var(--text2);font-weight:600;font-style:italic;z-index:10;position:relative}
 .timer-text{font-family:'Space Mono',monospace;font-size:52px;font-weight:700;color:var(--gold);transition:color 0.3s}
 .timer-text.urgent{color:var(--red);animation:pulse 0.5s ease infinite}
-.timer-bar-bg{height:5px;background:rgba(255,255,255,0.06);margin:0 32px;border-radius:3px;overflow:hidden;z-index:10;position:relative}
-.timer-bar{height:100%;border-radius:3px;transition:width 1s linear;background:linear-gradient(90deg,var(--gold),var(--orange))}
-.timer-bar.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
-
+.tbar-bg{height:5px;background:rgba(255,255,255,0.06);margin:0 32px;border-radius:3px;overflow:hidden;z-index:10;position:relative}
+.tbar{height:100%;border-radius:3px;transition:width 1s linear;background:linear-gradient(90deg,var(--gold),var(--orange))}
+.tbar.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
 .poster-area{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:5}
-.poster-container{position:relative;max-width:480px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7),0 0 60px rgba(255,230,109,0.06);background:#111}
-.poster-container.landscape{max-width:700px}
+.poster-box{position:relative;max-width:480px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7);background:#111}
+.poster-box.landscape{max-width:700px}
 #poster-canvas{width:100%;display:block;border-radius:20px}
-
-.players-sidebar{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
-.sidebar-player{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-.sidebar-player .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2)}
-.sidebar-player .dot.answered{background:var(--blue)}
-.sidebar-player .score{margin-left:auto;color:var(--gold);font-size:13px}
-
-.tv-options{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:0 32px;margin-bottom:6px;z-index:10;position:relative}
-.tv-option{padding:8px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
-.tv-option .letter{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
-.answer-progress{text-align:center;padding:6px;font-size:13px;color:var(--text2);z-index:10;position:relative}
-
-.reveal-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.8);backdrop-filter:blur(10px);animation:fadeIn 0.3s ease}
-.reveal-card{text-align:center;padding:28px 44px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);animation:popIn 0.4s ease;max-width:600px}
-.reveal-poster{max-width:240px;max-height:350px;border-radius:14px;margin-bottom:14px;box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:cover}
-.reveal-poster.landscape{max-width:440px;max-height:260px}
-.reveal-title{font-size:30px;font-weight:900;color:var(--gold)}
-.reveal-year{font-size:16px;color:var(--text2);margin-top:4px}
-.reveal-info{font-size:14px;color:var(--text2);margin-top:2px;font-style:italic}
-.reveal-results{margin-top:14px;display:flex;flex-direction:column;gap:4px;min-width:280px}
-.reveal-row{display:flex;justify-content:space-between;padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:15px;animation:slideUp 0.3s ease both}
-.reveal-row .pts{font-weight:800}
-.reveal-row .pts.correct{color:var(--green)}.reveal-row .pts.wrong{color:var(--red)}
-
-.round-intro-screen{flex-direction:column;align-items:center;justify-content:center;gap:12px}
-.ri-icon{font-size:80px;animation:popIn 0.5s ease}
-.ri-label{font-size:20px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
+.sidebar{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
+.sb-p{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.sb-p .score{margin-left:auto;color:var(--gold);font-size:13px}
+.tv-opts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:0 32px;margin-bottom:6px;z-index:10;position:relative}
+.tv-opt{padding:8px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.tv-opt .lt{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.ans-prog{text-align:center;padding:6px;font-size:13px;color:var(--text2);z-index:10;position:relative}
+.rev-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.8);backdrop-filter:blur(10px);animation:fadeIn 0.3s ease}
+.rev-card{text-align:center;padding:28px 44px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);animation:popIn 0.4s ease;max-width:600px}
+.rev-poster{max-width:240px;max-height:350px;border-radius:14px;margin-bottom:14px;box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:cover}
+.rev-poster.landscape{max-width:440px;max-height:260px}
+.rev-title{font-size:30px;font-weight:900;color:var(--gold)}
+.rev-year{font-size:16px;color:var(--text2);margin-top:4px}
+.rev-info{font-size:14px;color:var(--text2);margin-top:2px;font-style:italic}
+.rev-results{margin-top:14px;display:flex;flex-direction:column;gap:4px;min-width:280px}
+.rev-row{display:flex;justify-content:space-between;padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:15px;animation:slideUp 0.3s ease both}
+.rev-row .pts{font-weight:800}.rev-row .pts.correct{color:var(--green)}.rev-row .pts.wrong{color:var(--red)}
+.ri-screen{flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.ri-icon{font-size:80px;animation:popIn 0.5s ease}.ri-label{font-size:20px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
 .ri-name{font-size:44px;font-weight:900;color:var(--gold)}.ri-count{font-size:18px;color:var(--text2)}
-
 .lb-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
-.lb-title{font-size:28px;font-weight:900;color:var(--gold)}.lb-subtitle{font-size:16px;color:var(--text2);margin-bottom:12px}
+.lb-title{font-size:28px;font-weight:900;color:var(--gold)}.lb-sub{font-size:16px;color:var(--text2);margin-bottom:12px}
 .lb-row{display:flex;align-items:center;width:100%;max-width:500px;padding:14px 20px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);margin-bottom:6px;animation:slideUp 0.4s ease both}
 .lb-row.first{background:rgba(255,230,109,0.08);border-color:rgba(255,230,109,0.2)}
-.lb-rank{font-size:24px;width:40px;text-align:center}.lb-name{flex:1;font-weight:700;font-size:20px;margin-left:12px}
-.lb-score{font-weight:800;font-size:24px;color:var(--gold)}
-
+.lb-rk{font-size:24px;width:40px;text-align:center}.lb-nm{flex:1;font-weight:700;font-size:20px;margin-left:12px}.lb-sc{font-weight:800;font-size:24px;color:var(--gold)}
 .final-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
-.final-trophy{font-size:72px;animation:float 2s ease-in-out infinite}
-.final-winner{font-size:42px;font-weight:900;color:var(--gold)}.final-sub{font-size:18px;color:var(--text2);margin-bottom:16px}
-
-.mute-btn{position:fixed;top:16px;right:16px;z-index:999;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
-.mute-btn.muted{opacity:0.5}
-.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999}
-.confetti-piece{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
+.f-trophy{font-size:72px;animation:float 2s ease-in-out infinite}.f-winner{font-size:42px;font-weight:900;color:var(--gold)}.f-sub{font-size:18px;color:var(--text2);margin-bottom:16px}
+.mute-btn{position:fixed;top:16px;right:16px;z-index:999;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}.mute-btn.muted{opacity:0.5}
+.confetti-c{position:fixed;inset:0;pointer-events:none;z-index:999}
+.conf{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
 .particles{position:fixed;inset:0;pointer-events:none;z-index:0}
-.particle{position:absolute;border-radius:50%;background:var(--gold);opacity:0.08;animation:particleFloat linear infinite alternate}
+.particle{position:absolute;border-radius:50%;background:var(--gold);opacity:0.08;animation:pFloat linear infinite alternate}
 .tv-footer{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.15);z-index:5}
-
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @keyframes glow{0%,100%{text-shadow:0 0 40px rgba(255,230,109,0.3)}50%{text-shadow:0 0 80px rgba(255,230,109,0.6)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -98,29 +79,29 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 @keyframes popIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
-@keyframes particleFloat{0%{transform:translate(0,0)}100%{transform:translate(40px,-50px)}}
+@keyframes pFloat{0%{transform:translate(0,0)}100%{transform:translate(40px,-50px)}}
 </style>
 </head>
 <body>
 <div class="particles" id="pbg"></div>
-<button class="mute-btn" id="mute-btn" onclick="GameAudio.toggleMute();document.getElementById('mute-btn').textContent=GameAudio.isMuted()?'🔇':'🔊';document.getElementById('mute-btn').classList.toggle('muted',GameAudio.isMuted())">🔊</button>
+<button class="mute-btn" id="mute-btn" onclick="GameAudio.toggleMute();this.textContent=GameAudio.isMuted()?'🔇':'🔊';this.classList.toggle('muted',GameAudio.isMuted())">🔊</button>
 
 <div id="s-connect" class="screen active connect-screen">
-  <div class="icon">📺</div><h1>TV DISPLAY</h1><p>Enter the room code from the game master's phone</p>
+  <div class="icon">❓</div><h1>GUESS THE...</h1><p>Enter the room code from the game master's phone</p>
   <input type="text" id="connect-code" class="connect-input" maxlength="4" placeholder="CODE">
   <button class="connect-btn" onclick="connectHost()">CONNECT</button>
   <div id="connect-status"></div>
 </div>
 
 <div id="s-lobby" class="screen lobby-screen">
-  <div class="lobby-subtitle">JOIN WITH CODE</div>
+  <div class="lobby-sub">JOIN WITH CODE</div>
   <div class="lobby-code" id="lobby-code">----</div>
-  <div class="lobby-subtitle" id="lobby-cat"></div>
-  <div class="lobby-players-grid" id="lobby-players"></div>
-  <div class="lobby-subtitle" style="margin-top:10px">Waiting for host to start...</div>
+  <div class="lobby-sub" id="lobby-cat"></div>
+  <div class="lobby-pg" id="lobby-pg"></div>
+  <div class="lobby-sub" style="margin-top:10px">Waiting for host to start...</div>
 </div>
 
-<div id="s-round-intro" class="screen round-intro-screen">
+<div id="s-ri" class="screen ri-screen">
   <div class="ri-icon" id="ri-icon">🎬</div>
   <div class="ri-label" id="ri-label">ROUND 1 OF 5</div>
   <div class="ri-name" id="ri-name">Movie Posters</div>
@@ -129,35 +110,35 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
 <div id="s-game" class="screen game-screen">
   <div class="game-header">
-    <div class="round-badge" id="g-round">Round 1/5</div>
-    <div class="category-badge" id="g-category">Movie Posters</div>
+    <div class="round-badge" id="g-round">R1/5</div>
+    <div class="cat-badge" id="g-cat">Movie Posters</div>
     <div class="timer-text" id="g-timer">45</div>
   </div>
-  <div class="timer-bar-bg"><div class="timer-bar" id="g-timer-bar" style="width:100%"></div></div>
-  <div class="q-text" id="g-question"></div>
+  <div class="tbar-bg"><div class="tbar" id="g-tbar" style="width:100%"></div></div>
+  <div class="q-text" id="g-q"></div>
   <div class="poster-area">
-    <div class="poster-container" id="poster-container"><canvas id="poster-canvas"></canvas></div>
-    <div class="players-sidebar" id="players-sidebar"></div>
+    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas></div>
+    <div class="sidebar" id="sidebar"></div>
   </div>
-  <div class="tv-options" id="tv-options"></div>
-  <div class="answer-progress" id="answer-progress"></div>
-  <div id="reveal-overlay" class="reveal-overlay" style="display:none"></div>
+  <div class="tv-opts" id="tv-opts"></div>
+  <div class="ans-prog" id="ans-prog"></div>
+  <div id="rev-overlay" class="rev-overlay" style="display:none"></div>
 </div>
 
-<div id="s-leaderboard" class="screen lb-screen">
+<div id="s-lb" class="screen lb-screen">
   <div class="lb-title" id="lb-title">🏆 Leaderboard</div>
-  <div class="lb-subtitle" id="lb-subtitle"></div>
+  <div class="lb-sub" id="lb-sub"></div>
   <div id="lb-rows"></div>
 </div>
 
 <div id="s-final" class="screen final-screen">
-  <div class="final-trophy">🏆</div>
-  <div class="final-winner" id="final-winner">Winner!</div>
-  <div class="final-sub" id="final-sub">Final Scores</div>
-  <div id="final-rows" style="width:100%;max-width:500px"></div>
+  <div class="f-trophy">🏆</div>
+  <div class="f-winner" id="f-winner">Winner!</div>
+  <div class="f-sub" id="f-sub">Final Scores</div>
+  <div id="f-rows" style="width:100%;max-width:500px"></div>
 </div>
 
-<div class="confetti-container" id="confetti"></div>
+<div class="confetti-c" id="confetti"></div>
 <div class="tv-footer">Powered by Naseem Q. All rights reserved &copy; <span id="yr"></span></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -165,57 +146,45 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 <script>
 (function(){
   document.getElementById('yr').textContent=new Date().getFullYear();
-  const pbg=document.getElementById('pbg');
-  for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=2+Math.random()*4;p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;pbg.appendChild(p)}
+  const pbg=document.getElementById('pbg');for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=2+Math.random()*4;p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;pbg.appendChild(p)}
 
   let socket=null,roomCode='',timerInt=null,timerDur=50,timerStart=0;
   let diff={},animFrame=null,cPos={x:50,y:50},cVel={x:0.4,y:0.3};
   let playerList=[],curImg=null,curType='';
-
   const canvas=document.getElementById('poster-canvas'),ctx=canvas.getContext('2d');
-  let revealActive=false;
+  let revActive=false;
 
   function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
-  // ═══ CANVAS REVEAL ═════════════════════════════════
   function drawReveal(img,progress,cp){
-    const w=canvas.width,h=canvas.height;
-    ctx.clearRect(0,0,w,h);
-    // Blurred background
-    const blur=Math.max(0.5,diff.startBlur*(1-Math.pow(progress,diff.blurDecayPower||1.8)));
+    const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
+    const blur=Math.max(0.5,diff.startBlur*(1-Math.pow(progress,diff.blurDecayPower||1.7)));
     ctx.filter=`blur(${blur}px)`;ctx.drawImage(img,0,0,w,h);
-    // Clear circle on top
     ctx.filter='none';ctx.save();ctx.beginPath();
     const rad=Math.max(8,(diff.startRadius+((52-diff.startRadius)*progress))*Math.min(w,h)/100);
     ctx.arc(cp.x*w/100,cp.y*h/100,rad,0,Math.PI*2);ctx.clip();ctx.drawImage(img,0,0,w,h);ctx.restore();
-    // Glow border
     ctx.beginPath();ctx.arc(cp.x*w/100,cp.y*h/100,rad,0,Math.PI*2);
     ctx.strokeStyle=`rgba(255,230,109,${0.25+0.15*Math.sin(Date.now()/400)})`;ctx.lineWidth=2;ctx.stroke();
   }
-
-  function animReveal(){
-    if(!revealActive||!curImg)return;
-    const progress=Math.min((Date.now()-timerStart)/1000/timerDur,1);
+  function animRev(){
+    if(!revActive||!curImg)return;
+    const pr=Math.min((Date.now()-timerStart)/1000/timerDur,1);
     cVel.x+=(Math.random()-0.5)*0.12;cVel.y+=(Math.random()-0.5)*0.12;
     cVel.x=Math.max(-1.2,Math.min(1.2,cVel.x));cVel.y=Math.max(-1.2,Math.min(1.2,cVel.y));
     cPos.x+=cVel.x;cPos.y+=cVel.y;
     if(cPos.x<12){cPos.x=12;cVel.x*=-0.7}if(cPos.x>88){cPos.x=88;cVel.x*=-0.7}
     if(cPos.y<12){cPos.y=12;cVel.y*=-0.7}if(cPos.y>88){cPos.y=88;cVel.y*=-0.7}
-    drawReveal(curImg,progress,cPos);
-    animFrame=requestAnimationFrame(animReveal);
+    drawReveal(curImg,pr,cPos);animFrame=requestAnimationFrame(animRev);
   }
-
-  function startAnim(){revealActive=true;cPos={x:25+Math.random()*50,y:25+Math.random()*50};cVel={x:(Math.random()-0.5)*0.8,y:(Math.random()-0.5)*0.8};animReveal()}
-  function stopAnim(){revealActive=false;cancelAnimationFrame(animFrame)}
+  function startAnim(){revActive=true;cPos={x:25+Math.random()*50,y:25+Math.random()*50};cVel={x:(Math.random()-0.5)*0.8,y:(Math.random()-0.5)*0.8};animRev()}
+  function stopAnim(){revActive=false;cancelAnimationFrame(animFrame)}
   function drawFull(img){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.filter='none';ctx.drawImage(img,0,0,canvas.width,canvas.height)}
 
-  // ═══ CONNECT ═══════════════════════════════════════
   window.connectHost=function(){
     const code=document.getElementById('connect-code').value.trim().toUpperCase();
     if(!code||code.length!==4)return alert('Enter 4-character code');
-    document.getElementById('connect-status').textContent='Connecting...';
-    roomCode=code;socket=io({reconnection:true,timeout:10000});
-
+    document.getElementById('connect-status').textContent='Connecting...';roomCode=code;
+    socket=io({reconnection:true,timeout:10000});
     socket.on('connect',()=>{
       document.getElementById('connect-status').textContent='Joining room...';
       socket.emit('host-connect',{code:roomCode},(res)=>{
@@ -225,76 +194,49 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
         renderLobby(res.players);playerList=res.players;show('s-lobby');
       });
     });
-    socket.on('connect_error',()=>{document.getElementById('connect-status').textContent='Connection failed...'});
+    socket.on('connect_error',()=>{document.getElementById('connect-status').textContent='Failed...'});
+    socket.on('player-list-update',(p)=>{playerList=p;renderLobby(p);renderSB(p)});
 
-    socket.on('player-list-update',(p)=>{playerList=p;renderLobby(p);renderSidebar(p)});
-
-    socket.on('round-intro',(d)=>{
-      document.getElementById('ri-icon').textContent=d.roundIcon;
-      document.getElementById('ri-label').textContent=`ROUND ${d.roundNumber} OF ${d.totalRounds}`;
-      document.getElementById('ri-name').textContent=d.roundLabel;
-      document.getElementById('ri-count').textContent=`${d.questionsCount} Questions`;
-      show('s-round-intro');GameAudio.roundStart();GameAudio.startMusic(d.musicTrack||0);
-    });
+    socket.on('round-intro',(d)=>{show('s-ri');document.getElementById('ri-icon').textContent=d.roundIcon;document.getElementById('ri-label').textContent=`ROUND ${d.roundNumber} OF ${d.totalRounds}`;document.getElementById('ri-name').textContent=d.roundLabel;document.getElementById('ri-count').textContent=`${d.questionsCount} Questions`;GameAudio.roundStart();GameAudio.startMusic(d.musicTrack||0)});
 
     socket.on('question-start',(d)=>{
-      show('s-game');document.getElementById('reveal-overlay').style.display='none';
-      document.getElementById('g-round').textContent=`Round ${d.roundNumber}/${d.totalRounds} • Q${d.questionNumber}/${d.totalQuestions}`;
-      document.getElementById('g-category').textContent=d.category;
-      document.getElementById('g-question').textContent=d.question||'';
-      diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};timerDur=d.timer;timerStart=Date.now();
-      curType=d.type;
-      const container=document.getElementById('poster-container');
-      container.className='poster-container';
-      if(d.type==='movie_scene'||d.type==='tv_scene')container.classList.add('landscape');
-
+      show('s-game');document.getElementById('rev-overlay').style.display='none';
+      document.getElementById('g-round').textContent=`R${d.roundNumber}/${d.totalRounds} • Q${d.questionNumber}/${d.totalQuestions}`;
+      document.getElementById('g-cat').textContent=d.category;
+      document.getElementById('g-q').textContent=d.question||'';
+      diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};timerDur=d.timer;timerStart=Date.now();curType=d.type;
+      const box=document.getElementById('poster-box');box.className='poster-box';if(d.type==='movie_scene'||d.type==='tv_scene')box.classList.add('landscape');
       const img=new Image();img.crossOrigin='anonymous';
-      img.onload=function(){curImg=img;const isL=(d.type==='movie_scene'||d.type==='tv_scene');canvas.width=isL?960:520;canvas.height=isL?540:780;startAnim()};
-      img.onerror=function(){console.error('Image load failed');};
-      img.src=d.image;
-
-      const optDiv=document.getElementById('tv-options');optDiv.innerHTML='';
-      ['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-option';e.innerHTML=`<span class="letter">${l}</span><span>${d.options[i]}</span>`;optDiv.appendChild(e)}});
-      renderSidebar(playerList);startTimer();
+      img.onload=function(){curImg=img;const isL=d.type==='movie_scene'||d.type==='tv_scene';canvas.width=isL?960:520;canvas.height=isL?540:780;startAnim()};
+      img.onerror=function(){console.error('Img fail')};img.src=d.image;
+      const od=document.getElementById('tv-opts');od.innerHTML='';['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-opt';e.innerHTML=`<span class="lt">${l}</span><span>${d.options[i]}</span>`;od.appendChild(e)}});
+      renderSB(playerList);startTimer();
     });
 
-    socket.on('answer-progress',(d)=>{document.getElementById('answer-progress').textContent=`${d.answered}/${d.total} answered`});
+    socket.on('answer-progress',(d)=>{document.getElementById('ans-prog').textContent=`${d.answered}/${d.total} answered`});
 
     socket.on('question-reveal',(d)=>{
-      clearInterval(timerInt);stopAnim();
-      if(curImg)drawFull(curImg);GameAudio.reveal();
-      const ov=document.getElementById('reveal-overlay');ov.style.display='flex';
+      clearInterval(timerInt);stopAnim();if(curImg)drawFull(curImg);GameAudio.reveal();
+      const ov=document.getElementById('rev-overlay');ov.style.display='flex';
       const isL=curType==='movie_scene'||curType==='tv_scene';
-      let rhtml='';Object.entries(d.results).sort((a,b)=>b[1].points-a[1].points).forEach(([n,r],i)=>{
-        rhtml+=`<div class="reveal-row" style="animation-delay:${i*0.05}s"><span>${n}</span><span class="pts ${r.correct?'correct':'wrong'}">${r.correct?'+'+r.points:'✗'}</span></div>`;
-      });
-      ov.innerHTML=`<div class="reveal-card">
-        <img src="${d.image}" class="reveal-poster ${isL?'landscape':''}" crossorigin="anonymous" onerror="this.style.display='none'">
-        <div class="reveal-title">${d.answer}</div>
-        <div class="reveal-year">${d.year||''}</div>
-        ${d.info&&d.info!==d.answer?`<div class="reveal-info">${d.info}</div>`:''}
-        <div class="reveal-results">${rhtml}</div>
-      </div>`;
-      if(d.leaderboard){playerList=d.leaderboard;renderSidebar(playerList)}
+      let rh='';Object.entries(d.results).sort((a,b)=>b[1].points-a[1].points).forEach(([n,r],i)=>{rh+=`<div class="rev-row" style="animation-delay:${i*0.05}s"><span>${n}</span><span class="pts ${r.correct?'correct':'wrong'}">${r.correct?'+'+r.points:'✗'}</span></div>`});
+      ov.innerHTML=`<div class="rev-card"><img src="${d.image}" class="rev-poster ${isL?'landscape':''}" crossorigin="anonymous" onerror="this.style.display='none'"><div class="rev-title">${d.answer}</div><div class="rev-year">${d.year||''}</div>${d.info&&d.info!==d.answer?`<div class="rev-info">${d.info}</div>`:''}<div class="rev-results">${rh}</div></div>`;
+      if(d.leaderboard){playerList=d.leaderboard;renderSB(playerList)}
     });
 
     socket.on('round-results',(d)=>{
       stopAnim();GameAudio.roundComplete();
-      document.getElementById('lb-title').innerHTML=`🏆 ${d.roundLabel} Complete!`;
-      document.getElementById('lb-subtitle').textContent=`Round ${d.roundNumber} of ${d.totalRounds}`;
+      document.getElementById('lb-title').innerHTML=`🏆 ${d.roundLabel} Complete!`;document.getElementById('lb-sub').textContent=`Round ${d.roundNumber} of ${d.totalRounds}`;
       const rows=document.getElementById('lb-rows');rows.innerHTML='';
-      d.leaderboard.forEach((p,i)=>{const e=document.createElement('div');e.className=`lb-row ${i===0?'first':''}`;e.style.animationDelay=`${i*0.08}s`;
-        e.innerHTML=`<span class="lb-rank">${i===0?'👑':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score}</span>`;rows.appendChild(e)});
-      show('s-leaderboard');playerList=d.leaderboard;
+      d.leaderboard.forEach((p,i)=>{const e=document.createElement('div');e.className=`lb-row ${i===0?'first':''}`;e.style.animationDelay=`${i*0.08}s`;e.innerHTML=`<span class="lb-rk">${i===0?'👑':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span class="lb-nm">${p.name}</span><span class="lb-sc">${p.score}</span>`;rows.appendChild(e)});
+      show('s-lb');playerList=d.leaderboard;
     });
 
     socket.on('final-results',(d)=>{
       stopAnim();GameAudio.stopMusic();GameAudio.winner();
-      const w=d.leaderboard[0];document.getElementById('final-winner').textContent=w?`${w.name} Wins!`:'Game Over!';
-      document.getElementById('final-sub').textContent=w?`${w.score} points`:'';
-      const rows=document.getElementById('final-rows');rows.innerHTML='';
-      d.leaderboard.forEach((p,i)=>{const e=document.createElement('div');e.className=`lb-row ${i===0?'first':''}`;e.style.animationDelay=`${i*0.1}s`;
-        e.innerHTML=`<span class="lb-rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score}</span>`;rows.appendChild(e)});
+      const w=d.leaderboard[0];document.getElementById('f-winner').textContent=w?`${w.name} Wins!`:'Game Over!';document.getElementById('f-sub').textContent=w?`${w.score} points`:'';
+      const rows=document.getElementById('f-rows');rows.innerHTML='';
+      d.leaderboard.forEach((p,i)=>{const e=document.createElement('div');e.className=`lb-row ${i===0?'first':''}`;e.style.animationDelay=`${i*0.1}s`;e.innerHTML=`<span class="lb-rk">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span class="lb-nm">${p.name}</span><span class="lb-sc">${p.score}</span>`;rows.appendChild(e)});
       show('s-final');spawnConfetti();
     });
 
@@ -302,19 +244,10 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
     socket.on('game-resumed',()=>{startAnim();startTimer()});
   };
 
-  function startTimer(){
-    clearInterval(timerInt);const tEl=document.getElementById('g-timer'),bEl=document.getElementById('g-timer-bar');
-    tEl.classList.remove('urgent');bEl.classList.remove('urgent');
-    timerInt=setInterval(()=>{const el=(Date.now()-timerStart)/1000,rem=Math.max(0,timerDur-el);
-      tEl.textContent=Math.ceil(rem);bEl.style.width=(rem/timerDur)*100+'%';
-      if(rem<=5){tEl.classList.add('urgent');bEl.classList.add('urgent');if(Math.ceil(rem)!==Math.ceil(rem+0.2))GameAudio.tick()}
-      if(rem<=0)clearInterval(timerInt);
-    },200);
-  }
-
-  function renderLobby(p){const g=document.getElementById('lobby-players');g.innerHTML='';p.forEach((x,i)=>{const e=document.createElement('div');e.className='lobby-player';e.style.animationDelay=`${i*0.08}s`;e.innerHTML=`🎮 ${x.name} ${x.isMaster?'<span class="badge">HOST</span>':''}`;g.appendChild(e)})}
-  function renderSidebar(p){const s=document.getElementById('players-sidebar');s.innerHTML='';p.forEach(x=>{const e=document.createElement('div');e.className='sidebar-player';e.innerHTML=`<span class="dot"></span><span>${x.name}</span><span class="score">${x.score}</span>`;s.appendChild(e)})}
-  function spawnConfetti(){const c=document.getElementById('confetti');c.innerHTML='';const cols=['#FF6B6B','#4ECDC4','#FFE66D','#A78BFA','#F472B6','#34D399','#FB923C'];for(let i=0;i<60;i++){const p=document.createElement('div');p.className='confetti-piece';const s=6+Math.random()*10,d=2+Math.random()*2;p.style.cssText=`left:${Math.random()*100}%;width:${s}px;height:${s*1.5}px;background:${cols[i%cols.length]};animation-duration:${d}s;animation-delay:${Math.random()*0.8}s;transform:rotate(${Math.random()*360}deg)`;c.appendChild(p)}setTimeout(()=>c.innerHTML='',5000)}
+  function startTimer(){clearInterval(timerInt);const tE=document.getElementById('g-timer'),bE=document.getElementById('g-tbar');tE.classList.remove('urgent');bE.classList.remove('urgent');timerInt=setInterval(()=>{const el=(Date.now()-timerStart)/1000,rem=Math.max(0,timerDur-el);tE.textContent=Math.ceil(rem);bE.style.width=(rem/timerDur)*100+'%';if(rem<=5){tE.classList.add('urgent');bE.classList.add('urgent');if(Math.ceil(rem)!==Math.ceil(rem+0.2))GameAudio.tick()}if(rem<=0)clearInterval(timerInt)},200)}
+  function renderLobby(p){const g=document.getElementById('lobby-pg');g.innerHTML='';p.forEach((x,i)=>{const e=document.createElement('div');e.className='lobby-p';e.style.animationDelay=`${i*0.08}s`;e.innerHTML=`🎮 ${x.name} ${x.isMaster?'<span class="badge">HOST</span>':''}`;g.appendChild(e)})}
+  function renderSB(p){const s=document.getElementById('sidebar');s.innerHTML='';p.forEach(x=>{const e=document.createElement('div');e.className='sb-p';e.innerHTML=`<span>${x.name}</span><span class="score">${x.score}</span>`;s.appendChild(e)})}
+  function spawnConfetti(){const c=document.getElementById('confetti');c.innerHTML='';const cols=['#FF6B6B','#4ECDC4','#FFE66D','#A78BFA','#F472B6','#34D399','#FB923C'];for(let i=0;i<60;i++){const p=document.createElement('div');p.className='conf';const s=6+Math.random()*10,d=2+Math.random()*2;p.style.cssText=`left:${Math.random()*100}%;width:${s}px;height:${s*1.5}px;background:${cols[i%cols.length]};animation-duration:${d}s;animation-delay:${Math.random()*0.8}s;transform:rotate(${Math.random()*360}deg)`;c.appendChild(p)}setTimeout(()=>c.innerHTML='',5000)}
 
   const params=new URLSearchParams(window.location.search);
   if(params.get('code')){document.getElementById('connect-code').value=params.get('code');setTimeout(connectHost,500)}
