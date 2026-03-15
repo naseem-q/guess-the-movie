@@ -1,12 +1,9 @@
 {
-  "name": "guess-the-movie",
-  "version": "1.0.0",
-  "description": "Guess The Movie - Multiplayer Party Game",
+  "name": "party-game",
+  "version": "2.0.0",
+  "description": "Party Game - Multiplayer Guessing Game",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
+  "scripts": { "start": "node server.js" },
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.7.4",
