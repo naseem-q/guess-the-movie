@@ -3,490 +3,319 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guess The Movie — Host Display</title>
+<title>Party Game — TV Display</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#08081a;--gold:#FFE66D;--orange:#FB923C;--green:#34D399;--red:#FF6B6B;--blue:#60A5FA;--text:#E8E8F0;--text2:rgba(232,232,240,0.45)}
-  html,body{height:100%;overflow:hidden}
-  body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 50%,#12122e 0%,var(--bg) 70%);color:var(--text)}
-  .screen{display:none;width:100vw;height:100vh;position:relative}
-  .screen.active{display:flex}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#08081a;--gold:#FFE66D;--orange:#FB923C;--green:#34D399;--red:#FF6B6B;--blue:#60A5FA;--text:#E8E8F0;--text2:rgba(232,232,240,0.45)}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 50%,#12122e 0%,var(--bg) 70%);color:var(--text)}
+.screen{display:none;width:100vw;height:100vh;position:relative}.screen.active{display:flex}
 
-  /* Connect */
-  .connect-screen{align-items:center;justify-content:center;flex-direction:column;gap:24px}
-  .connect-screen .icon{font-size:64px;animation:float 3s ease-in-out infinite}
-  .connect-screen h1{font-family:'Space Mono',monospace;font-size:36px;color:var(--gold)}
-  .connect-screen p{color:var(--text2);font-size:16px}
-  .connect-input{padding:16px 24px;border-radius:14px;border:2px solid rgba(255,230,109,0.3);background:rgba(255,255,255,0.05);color:var(--gold);font-size:48px;font-family:'Space Mono',monospace;text-align:center;letter-spacing:14px;outline:none;width:280px;text-transform:uppercase}
-  .connect-input:focus{border-color:var(--gold)}
-  .connect-btn{padding:14px 40px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:18px;font-weight:800;font-family:'Outfit',sans-serif;cursor:pointer}
-  #connect-status{color:var(--gold);font-size:16px;text-align:center;margin-top:16px;font-weight:700}
+.connect-screen{align-items:center;justify-content:center;flex-direction:column;gap:24px}
+.connect-screen .icon{font-size:64px;animation:float 3s ease-in-out infinite}
+.connect-screen h1{font-family:'Space Mono',monospace;font-size:36px;color:var(--gold)}
+.connect-screen p{color:var(--text2);font-size:16px}
+.connect-input{padding:16px 24px;border-radius:14px;border:2px solid rgba(255,230,109,0.3);background:rgba(255,255,255,0.05);color:var(--gold);font-size:48px;font-family:'Space Mono',monospace;text-align:center;letter-spacing:14px;outline:none;width:280px;text-transform:uppercase}
+.connect-input:focus{border-color:var(--gold)}
+.connect-btn{padding:14px 40px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:18px;font-weight:800;font-family:'Outfit',sans-serif;cursor:pointer}
+#connect-status{color:var(--gold);font-size:16px;text-align:center;margin-top:12px;font-weight:700}
 
-  /* Lobby */
-  .lobby-screen{flex-direction:column;align-items:center;justify-content:center;gap:30px}
-  .lobby-code{font-family:'Space Mono',monospace;font-size:96px;font-weight:700;color:var(--gold);letter-spacing:20px;text-shadow:0 0 40px rgba(255,230,109,0.3);animation:glow 2.5s ease-in-out infinite}
-  .lobby-subtitle{font-size:18px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
-  .lobby-players-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:800px}
-  .lobby-player{padding:14px 24px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;animation:popIn 0.4s ease both}
-  .lobby-player .master-badge{font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(255,230,109,0.15);color:var(--gold)}
+.lobby-screen{flex-direction:column;align-items:center;justify-content:center;gap:30px}
+.lobby-code{font-family:'Space Mono',monospace;font-size:96px;font-weight:700;color:var(--gold);letter-spacing:20px;text-shadow:0 0 40px rgba(255,230,109,0.3);animation:glow 2.5s ease-in-out infinite}
+.lobby-subtitle{font-size:18px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
+.lobby-players-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:800px}
+.lobby-player{padding:14px 24px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;animation:popIn 0.4s ease both}
+.lobby-player .badge{font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(255,230,109,0.15);color:var(--gold)}
 
-  /* Game */
-  .game-screen{flex-direction:column}
-  .game-header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;z-index:10}
-  .round-badge{font-size:15px;font-weight:800;padding:8px 18px;border-radius:24px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)}
-  .category-badge{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
-  .timer-text{font-family:'Space Mono',monospace;font-size:52px;font-weight:700;color:var(--gold);transition:color 0.3s}
-  .timer-text.urgent{color:var(--red);animation:pulse 0.5s ease infinite}
-  .timer-bar-bg{height:5px;background:rgba(255,255,255,0.06);margin:0 32px;border-radius:3px;overflow:hidden;z-index:10;position:relative}
-  .timer-bar{height:100%;border-radius:3px;transition:width 1s linear;background:linear-gradient(90deg,var(--gold),var(--orange))}
-  .timer-bar.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
+.game-screen{flex-direction:column}
+.game-header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;z-index:10}
+.round-badge{font-size:15px;font-weight:800;padding:8px 18px;border-radius:24px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)}
+.category-badge{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.q-text{font-size:16px;text-align:center;padding:4px 32px;color:var(--text2);font-weight:600;font-style:italic;z-index:10;position:relative}
+.timer-text{font-family:'Space Mono',monospace;font-size:52px;font-weight:700;color:var(--gold);transition:color 0.3s}
+.timer-text.urgent{color:var(--red);animation:pulse 0.5s ease infinite}
+.timer-bar-bg{height:5px;background:rgba(255,255,255,0.06);margin:0 32px;border-radius:3px;overflow:hidden;z-index:10;position:relative}
+.timer-bar{height:100%;border-radius:3px;transition:width 1s linear;background:linear-gradient(90deg,var(--gold),var(--orange))}
+.timer-bar.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
 
-  /* Poster area with canvas */
-  .poster-area{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:5}
-  .poster-container{position:relative;max-width:520px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7),0 0 60px rgba(255,230,109,0.06);background:#111}
-  .poster-container.scene{max-width:720px}
-  .poster-container.character{max-width:420px}
-  #poster-canvas{width:100%;display:block;border-radius:20px}
-  .poster-scanlines{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.02) 3px,rgba(0,0,0,0.02) 6px);border-radius:20px}
+.poster-area{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:5}
+.poster-container{position:relative;max-width:480px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7),0 0 60px rgba(255,230,109,0.06);background:#111}
+.poster-container.landscape{max-width:700px}
+#poster-canvas{width:100%;display:block;border-radius:20px}
 
-  /* Players sidebar */
-  .players-sidebar{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
-  .sidebar-player{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-  .sidebar-player .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);transition:background 0.3s}
-  .sidebar-player .dot.answered{background:var(--blue)}
-  .sidebar-player .score{margin-left:auto;color:var(--gold);font-size:13px}
+.players-sidebar{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
+.sidebar-player{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.sidebar-player .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2)}
+.sidebar-player .dot.answered{background:var(--blue)}
+.sidebar-player .score{margin-left:auto;color:var(--gold);font-size:13px}
 
-  /* TV Options */
-  .tv-options{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;padding:0 32px;margin-bottom:8px;z-index:10;position:relative}
-  .tv-option{padding:10px 22px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
-  .tv-option .letter{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
-  .answer-progress{text-align:center;padding:8px;font-size:14px;color:var(--text2);z-index:10;position:relative}
+.tv-options{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:0 32px;margin-bottom:6px;z-index:10;position:relative}
+.tv-option{padding:8px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.tv-option .letter{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.answer-progress{text-align:center;padding:6px;font-size:13px;color:var(--text2);z-index:10;position:relative}
 
-  /* Reveal overlay */
-  .reveal-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.75);backdrop-filter:blur(8px);animation:fadeIn 0.3s ease}
-  .reveal-card{text-align:center;padding:30px 50px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);animation:popIn 0.4s ease;max-width:600px}
-  .reveal-poster{max-width:280px;max-height:400px;border-radius:14px;margin-bottom:16px;box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:cover}
-  .reveal-poster.scene{max-width:480px;max-height:300px}
-  .reveal-title{font-size:32px;font-weight:900;color:var(--gold)}
-  .reveal-year{font-size:18px;color:var(--text2);margin-top:4px}
-  .reveal-results{margin-top:16px;display:flex;flex-direction:column;gap:4px;min-width:300px}
-  .reveal-row{display:flex;justify-content:space-between;padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:16px;animation:slideUp 0.3s ease both}
-  .reveal-row .name{font-weight:700}
-  .reveal-row .pts{font-weight:800}
-  .reveal-row .pts.correct{color:var(--green)}
-  .reveal-row .pts.wrong{color:var(--red)}
+.reveal-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.8);backdrop-filter:blur(10px);animation:fadeIn 0.3s ease}
+.reveal-card{text-align:center;padding:28px 44px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);animation:popIn 0.4s ease;max-width:600px}
+.reveal-poster{max-width:240px;max-height:350px;border-radius:14px;margin-bottom:14px;box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:cover}
+.reveal-poster.landscape{max-width:440px;max-height:260px}
+.reveal-title{font-size:30px;font-weight:900;color:var(--gold)}
+.reveal-year{font-size:16px;color:var(--text2);margin-top:4px}
+.reveal-info{font-size:14px;color:var(--text2);margin-top:2px;font-style:italic}
+.reveal-results{margin-top:14px;display:flex;flex-direction:column;gap:4px;min-width:280px}
+.reveal-row{display:flex;justify-content:space-between;padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.04);font-size:15px;animation:slideUp 0.3s ease both}
+.reveal-row .pts{font-weight:800}
+.reveal-row .pts.correct{color:var(--green)}.reveal-row .pts.wrong{color:var(--red)}
 
-  /* Round Intro */
-  .round-intro-screen{flex-direction:column;align-items:center;justify-content:center;gap:12px}
-  .ri-icon{font-size:80px;animation:popIn 0.5s ease}
-  .ri-label{font-size:20px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
-  .ri-name{font-size:44px;font-weight:900;color:var(--gold)}
-  .ri-count{font-size:18px;color:var(--text2)}
+.round-intro-screen{flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.ri-icon{font-size:80px;animation:popIn 0.5s ease}
+.ri-label{font-size:20px;color:var(--text2);letter-spacing:4px;text-transform:uppercase}
+.ri-name{font-size:44px;font-weight:900;color:var(--gold)}.ri-count{font-size:18px;color:var(--text2)}
 
-  /* Leaderboard */
-  .leaderboard-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
-  .lb-title{font-size:28px;font-weight:900;color:var(--gold)}
-  .lb-subtitle{font-size:16px;color:var(--text2);margin-bottom:12px}
-  .lb-row{display:flex;align-items:center;width:100%;max-width:500px;padding:14px 20px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);margin-bottom:6px;animation:slideUp 0.4s ease both}
-  .lb-row.first{background:rgba(255,230,109,0.08);border-color:rgba(255,230,109,0.2)}
-  .lb-rank{font-size:24px;width:40px;text-align:center}
-  .lb-name{flex:1;font-weight:700;font-size:20px;margin-left:12px}
-  .lb-score{font-weight:800;font-size:24px;color:var(--gold)}
+.lb-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
+.lb-title{font-size:28px;font-weight:900;color:var(--gold)}.lb-subtitle{font-size:16px;color:var(--text2);margin-bottom:12px}
+.lb-row{display:flex;align-items:center;width:100%;max-width:500px;padding:14px 20px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);margin-bottom:6px;animation:slideUp 0.4s ease both}
+.lb-row.first{background:rgba(255,230,109,0.08);border-color:rgba(255,230,109,0.2)}
+.lb-rank{font-size:24px;width:40px;text-align:center}.lb-name{flex:1;font-weight:700;font-size:20px;margin-left:12px}
+.lb-score{font-weight:800;font-size:24px;color:var(--gold)}
 
-  /* Final */
-  .final-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
-  .final-trophy{font-size:72px;animation:float 2s ease-in-out infinite}
-  .final-winner{font-size:42px;font-weight:900;color:var(--gold)}
-  .final-sub{font-size:18px;color:var(--text2);margin-bottom:16px}
+.final-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
+.final-trophy{font-size:72px;animation:float 2s ease-in-out infinite}
+.final-winner{font-size:42px;font-weight:900;color:var(--gold)}.final-sub{font-size:18px;color:var(--text2);margin-bottom:16px}
 
-  /* Mute button */
-  .mute-btn{position:fixed;top:16px;right:16px;z-index:999;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:all 0.2s}
-  .mute-btn:hover{background:rgba(255,255,255,0.12)}
-  .mute-btn.muted{opacity:0.5}
+.mute-btn{position:fixed;top:16px;right:16px;z-index:999;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.mute-btn.muted{opacity:0.5}
+.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999}
+.confetti-piece{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
+.particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+.particle{position:absolute;border-radius:50%;background:var(--gold);opacity:0.08;animation:particleFloat linear infinite alternate}
+.tv-footer{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.15);z-index:5}
 
-  /* Confetti */
-  .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999}
-  .confetti-piece{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
-
-  /* Particles */
-  .particles{position:fixed;inset:0;pointer-events:none;z-index:0}
-  .particle{position:absolute;border-radius:50%;background:var(--gold);opacity:0.08;animation:particleFloat linear infinite alternate}
-
-  .tv-footer{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,0.15);z-index:5}
-
-  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-  @keyframes glow{0%,100%{text-shadow:0 0 40px rgba(255,230,109,0.3)}50%{text-shadow:0 0 80px rgba(255,230,109,0.6)}}
-  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  @keyframes popIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
-  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-  @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
-  @keyframes particleFloat{0%{transform:translate(0,0)}100%{transform:translate(40px,-50px)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes glow{0%,100%{text-shadow:0 0 40px rgba(255,230,109,0.3)}50%{text-shadow:0 0 80px rgba(255,230,109,0.6)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@keyframes particleFloat{0%{transform:translate(0,0)}100%{transform:translate(40px,-50px)}}
 </style>
 </head>
 <body>
+<div class="particles" id="pbg"></div>
+<button class="mute-btn" id="mute-btn" onclick="GameAudio.toggleMute();document.getElementById('mute-btn').textContent=GameAudio.isMuted()?'🔇':'🔊';document.getElementById('mute-btn').classList.toggle('muted',GameAudio.isMuted())">🔊</button>
 
-<div class="particles" id="particles-bg"></div>
-
-<!-- Mute Button (always visible) -->
-<button class="mute-btn" id="mute-btn" onclick="toggleMute()" title="Toggle Music">🔊</button>
-
-<!-- Connect -->
-<div id="connect-screen" class="screen active connect-screen">
-  <div class="icon">📺</div>
-  <h1>TV DISPLAY</h1>
-  <p>Enter the room code from the game master's phone</p>
+<div id="s-connect" class="screen active connect-screen">
+  <div class="icon">📺</div><h1>TV DISPLAY</h1><p>Enter the room code from the game master's phone</p>
   <input type="text" id="connect-code" class="connect-input" maxlength="4" placeholder="CODE">
   <button class="connect-btn" onclick="connectHost()">CONNECT</button>
   <div id="connect-status"></div>
 </div>
 
-<!-- Lobby -->
-<div id="lobby-screen" class="screen lobby-screen">
+<div id="s-lobby" class="screen lobby-screen">
   <div class="lobby-subtitle">JOIN WITH CODE</div>
   <div class="lobby-code" id="lobby-code">----</div>
-  <div class="lobby-subtitle" id="lobby-url"></div>
+  <div class="lobby-subtitle" id="lobby-cat"></div>
   <div class="lobby-players-grid" id="lobby-players"></div>
-  <div class="lobby-subtitle" style="margin-top:10px;">Waiting for host to start...</div>
+  <div class="lobby-subtitle" style="margin-top:10px">Waiting for host to start...</div>
 </div>
 
-<!-- Round Intro -->
-<div id="round-intro-screen" class="screen round-intro-screen">
+<div id="s-round-intro" class="screen round-intro-screen">
   <div class="ri-icon" id="ri-icon">🎬</div>
   <div class="ri-label" id="ri-label">ROUND 1 OF 5</div>
   <div class="ri-name" id="ri-name">Movie Posters</div>
   <div class="ri-count" id="ri-count">10 Questions</div>
 </div>
 
-<!-- Game -->
-<div id="game-screen" class="screen game-screen">
+<div id="s-game" class="screen game-screen">
   <div class="game-header">
     <div class="round-badge" id="g-round">Round 1/5</div>
     <div class="category-badge" id="g-category">Movie Posters</div>
     <div class="timer-text" id="g-timer">45</div>
   </div>
   <div class="timer-bar-bg"><div class="timer-bar" id="g-timer-bar" style="width:100%"></div></div>
-
+  <div class="q-text" id="g-question"></div>
   <div class="poster-area">
-    <div class="poster-container" id="poster-container">
-      <canvas id="poster-canvas"></canvas>
-      <div class="poster-scanlines"></div>
-    </div>
+    <div class="poster-container" id="poster-container"><canvas id="poster-canvas"></canvas></div>
     <div class="players-sidebar" id="players-sidebar"></div>
   </div>
-
   <div class="tv-options" id="tv-options"></div>
   <div class="answer-progress" id="answer-progress"></div>
-  <div id="reveal-overlay" class="reveal-overlay" style="display:none;"></div>
+  <div id="reveal-overlay" class="reveal-overlay" style="display:none"></div>
 </div>
 
-<!-- Leaderboard -->
-<div id="leaderboard-screen" class="screen leaderboard-screen">
+<div id="s-leaderboard" class="screen lb-screen">
   <div class="lb-title" id="lb-title">🏆 Leaderboard</div>
   <div class="lb-subtitle" id="lb-subtitle"></div>
   <div id="lb-rows"></div>
 </div>
 
-<!-- Final -->
-<div id="final-screen" class="screen final-screen">
+<div id="s-final" class="screen final-screen">
   <div class="final-trophy">🏆</div>
   <div class="final-winner" id="final-winner">Winner!</div>
   <div class="final-sub" id="final-sub">Final Scores</div>
-  <div id="final-rows" style="width:100%;max-width:500px;"></div>
+  <div id="final-rows" style="width:100%;max-width:500px"></div>
 </div>
 
 <div class="confetti-container" id="confetti"></div>
-<div class="tv-footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year"></span></div>
+<div class="tv-footer">Powered by Naseem Q. All rights reserved &copy; <span id="yr"></span></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/audio.js"></script>
 <script>
 (function(){
-  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  const pbg=document.getElementById('pbg');
+  for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=2+Math.random()*4;p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;pbg.appendChild(p)}
 
-  // Particles
-  const pbg = document.getElementById('particles-bg');
-  for(let i=0;i<25;i++){const p=document.createElement('div');p.className='particle';const s=2+Math.random()*4;p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;pbg.appendChild(p)}
+  let socket=null,roomCode='',timerInt=null,timerDur=50,timerStart=0;
+  let diff={},animFrame=null,cPos={x:50,y:50},cVel={x:0.4,y:0.3};
+  let playerList=[],curImg=null,curType='';
 
-  // ─── State ─────────────────────────────────────────
-  let socket=null, roomCode='', timerInterval=null, timerDuration=50, timerStart=0;
-  let difficulty={}, animFrame=null, circlePos={x:50,y:50}, circleVel={x:0.3,y:0.2};
-  let playerList=[], currentImage=null, currentType='';
-
-  // ─── Audio (uses GameAudio from audio.js) ────
-  window.toggleMute=function(){
-    const m = GameAudio.toggleMute();
-    document.getElementById('mute-btn').textContent = m ? '🔇' : '🔊';
-    document.getElementById('mute-btn').classList.toggle('muted', m);
-  };
-
-  // ─── Canvas Reveal Animation ───────────────────────
-  const canvas=document.getElementById('poster-canvas');
-  const ctx=canvas.getContext('2d');
+  const canvas=document.getElementById('poster-canvas'),ctx=canvas.getContext('2d');
   let revealActive=false;
 
-  function drawReveal(img,progress,cPos,radius){
-    const w=canvas.width, h=canvas.height;
-    ctx.clearRect(0,0,w,h);
+  function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
-    // 1. Draw fully blurred version (entire background)
-    const blur=Math.max(1,difficulty.startBlur*(1-Math.pow(progress,difficulty.blurDecayPower||1.8)));
-    ctx.filter=`blur(${blur}px)`;
-    ctx.drawImage(img,0,0,w,h);
-
-    // 2. Draw clear circle on top (clipped)
-    ctx.filter='none';
-    ctx.save();
-    ctx.beginPath();
-    const rad=Math.max(10,(difficulty.startRadius+((50-difficulty.startRadius)*progress))*Math.min(w,h)/100);
-    ctx.arc(cPos.x*w/100,cPos.y*h/100,rad,0,Math.PI*2);
-    ctx.clip();
-    ctx.drawImage(img,0,0,w,h);
-    ctx.restore();
-
-    // 3. Circle border glow
-    ctx.beginPath();
-    ctx.arc(cPos.x*w/100,cPos.y*h/100,rad,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(255,230,109,${0.3+0.2*Math.sin(Date.now()/500)})`;
-    ctx.lineWidth=2;
-    ctx.stroke();
-  }
-
-  function drawFullReveal(img){
+  // ═══ CANVAS REVEAL ═════════════════════════════════
+  function drawReveal(img,progress,cp){
     const w=canvas.width,h=canvas.height;
     ctx.clearRect(0,0,w,h);
-    ctx.filter='none';
-    ctx.drawImage(img,0,0,w,h);
+    // Blurred background
+    const blur=Math.max(0.5,diff.startBlur*(1-Math.pow(progress,diff.blurDecayPower||1.8)));
+    ctx.filter=`blur(${blur}px)`;ctx.drawImage(img,0,0,w,h);
+    // Clear circle on top
+    ctx.filter='none';ctx.save();ctx.beginPath();
+    const rad=Math.max(8,(diff.startRadius+((52-diff.startRadius)*progress))*Math.min(w,h)/100);
+    ctx.arc(cp.x*w/100,cp.y*h/100,rad,0,Math.PI*2);ctx.clip();ctx.drawImage(img,0,0,w,h);ctx.restore();
+    // Glow border
+    ctx.beginPath();ctx.arc(cp.x*w/100,cp.y*h/100,rad,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(255,230,109,${0.25+0.15*Math.sin(Date.now()/400)})`;ctx.lineWidth=2;ctx.stroke();
   }
 
-  function animateReveal(){
-    if(!revealActive||!currentImage)return;
-    const elapsed=(Date.now()-timerStart)/1000;
-    const progress=Math.min(elapsed/timerDuration,1);
-
-    // Move circle randomly (smooth drift)
-    circleVel.x+=(Math.random()-0.5)*0.15;
-    circleVel.y+=(Math.random()-0.5)*0.15;
-    circleVel.x=Math.max(-1.5,Math.min(1.5,circleVel.x));
-    circleVel.y=Math.max(-1.5,Math.min(1.5,circleVel.y));
-    circlePos.x+=circleVel.x;
-    circlePos.y+=circleVel.y;
-
-    // Bounce off edges
-    if(circlePos.x<15){circlePos.x=15;circleVel.x*=-0.8}
-    if(circlePos.x>85){circlePos.x=85;circleVel.x*=-0.8}
-    if(circlePos.y<15){circlePos.y=15;circleVel.y*=-0.8}
-    if(circlePos.y>85){circlePos.y=85;circleVel.y*=-0.8}
-
-    drawReveal(currentImage,progress,circlePos,0);
-    animFrame=requestAnimationFrame(animateReveal);
+  function animReveal(){
+    if(!revealActive||!curImg)return;
+    const progress=Math.min((Date.now()-timerStart)/1000/timerDur,1);
+    cVel.x+=(Math.random()-0.5)*0.12;cVel.y+=(Math.random()-0.5)*0.12;
+    cVel.x=Math.max(-1.2,Math.min(1.2,cVel.x));cVel.y=Math.max(-1.2,Math.min(1.2,cVel.y));
+    cPos.x+=cVel.x;cPos.y+=cVel.y;
+    if(cPos.x<12){cPos.x=12;cVel.x*=-0.7}if(cPos.x>88){cPos.x=88;cVel.x*=-0.7}
+    if(cPos.y<12){cPos.y=12;cVel.y*=-0.7}if(cPos.y>88){cPos.y=88;cVel.y*=-0.7}
+    drawReveal(curImg,progress,cPos);
+    animFrame=requestAnimationFrame(animReveal);
   }
 
-  function startRevealAnimation(){
-    revealActive=true;
-    circlePos={x:30+Math.random()*40,y:30+Math.random()*40};
-    circleVel={x:(Math.random()-0.5)*1,y:(Math.random()-0.5)*1};
-    animateReveal();
-  }
+  function startAnim(){revealActive=true;cPos={x:25+Math.random()*50,y:25+Math.random()*50};cVel={x:(Math.random()-0.5)*0.8,y:(Math.random()-0.5)*0.8};animReveal()}
+  function stopAnim(){revealActive=false;cancelAnimationFrame(animFrame)}
+  function drawFull(img){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.filter='none';ctx.drawImage(img,0,0,canvas.width,canvas.height)}
 
-  function stopRevealAnimation(){
-    revealActive=false;
-    cancelAnimationFrame(animFrame);
-  }
-
-  // ─── Screen Management ─────────────────────────────
-  function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
-
-  // ─── Connect as Host ──────────────────────────────
-  function showStatus(msg){document.getElementById('connect-status').textContent=msg}
-
+  // ═══ CONNECT ═══════════════════════════════════════
   window.connectHost=function(){
     const code=document.getElementById('connect-code').value.trim().toUpperCase();
-    if(!code||code.length!==4)return alert('Enter a 4-character room code');
-    showStatus('Connecting...');
-    roomCode=code;
-
-    socket=io({reconnection:true,reconnectionAttempts:10,timeout:10000});
+    if(!code||code.length!==4)return alert('Enter 4-character code');
+    document.getElementById('connect-status').textContent='Connecting...';
+    roomCode=code;socket=io({reconnection:true,timeout:10000});
 
     socket.on('connect',()=>{
-      showStatus('Connected! Joining room '+roomCode+'...');
+      document.getElementById('connect-status').textContent='Joining room...';
       socket.emit('host-connect',{code:roomCode},(res)=>{
-        if(!res){showStatus('No response. Try again.');return}
-        if(res.error){showStatus('Error: '+res.error);return}
+        if(!res||res.error){document.getElementById('connect-status').textContent=res?.error||'Error';return}
         document.getElementById('lobby-code').textContent=roomCode;
-        document.getElementById('lobby-url').textContent=`or visit ${location.origin}/?code=${roomCode}`;
-        renderLobbyPlayers(res.players);
-        playerList=res.players;
-        showScreen('lobby-screen');
+        document.getElementById('lobby-cat').textContent=res.categoryName||'';
+        renderLobby(res.players);playerList=res.players;show('s-lobby');
       });
     });
+    socket.on('connect_error',()=>{document.getElementById('connect-status').textContent='Connection failed...'});
 
-    socket.on('connect_error',()=>showStatus('Connection failed. Retrying...'));
-    socket.on('disconnect',()=>showStatus('Disconnected. Reconnecting...'));
+    socket.on('player-list-update',(p)=>{playerList=p;renderLobby(p);renderSidebar(p)});
 
-    socket.on('player-list-update',(players)=>{playerList=players;renderLobbyPlayers(players);renderSidebar(players)});
-
-    socket.on('round-intro',(data)=>{
-      document.getElementById('ri-icon').textContent=data.roundIcon;
-      document.getElementById('ri-label').textContent=`ROUND ${data.roundNumber} OF ${data.totalRounds}`;
-      document.getElementById('ri-name').textContent=data.roundLabel;
-      document.getElementById('ri-count').textContent=`${data.questionsCount} Questions`;
-      showScreen('round-intro-screen');
-      // Start music for this round
-      GameAudio.roundStart();
-      GameAudio.startMusic(data.musicTrack||0);
+    socket.on('round-intro',(d)=>{
+      document.getElementById('ri-icon').textContent=d.roundIcon;
+      document.getElementById('ri-label').textContent=`ROUND ${d.roundNumber} OF ${d.totalRounds}`;
+      document.getElementById('ri-name').textContent=d.roundLabel;
+      document.getElementById('ri-count').textContent=`${d.questionsCount} Questions`;
+      show('s-round-intro');GameAudio.roundStart();GameAudio.startMusic(d.musicTrack||0);
     });
 
-    socket.on('question-start',(data)=>{
-      showScreen('game-screen');
-      document.getElementById('reveal-overlay').style.display='none';
-
-      document.getElementById('g-round').textContent=`Round ${data.roundNumber}/${data.totalRounds} • Q${data.questionNumber}/${data.totalQuestions}`;
-      document.getElementById('g-category').textContent=data.category;
-
+    socket.on('question-start',(d)=>{
+      show('s-game');document.getElementById('reveal-overlay').style.display='none';
+      document.getElementById('g-round').textContent=`Round ${d.roundNumber}/${d.totalRounds} • Q${d.questionNumber}/${d.totalQuestions}`;
+      document.getElementById('g-category').textContent=d.category;
+      document.getElementById('g-question').textContent=d.question||'';
+      diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};timerDur=d.timer;timerStart=Date.now();
+      curType=d.type;
       const container=document.getElementById('poster-container');
       container.className='poster-container';
-      currentType=data.type;
-      if(data.type==='movie_scene'||data.type==='tv_scene')container.classList.add('scene');
-      if(data.type==='character')container.classList.add('character');
+      if(d.type==='movie_scene'||d.type==='tv_scene')container.classList.add('landscape');
 
-      difficulty=data.difficulty||{startBlur:45,startRadius:4,blurDecayPower:1.8};
-      timerDuration=data.timer;
-      timerStart=Date.now();
+      const img=new Image();img.crossOrigin='anonymous';
+      img.onload=function(){curImg=img;const isL=(d.type==='movie_scene'||d.type==='tv_scene');canvas.width=isL?960:520;canvas.height=isL?540:780;startAnim()};
+      img.onerror=function(){console.error('Image load failed');};
+      img.src=d.image;
 
-      // Load image into canvas
-      const img=new Image();
-      img.crossOrigin='anonymous';
-      img.onload=function(){
-        currentImage=img;
-        const isLandscape=(data.type==='movie_scene'||data.type==='tv_scene');
-        canvas.width=isLandscape?960:520;
-        canvas.height=isLandscape?540:780;
-        startRevealAnimation();
-      };
-      img.src=data.image;
+      const optDiv=document.getElementById('tv-options');optDiv.innerHTML='';
+      ['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-option';e.innerHTML=`<span class="letter">${l}</span><span>${d.options[i]}</span>`;optDiv.appendChild(e)}});
+      renderSidebar(playerList);startTimer();
+    });
 
-      // Options
-      const optDiv=document.getElementById('tv-options');
-      optDiv.innerHTML='';
-      const letters=['A','B','C','D'];
-      data.options.forEach((opt,i)=>{
-        const el=document.createElement('div');el.className='tv-option';
-        el.innerHTML=`<span class="letter">${letters[i]}</span><span>${opt}</span>`;
-        optDiv.appendChild(el);
+    socket.on('answer-progress',(d)=>{document.getElementById('answer-progress').textContent=`${d.answered}/${d.total} answered`});
+
+    socket.on('question-reveal',(d)=>{
+      clearInterval(timerInt);stopAnim();
+      if(curImg)drawFull(curImg);GameAudio.reveal();
+      const ov=document.getElementById('reveal-overlay');ov.style.display='flex';
+      const isL=curType==='movie_scene'||curType==='tv_scene';
+      let rhtml='';Object.entries(d.results).sort((a,b)=>b[1].points-a[1].points).forEach(([n,r],i)=>{
+        rhtml+=`<div class="reveal-row" style="animation-delay:${i*0.05}s"><span>${n}</span><span class="pts ${r.correct?'correct':'wrong'}">${r.correct?'+'+r.points:'✗'}</span></div>`;
       });
-
-      renderSidebar(playerList);
-      startTimer();
+      ov.innerHTML=`<div class="reveal-card">
+        <img src="${d.image}" class="reveal-poster ${isL?'landscape':''}" crossorigin="anonymous" onerror="this.style.display='none'">
+        <div class="reveal-title">${d.answer}</div>
+        <div class="reveal-year">${d.year||''}</div>
+        ${d.info&&d.info!==d.answer?`<div class="reveal-info">${d.info}</div>`:''}
+        <div class="reveal-results">${rhtml}</div>
+      </div>`;
+      if(d.leaderboard){playerList=d.leaderboard;renderSidebar(playerList)}
     });
 
-    socket.on('answer-progress',(data)=>{
-      document.getElementById('answer-progress').textContent=`${data.answered} / ${data.total} answered`;
-    });
-
-    socket.on('question-reveal',(data)=>{
-      clearInterval(timerInterval);
-      stopRevealAnimation();
-
-      // Show full clear image on canvas
-      if(currentImage) drawFullReveal(currentImage);
-
-      GameAudio.reveal();
-
-      // Show overlay with full poster + name + results
-      const overlay=document.getElementById('reveal-overlay');
-      overlay.style.display='flex';
-
-      const isScene=(data.image&&(currentType==='movie_scene'||currentType==='tv_scene'));
-
-      let resultsHtml='';
-      const sorted=Object.entries(data.results).sort((a,b)=>b[1].points-a[1].points);
-      sorted.forEach(([name,r],i)=>{
-        resultsHtml+=`<div class="reveal-row" style="animation-delay:${i*0.06}s"><span class="name">${name}</span><span class="pts ${r.correct?'correct':'wrong'}">${r.correct?'+'+r.points:'✗'}</span></div>`;
-      });
-
-      overlay.innerHTML=`
-        <div class="reveal-card">
-          <img src="${data.image}" class="reveal-poster ${isScene?'scene':''}" crossorigin="anonymous" onerror="this.style.display='none'">
-          <div class="reveal-title">${data.answer}</div>
-          <div class="reveal-year">${data.year||''}</div>
-          <div class="reveal-results">${resultsHtml}</div>
-        </div>`;
-
-      if(data.leaderboard){playerList=data.leaderboard;renderSidebar(playerList)}
-    });
-
-    socket.on('round-results',(data)=>{
-      stopRevealAnimation();
-      document.getElementById('lb-title').innerHTML=`🏆 ${data.roundLabel} Complete!`;
-      document.getElementById('lb-subtitle').textContent=`Round ${data.roundNumber} of ${data.totalRounds}`;
+    socket.on('round-results',(d)=>{
+      stopAnim();GameAudio.roundComplete();
+      document.getElementById('lb-title').innerHTML=`🏆 ${d.roundLabel} Complete!`;
+      document.getElementById('lb-subtitle').textContent=`Round ${d.roundNumber} of ${d.totalRounds}`;
       const rows=document.getElementById('lb-rows');rows.innerHTML='';
-      data.leaderboard.forEach((p,i)=>{
-        const d=document.createElement('div');d.className=`lb-row ${i===0?'first':''}`;d.style.animationDelay=`${i*0.08}s`;
-        const rank=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
-        d.innerHTML=`<span class="lb-rank">${rank}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score}</span>`;
-        rows.appendChild(d);
-      });
-      showScreen('leaderboard-screen');
-      playerList=data.leaderboard;
-      GameAudio.roundComplete();
+      d.leaderboard.forEach((p,i)=>{const e=document.createElement('div');e.className=`lb-row ${i===0?'first':''}`;e.style.animationDelay=`${i*0.08}s`;
+        e.innerHTML=`<span class="lb-rank">${i===0?'👑':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score}</span>`;rows.appendChild(e)});
+      show('s-leaderboard');playerList=d.leaderboard;
     });
 
-    socket.on('final-results',(data)=>{
-      stopRevealAnimation();GameAudio.stopMusic();
-      const w=data.leaderboard[0];
-      document.getElementById('final-winner').textContent=w?`${w.name} Wins!`:'Game Over!';
+    socket.on('final-results',(d)=>{
+      stopAnim();GameAudio.stopMusic();GameAudio.winner();
+      const w=d.leaderboard[0];document.getElementById('final-winner').textContent=w?`${w.name} Wins!`:'Game Over!';
       document.getElementById('final-sub').textContent=w?`${w.score} points`:'';
       const rows=document.getElementById('final-rows');rows.innerHTML='';
-      data.leaderboard.forEach((p,i)=>{
-        const d=document.createElement('div');d.className=`lb-row ${i===0?'first':''}`;d.style.animationDelay=`${i*0.1}s`;
-        const rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
-        d.innerHTML=`<span class="lb-rank">${rank}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score}</span>`;
-        rows.appendChild(d);
-      });
-      showScreen('final-screen');
-      spawnConfetti();
-      GameAudio.winner();
+      d.leaderboard.forEach((p,i)=>{const e=document.createElement('div');e.className=`lb-row ${i===0?'first':''}`;e.style.animationDelay=`${i*0.1}s`;
+        e.innerHTML=`<span class="lb-rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score}</span>`;rows.appendChild(e)});
+      show('s-final');spawnConfetti();
     });
 
-    socket.on('game-paused',()=>{clearInterval(timerInterval);stopRevealAnimation()});
-    socket.on('game-resumed',()=>{startRevealAnimation();startTimer()});
+    socket.on('game-paused',()=>{clearInterval(timerInt);stopAnim()});
+    socket.on('game-resumed',()=>{startAnim();startTimer()});
   };
 
-  // ─── Timer ─────────────────────────────────────────
   function startTimer(){
-    clearInterval(timerInterval);
-    const tEl=document.getElementById('g-timer'),bEl=document.getElementById('g-timer-bar');
+    clearInterval(timerInt);const tEl=document.getElementById('g-timer'),bEl=document.getElementById('g-timer-bar');
     tEl.classList.remove('urgent');bEl.classList.remove('urgent');
-    timerInterval=setInterval(()=>{
-      const el=(Date.now()-timerStart)/1000, rem=Math.max(0,timerDuration-el);
-      tEl.textContent=Math.ceil(rem);
-      bEl.style.width=(rem/timerDuration)*100+'%';
+    timerInt=setInterval(()=>{const el=(Date.now()-timerStart)/1000,rem=Math.max(0,timerDur-el);
+      tEl.textContent=Math.ceil(rem);bEl.style.width=(rem/timerDur)*100+'%';
       if(rem<=5){tEl.classList.add('urgent');bEl.classList.add('urgent');if(Math.ceil(rem)!==Math.ceil(rem+0.2))GameAudio.tick()}
-      if(rem<=0)clearInterval(timerInterval);
+      if(rem<=0)clearInterval(timerInt);
     },200);
   }
 
-  // ─── Renderers ─────────────────────────────────────
-  function renderLobbyPlayers(players){
-    const g=document.getElementById('lobby-players');if(!g)return;g.innerHTML='';
-    players.forEach((p,i)=>{const d=document.createElement('div');d.className='lobby-player';d.style.animationDelay=`${i*0.08}s`;d.innerHTML=`<span style="font-size:22px">🎮</span> ${p.name} ${p.isMaster?'<span class="master-badge">HOST</span>':''}`;g.appendChild(d)});
-  }
-  function renderSidebar(players){
-    const s=document.getElementById('players-sidebar');if(!s)return;s.innerHTML='';
-    players.forEach(p=>{const d=document.createElement('div');d.className='sidebar-player';d.innerHTML=`<span class="dot"></span><span>${p.name}</span><span class="score">${p.score}</span>`;s.appendChild(d)});
-  }
+  function renderLobby(p){const g=document.getElementById('lobby-players');g.innerHTML='';p.forEach((x,i)=>{const e=document.createElement('div');e.className='lobby-player';e.style.animationDelay=`${i*0.08}s`;e.innerHTML=`🎮 ${x.name} ${x.isMaster?'<span class="badge">HOST</span>':''}`;g.appendChild(e)})}
+  function renderSidebar(p){const s=document.getElementById('players-sidebar');s.innerHTML='';p.forEach(x=>{const e=document.createElement('div');e.className='sidebar-player';e.innerHTML=`<span class="dot"></span><span>${x.name}</span><span class="score">${x.score}</span>`;s.appendChild(e)})}
+  function spawnConfetti(){const c=document.getElementById('confetti');c.innerHTML='';const cols=['#FF6B6B','#4ECDC4','#FFE66D','#A78BFA','#F472B6','#34D399','#FB923C'];for(let i=0;i<60;i++){const p=document.createElement('div');p.className='confetti-piece';const s=6+Math.random()*10,d=2+Math.random()*2;p.style.cssText=`left:${Math.random()*100}%;width:${s}px;height:${s*1.5}px;background:${cols[i%cols.length]};animation-duration:${d}s;animation-delay:${Math.random()*0.8}s;transform:rotate(${Math.random()*360}deg)`;c.appendChild(p)}setTimeout(()=>c.innerHTML='',5000)}
 
-  // ─── Confetti ──────────────────────────────────────
-  function spawnConfetti(){
-    const c=document.getElementById('confetti');c.innerHTML='';
-    const cols=['#FF6B6B','#4ECDC4','#FFE66D','#A78BFA','#F472B6','#34D399','#FB923C'];
-    for(let i=0;i<60;i++){const p=document.createElement('div');p.className='confetti-piece';const s=6+Math.random()*10,d=2+Math.random()*2;p.style.cssText=`left:${Math.random()*100}%;width:${s}px;height:${s*1.5}px;background:${cols[i%cols.length]};animation-duration:${d}s;animation-delay:${Math.random()*0.8}s;transform:rotate(${Math.random()*360}deg);`;c.appendChild(p)}
-    setTimeout(()=>c.innerHTML='',5000);
-  }
-
-  // ─── Auto-connect from URL ─────────────────────────
   const params=new URLSearchParams(window.location.search);
   if(params.get('code')){document.getElementById('connect-code').value=params.get('code');setTimeout(connectHost,500)}
 })();
