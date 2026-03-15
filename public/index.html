@@ -4,258 +4,122 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Guess The Movie</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0a0a1a;
-    --bg2: #141428;
-    --surface: rgba(255,255,255,0.04);
-    --border: rgba(255,255,255,0.08);
-    --text: #E8E8F0;
-    --text2: rgba(232,232,240,0.5);
-    --gold: #FFE66D;
-    --orange: #FB923C;
-    --green: #34D399;
-    --red: #FF6B6B;
-    --blue: #60A5FA;
-    --purple: #A78BFA;
-  }
-  html, body { height: 100%; overflow: hidden; }
-  body {
-    font-family: 'Outfit', sans-serif;
-    background: linear-gradient(145deg, var(--bg) 0%, var(--bg2) 50%, var(--bg) 100%);
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; overflow-y: auto; }
-  .screen.active { display: flex; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0a0a1a;--bg2:#141428;--surface:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);--text:#E8E8F0;--text2:rgba(232,232,240,0.5);--gold:#FFE66D;--orange:#FB923C;--green:#34D399;--red:#FF6B6B;--blue:#60A5FA;--purple:#A78BFA}
+  html,body{height:100%;overflow:hidden}
+  body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%);color:var(--text);display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+  .screen{display:none;flex-direction:column;height:100vh;height:100dvh;overflow-y:auto}.screen.active{display:flex}
 
-  /* ─── Home Screen ───────────────────────────────── */
-  .home { align-items: center; justify-content: center; padding: 24px; gap: 28px; }
-  .logo-icon { font-size: 52px; filter: drop-shadow(0 4px 20px rgba(255,230,109,0.4)); animation: float 3s ease-in-out infinite; }
-  .logo-title {
-    font-family: 'Space Mono', monospace; font-size: 34px; font-weight: 700;
-    line-height: 1.1; text-align: center;
-    background: linear-gradient(135deg, var(--gold), var(--orange));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .logo-sub { font-size: 13px; color: var(--text2); letter-spacing: 3px; text-transform: uppercase; text-align: center; }
-  .home-buttons { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
-  .btn-primary {
-    padding: 16px 24px; border-radius: 14px; border: none;
-    background: linear-gradient(135deg, var(--gold), var(--orange));
-    color: var(--bg); font-size: 16px; font-weight: 800; font-family: 'Outfit', sans-serif;
-    cursor: pointer; letter-spacing: 0.5px; text-transform: uppercase;
-    box-shadow: 0 4px 24px rgba(255,230,109,0.25);
-    transition: transform 0.15s, box-shadow 0.15s; display: flex; align-items: center; justify-content: center; gap: 10px;
-  }
-  .btn-primary:active { transform: scale(0.97); }
-  .btn-secondary {
-    padding: 16px 24px; border-radius: 14px;
-    border: 1px solid var(--border); background: var(--surface);
-    color: var(--text); font-size: 16px; font-weight: 700; font-family: 'Outfit', sans-serif;
-    cursor: pointer; transition: transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 10px;
-  }
-  .btn-secondary:active { transform: scale(0.97); }
-  .btn-host {
-    padding: 14px 24px; border-radius: 14px;
-    border: 1px solid rgba(96,165,250,0.3); background: rgba(96,165,250,0.08);
-    color: var(--blue); font-size: 14px; font-weight: 700; font-family: 'Outfit', sans-serif;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
+  .home{align-items:center;justify-content:center;padding:24px;gap:28px}
+  .logo-icon{font-size:52px;filter:drop-shadow(0 4px 20px rgba(255,230,109,0.4));animation:float 3s ease-in-out infinite}
+  .logo-title{font-family:'Space Mono',monospace;font-size:34px;font-weight:700;line-height:1.1;text-align:center;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo-sub{font-size:13px;color:var(--text2);letter-spacing:3px;text-transform:uppercase;text-align:center}
+  .home-buttons{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px}
+  .btn-primary{padding:16px 24px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:16px;font-weight:800;font-family:'Outfit',sans-serif;cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;box-shadow:0 4px 24px rgba(255,230,109,0.25);transition:transform 0.15s;display:flex;align-items:center;justify-content:center;gap:10px}
+  .btn-primary:active{transform:scale(0.97)}
+  .btn-secondary{padding:16px 24px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;transition:transform 0.15s;display:flex;align-items:center;justify-content:center;gap:10px}
+  .btn-secondary:active{transform:scale(0.97)}
+  .btn-host{padding:14px 24px;border-radius:14px;border:1px solid rgba(96,165,250,0.3);background:rgba(96,165,250,0.08);color:var(--blue);font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 
-  /* ─── Shared ────────────────────────────────────── */
-  .page-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
-  .back-btn {
-    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--surface); color: var(--text); font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .page-title { font-size: 18px; font-weight: 800; }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text2); }
-  .form-input {
-    padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);
-    background: var(--surface); color: var(--text); font-size: 16px;
-    font-family: 'Outfit', sans-serif; outline: none;
-  }
-  .form-input:focus { border-color: var(--gold); }
-  .form-input::placeholder { color: rgba(255,255,255,0.2); }
-  .form-body { padding: 20px; display: flex; flex-direction: column; gap: 18px; flex: 1; }
+  .page-header{padding:16px 20px;display:flex;align-items:center;gap:12px}
+  .back-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .page-title{font-size:18px;font-weight:800}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text2)}
+  .form-input{padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;font-family:'Outfit',sans-serif;outline:none}
+  .form-input:focus{border-color:var(--gold)}.form-input::placeholder{color:rgba(255,255,255,0.2)}
+  .form-body{padding:20px;display:flex;flex-direction:column;gap:18px;flex:1}
 
-  /* ─── Create Game Screen ────────────────────────── */
-  .setting-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-  .option-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .option-btn {
-    flex: 1; min-width: 80px; padding: 10px 8px; border-radius: 10px;
-    border: 1px solid var(--border); background: var(--surface);
-    color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 700;
-    font-family: 'Outfit', sans-serif; cursor: pointer; text-align: center;
-    transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  }
-  .option-btn.active { border-color: var(--gold); background: rgba(255,230,109,0.12); color: var(--gold); }
-  .round-toggle {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--surface); cursor: pointer; transition: all 0.2s; margin-bottom: 6px;
-  }
-  .round-toggle.active { border-color: var(--green); background: rgba(52,211,153,0.08); }
-  .round-toggle .icon { font-size: 18px; }
-  .round-toggle .label { flex: 1; margin-left: 10px; font-weight: 600; font-size: 14px; }
-  .round-toggle .check {
-    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 13px;
-    transition: all 0.2s;
-  }
-  .round-toggle.active .check { border-color: var(--green); background: var(--green); color: var(--bg); }
+  .setting-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+  .option-row{display:flex;gap:8px;flex-wrap:wrap}
+  .option-btn{flex:1;min-width:80px;padding:10px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;text-align:center;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .option-btn.active{border-color:var(--gold);background:rgba(255,230,109,0.12);color:var(--gold)}
+  .round-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all 0.2s;margin-bottom:6px}
+  .round-toggle.active{border-color:var(--green);background:rgba(52,211,153,0.08)}
+  .round-toggle .icon{font-size:18px}.round-toggle .label{flex:1;margin-left:10px;font-weight:600;font-size:14px}
+  .round-toggle .check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;transition:all 0.2s}
+  .round-toggle.active .check{border-color:var(--green);background:var(--green);color:var(--bg)}
 
-  /* ─── Lobby ─────────────────────────────────────── */
-  .room-code-box {
-    text-align: center; padding: 20px; border-radius: 16px;
-    background: rgba(255,230,109,0.05); border: 1px solid rgba(255,230,109,0.2);
-  }
-  .room-code-text {
-    font-family: 'Space Mono', monospace; font-size: 44px; font-weight: 700;
-    letter-spacing: 10px; color: var(--gold); margin-top: 4px;
-  }
-  .players-grid { display: flex; flex-direction: column; gap: 6px; }
-  .player-chip {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; border-radius: 10px; background: var(--surface);
-    border-left: 3px solid var(--gold); animation: slideUp 0.3s ease both;
-  }
-  .player-chip .name { flex: 1; font-weight: 700; font-size: 15px; }
-  .player-chip .badge {
-    font-size: 10px; padding: 2px 8px; border-radius: 6px;
-    background: rgba(255,230,109,0.15); color: var(--gold); font-weight: 700;
-  }
-  .player-count { font-size: 13px; color: var(--text2); text-align: center; margin-top: 8px; }
+  .room-code-box{text-align:center;padding:20px;border-radius:16px;background:rgba(255,230,109,0.05);border:1px solid rgba(255,230,109,0.2)}
+  .room-code-text{font-family:'Space Mono',monospace;font-size:44px;font-weight:700;letter-spacing:10px;color:var(--gold);margin-top:4px}
+  .players-grid{display:flex;flex-direction:column;gap:6px}
+  .player-chip{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:var(--surface);border-left:3px solid var(--gold);animation:slideUp 0.3s ease both}
+  .player-chip .name{flex:1;font-weight:700;font-size:15px}
+  .player-chip .badge{font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(255,230,109,0.15);color:var(--gold);font-weight:700}
+  .player-count{font-size:13px;color:var(--text2);text-align:center;margin-top:8px}
 
-  /* ─── Game: Waiting / Question ──────────────────── */
-  .game-status { text-align: center; padding: 12px 20px; font-size: 13px; color: var(--text2); display: flex; justify-content: space-between; }
-  .game-status .score { font-size: 18px; font-weight: 800; color: var(--gold); }
-  .game-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-  .waiting-icon { font-size: 48px; animation: float 2s ease-in-out infinite; margin-bottom: 12px; }
-  .waiting-text { font-size: 20px; font-weight: 700; }
-  .waiting-sub { font-size: 14px; color: var(--text2); margin-top: 6px; }
-  .question-category { font-size: 13px; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
-  .question-number { font-size: 22px; font-weight: 800; margin-bottom: 20px; }
-  .options-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
-  .option-answer {
-    padding: 16px 18px; border-radius: 14px; border: 2px solid var(--border);
-    background: var(--surface); color: var(--text); font-size: 16px; font-weight: 700;
-    font-family: 'Outfit', sans-serif; cursor: pointer; text-align: left;
-    transition: all 0.2s; display: flex; align-items: center; gap: 12px;
-  }
-  .option-answer:active { transform: scale(0.98); }
-  .option-answer .letter {
-    width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.06);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 800; flex-shrink: 0;
-  }
-  .option-answer.selected { border-color: var(--blue); background: rgba(96,165,250,0.1); }
-  .option-answer.correct { border-color: var(--green); background: rgba(52,211,153,0.15); }
-  .option-answer.wrong { border-color: var(--red); background: rgba(255,107,107,0.1); }
-  .option-answer.disabled { pointer-events: none; opacity: 0.6; }
-  .option-answer.correct .letter { background: var(--green); color: var(--bg); }
-  .option-answer.wrong .letter { background: var(--red); color: white; }
+  .game-status{text-align:center;padding:12px 20px;font-size:13px;color:var(--text2);display:flex;justify-content:space-between}
+  .game-status .score{font-size:18px;font-weight:800;color:var(--gold)}
+  .game-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+  .waiting-icon{font-size:48px;animation:float 2s ease-in-out infinite;margin-bottom:12px}
+  .waiting-text{font-size:20px;font-weight:700}.waiting-sub{font-size:14px;color:var(--text2);margin-top:6px}
+  .question-category{font-size:13px;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:2px;font-weight:700}
+  .question-number{font-size:22px;font-weight:800;margin-bottom:20px}
+  .options-grid{display:flex;flex-direction:column;gap:10px;width:100%;max-width:400px}
+  .option-answer{padding:16px 18px;border-radius:14px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;text-align:left;transition:all 0.2s;display:flex;align-items:center;gap:12px}
+  .option-answer:active{transform:scale(0.98)}
+  .option-answer .letter{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+  .option-answer.selected{border-color:var(--blue);background:rgba(96,165,250,0.1)}
+  .option-answer.correct{border-color:var(--green);background:rgba(52,211,153,0.15)}
+  .option-answer.wrong{border-color:var(--red);background:rgba(255,107,107,0.1)}
+  .option-answer.disabled{pointer-events:none;opacity:0.6}
+  .option-answer.correct .letter{background:var(--green);color:var(--bg)}
+  .option-answer.wrong .letter{background:var(--red);color:white}
 
-  /* Timer bar */
-  .timer-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); margin: 0 20px; border-radius: 2px; overflow: hidden; }
-  .timer-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--orange)); transition: width 1s linear; border-radius: 2px; }
-  .timer-bar-fill.urgent { background: linear-gradient(90deg, var(--red), #FF4444); }
+  .timer-bar-wrap{height:4px;background:rgba(255,255,255,0.06);margin:0 20px;border-radius:2px;overflow:hidden}
+  .timer-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));transition:width 1s linear;border-radius:2px}
+  .timer-bar-fill.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
 
-  /* Feedback */
-  .feedback-overlay {
-    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    z-index: 100; animation: fadeIn 0.2s ease; pointer-events: none;
-  }
-  .feedback-card {
-    padding: 24px 40px; border-radius: 20px; text-align: center; animation: popIn 0.3s ease;
-  }
-  .feedback-card.correct { background: linear-gradient(135deg, rgba(52,211,153,0.95), rgba(30,160,110,0.95)); }
-  .feedback-card.wrong { background: linear-gradient(135deg, rgba(255,107,107,0.95), rgba(200,50,50,0.95)); }
-  .feedback-icon { font-size: 40px; margin-bottom: 6px; }
-  .feedback-text { font-size: 20px; font-weight: 800; }
-  .feedback-pts { font-size: 28px; font-weight: 900; color: var(--gold); }
-  .feedback-answer { font-size: 14px; margin-top: 4px; opacity: 0.8; }
+  .feedback-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;animation:fadeIn 0.2s ease;pointer-events:none}
+  .feedback-card{padding:24px 40px;border-radius:20px;text-align:center;animation:popIn 0.3s ease}
+  .feedback-card.correct{background:linear-gradient(135deg,rgba(52,211,153,0.95),rgba(30,160,110,0.95))}
+  .feedback-card.wrong{background:linear-gradient(135deg,rgba(255,107,107,0.95),rgba(200,50,50,0.95))}
+  .feedback-icon{font-size:40px;margin-bottom:6px}.feedback-text{font-size:20px;font-weight:800}
+  .feedback-pts{font-size:28px;font-weight:900;color:var(--gold)}.feedback-answer{font-size:14px;margin-top:4px;opacity:0.8}
 
-  /* ─── Round Intro ───────────────────────────────── */
-  .round-intro-screen { align-items: center; justify-content: center; }
-  .round-intro-icon { font-size: 60px; animation: popIn 0.5s ease; }
-  .round-intro-title { font-size: 14px; color: var(--text2); text-transform: uppercase; letter-spacing: 3px; margin-top: 16px; }
-  .round-intro-name { font-size: 28px; font-weight: 900; margin-top: 6px; color: var(--gold); text-align: center; }
-  .round-intro-count { font-size: 14px; color: var(--text2); margin-top: 10px; }
+  .round-intro-icon{font-size:60px;animation:popIn 0.5s ease}
+  .round-intro-title{font-size:14px;color:var(--text2);text-transform:uppercase;letter-spacing:3px;margin-top:16px}
+  .round-intro-name{font-size:28px;font-weight:900;margin-top:6px;color:var(--gold);text-align:center}
+  .round-intro-count{font-size:14px;color:var(--text2);margin-top:10px}
 
-  /* ─── Results ───────────────────────────────────── */
-  .results-screen { align-items: center; padding: 24px 20px; }
-  .results-title { font-size: 28px; font-weight: 900; color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-  .lb-row {
-    display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 400px;
-    padding: 12px 16px; border-radius: 12px; background: var(--surface);
-    border: 1px solid var(--border); margin-bottom: 6px; animation: slideUp 0.3s ease both;
-  }
-  .lb-row.first { background: rgba(255,230,109,0.08); border-color: rgba(255,230,109,0.2); }
-  .lb-rank { font-size: 20px; width: 32px; text-align: center; }
-  .lb-name { flex: 1; font-weight: 700; font-size: 16px; margin-left: 10px; }
-  .lb-score { font-weight: 800; font-size: 20px; color: var(--gold); }
+  .results-screen{align-items:center;padding:24px 20px}
+  .results-title{font-size:28px;font-weight:900;color:var(--gold);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+  .lb-row{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;padding:12px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);margin-bottom:6px;animation:slideUp 0.3s ease both}
+  .lb-row.first{background:rgba(255,230,109,0.08);border-color:rgba(255,230,109,0.2)}
+  .lb-rank{font-size:20px;width:32px;text-align:center}
+  .lb-name{flex:1;font-weight:700;font-size:16px;margin-left:10px}.lb-score{font-weight:800;font-size:20px;color:var(--gold)}
 
-  /* ─── Host Controls ─────────────────────────────── */
-  .host-controls {
-    display: flex; gap: 8px; padding: 12px 20px; justify-content: center; flex-wrap: wrap;
-  }
-  .ctrl-btn {
-    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--surface); color: var(--text2); font-size: 12px; font-weight: 700;
-    font-family: 'Outfit', sans-serif; cursor: pointer;
-  }
-  .ctrl-btn:active { transform: scale(0.95); }
-  .ctrl-btn.danger { border-color: rgba(255,107,107,0.3); color: var(--red); }
-  .ctrl-btn.primary { border-color: rgba(255,230,109,0.3); color: var(--gold); background: rgba(255,230,109,0.08); }
+  .host-controls{display:flex;gap:8px;padding:12px 20px;justify-content:center;flex-wrap:wrap}
+  .ctrl-btn{padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer}
+  .ctrl-btn:active{transform:scale(0.95)}.ctrl-btn.danger{border-color:rgba(255,107,107,0.3);color:var(--red)}
+  .ctrl-btn.primary{border-color:rgba(255,230,109,0.3);color:var(--gold);background:rgba(255,230,109,0.08)}
 
-  /* ─── Reveal (player side) ──────────────────────── */
-  .reveal-section { text-align: center; padding: 20px; }
-  .reveal-answer { font-size: 22px; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
-  .reveal-year { font-size: 14px; color: var(--text2); }
-  .reveal-results { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 360px; margin-inline: auto; }
-  .reveal-player {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px; border-radius: 8px; background: var(--surface); font-size: 14px;
-  }
-  .reveal-player .pts { font-weight: 800; }
-  .reveal-player .pts.correct { color: var(--green); }
-  .reveal-player .pts.wrong { color: var(--red); }
+  /* Reveal section with poster image */
+  .reveal-section{text-align:center;padding:20px}
+  .reveal-poster-img{max-width:200px;max-height:280px;border-radius:12px;margin-bottom:12px;box-shadow:0 6px 30px rgba(0,0,0,0.4);object-fit:cover}
+  .reveal-poster-img.scene{max-width:300px;max-height:180px}
+  .reveal-answer{font-size:22px;font-weight:900;color:var(--gold);margin-bottom:4px}
+  .reveal-year{font-size:14px;color:var(--text2)}
+  .reveal-results{margin-top:14px;display:flex;flex-direction:column;gap:4px;width:100%;max-width:360px;margin-inline:auto}
+  .reveal-player{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:var(--surface);font-size:14px}
+  .reveal-player .pts{font-weight:800}.reveal-player .pts.correct{color:var(--green)}.reveal-player .pts.wrong{color:var(--red)}
 
-  /* ─── Footer ────────────────────────────────────── */
-  .footer {
-    padding: 12px 20px; text-align: center; font-size: 11px; color: rgba(255,255,255,0.2);
-    border-top: 1px solid rgba(255,255,255,0.04); margin-top: auto;
-  }
+  .footer{padding:12px 20px;text-align:center;font-size:11px;color:rgba(255,255,255,0.2);border-top:1px solid rgba(255,255,255,0.04);margin-top:auto}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;background:var(--red);color:white;font-size:14px;font-weight:700;z-index:200;animation:slideUp 0.3s ease,fadeOut 0.3s ease 2.5s forwards}
 
-  /* ─── Error / Toast ─────────────────────────────── */
-  .toast {
-    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    padding: 10px 20px; border-radius: 10px; background: var(--red);
-    color: white; font-size: 14px; font-weight: 700; z-index: 200;
-    animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
-  }
-
-  /* ─── Animations ────────────────────────────────── */
-  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-  @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes fadeOut{from{opacity:1}to{opacity:0}}
+  @keyframes popIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 </style>
 </head>
 <body>
 
-<!-- ═══ HOME SCREEN ═══ -->
+<!-- HOME -->
 <div id="home-screen" class="screen active">
   <div class="home">
     <div class="logo-icon">🎬</div>
@@ -267,38 +131,25 @@
       <button class="btn-host" onclick="showScreen('host-connect-screen')">📺 Display on TV (Host)</button>
     </div>
   </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-home"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ HOST CONNECT SCREEN ═══ -->
+<!-- HOST CONNECT -->
 <div id="host-connect-screen" class="screen">
-  <div class="page-header">
-    <button class="back-btn" onclick="showScreen('home-screen')">←</button>
-    <span class="page-title">📺 Connect TV</span>
-  </div>
+  <div class="page-header"><button class="back-btn" onclick="showScreen('home-screen')">←</button><span class="page-title">📺 Connect TV</span></div>
   <div class="form-body">
-    <p style="color: var(--text2); font-size: 14px; line-height: 1.6;">Open this page on the TV or laptop connected to the TV. Enter the room code shown on the game master's phone.</p>
-    <div class="form-group">
-      <label class="form-label">Room Code</label>
-      <input type="text" id="host-code-input" class="form-input" placeholder="e.g. XKPW" maxlength="4" style="font-size: 28px; text-align: center; letter-spacing: 8px; text-transform: uppercase; font-family: 'Space Mono', monospace;">
-    </div>
+    <p style="color:var(--text2);font-size:14px;line-height:1.6">Open this page on the TV. Enter the room code from the game master's phone.</p>
+    <div class="form-group"><label class="form-label">Room Code</label><input type="text" id="host-code-input" class="form-input" placeholder="e.g. XKPW" maxlength="4" style="font-size:28px;text-align:center;letter-spacing:8px;text-transform:uppercase;font-family:'Space Mono',monospace"></div>
     <button class="btn-primary" onclick="connectAsHost()">📺 Connect</button>
-    <p style="color: var(--text2); font-size: 12px; text-align: center;">The TV will only display the game. No controls needed here.</p>
   </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-host-connect"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ CREATE GAME SCREEN ═══ -->
+<!-- CREATE GAME -->
 <div id="create-screen" class="screen">
-  <div class="page-header">
-    <button class="back-btn" onclick="showScreen('home-screen')">←</button>
-    <span class="page-title">🎮 Create Game</span>
-  </div>
+  <div class="page-header"><button class="back-btn" onclick="showScreen('home-screen')">←</button><span class="page-title">🎮 Create Game</span></div>
   <div class="form-body">
-    <div class="form-group">
-      <label class="form-label">Your Name</label>
-      <input type="text" id="create-name" class="form-input" placeholder="Enter your name" maxlength="15">
-    </div>
+    <div class="form-group"><label class="form-label">Your Name</label><input type="text" id="create-name" class="form-input" placeholder="Enter your name" maxlength="15"></div>
     <div class="setting-card">
       <label class="form-label">Difficulty</label>
       <div class="option-row" id="difficulty-row">
@@ -310,540 +161,270 @@
     <div class="setting-card">
       <label class="form-label">Rounds</label>
       <div id="rounds-toggles">
-        <div class="round-toggle active" data-round="movie_posters" onclick="toggleRound(this)">
-          <span class="icon">🎬</span><span class="label">Movie Posters</span><span class="check">✓</span>
-        </div>
-        <div class="round-toggle active" data-round="tv_posters" onclick="toggleRound(this)">
-          <span class="icon">📺</span><span class="label">TV Show Posters</span><span class="check">✓</span>
-        </div>
-        <div class="round-toggle active" data-round="movie_scenes" onclick="toggleRound(this)">
-          <span class="icon">🎞️</span><span class="label">Movie Scenes</span><span class="check">✓</span>
-        </div>
-        <div class="round-toggle active" data-round="tv_scenes" onclick="toggleRound(this)">
-          <span class="icon">📡</span><span class="label">TV Show Scenes</span><span class="check">✓</span>
-        </div>
-        <div class="round-toggle active" data-round="characters" onclick="toggleRound(this)">
-          <span class="icon">🌟</span><span class="label">Guess the Character</span><span class="check">✓</span>
-        </div>
+        <div class="round-toggle active" data-round="movie_posters" onclick="toggleRound(this)"><span class="icon">🎬</span><span class="label">Movie Posters</span><span class="check">✓</span></div>
+        <div class="round-toggle active" data-round="tv_posters" onclick="toggleRound(this)"><span class="icon">📺</span><span class="label">TV Show Posters</span><span class="check">✓</span></div>
+        <div class="round-toggle active" data-round="movie_scenes" onclick="toggleRound(this)"><span class="icon">🎞️</span><span class="label">Movie Scenes</span><span class="check">✓</span></div>
+        <div class="round-toggle active" data-round="tv_scenes" onclick="toggleRound(this)"><span class="icon">📡</span><span class="label">TV Show Scenes</span><span class="check">✓</span></div>
+        <div class="round-toggle active" data-round="characters" onclick="toggleRound(this)"><span class="icon">🌟</span><span class="label">Guess the Character</span><span class="check">✓</span></div>
       </div>
     </div>
     <button class="btn-primary" onclick="createGame()">🚀 Create Room</button>
+    <div id="create-status" style="text-align:center;color:var(--gold);font-size:14px;font-weight:700;display:none;">Generating questions... This may take a minute.</div>
   </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-create"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ JOIN GAME SCREEN ═══ -->
+<!-- JOIN GAME -->
 <div id="join-screen" class="screen">
-  <div class="page-header">
-    <button class="back-btn" onclick="showScreen('home-screen')">←</button>
-    <span class="page-title">🚀 Join Game</span>
-  </div>
-  <div class="form-body" style="justify-content: center;">
-    <div class="form-group">
-      <label class="form-label">Room Code</label>
-      <input type="text" id="join-code" class="form-input" placeholder="e.g. XKPW" maxlength="4" style="font-size: 24px; text-align: center; letter-spacing: 6px; text-transform: uppercase; font-family: 'Space Mono', monospace;">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Your Name</label>
-      <input type="text" id="join-name" class="form-input" placeholder="Enter your name" maxlength="15">
-    </div>
+  <div class="page-header"><button class="back-btn" onclick="showScreen('home-screen')">←</button><span class="page-title">🚀 Join Game</span></div>
+  <div class="form-body" style="justify-content:center">
+    <div class="form-group"><label class="form-label">Room Code</label><input type="text" id="join-code" class="form-input" placeholder="e.g. XKPW" maxlength="4" style="font-size:24px;text-align:center;letter-spacing:6px;text-transform:uppercase;font-family:'Space Mono',monospace"></div>
+    <div class="form-group"><label class="form-label">Your Name</label><input type="text" id="join-name" class="form-input" placeholder="Enter your name" maxlength="15"></div>
     <button class="btn-primary" onclick="joinGame()">🎯 Join</button>
   </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-join"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ LOBBY SCREEN ═══ -->
+<!-- LOBBY -->
 <div id="lobby-screen" class="screen">
-  <div class="page-header">
-    <span class="page-title">🎉 Game Lobby</span>
-  </div>
+  <div class="page-header"><span class="page-title">🎉 Game Lobby</span></div>
   <div class="form-body">
     <div class="room-code-box">
-      <div style="font-size:12px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase;">Room Code</div>
+      <div style="font-size:12px;color:var(--text2);letter-spacing:2px;text-transform:uppercase">Room Code</div>
       <div class="room-code-text" id="lobby-code">----</div>
-      <div style="font-size:12px; color: var(--text2); margin-top: 4px;">Share this code or show QR to friends</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">Share this code with friends</div>
     </div>
-    <div>
-      <label class="form-label">Players</label>
-      <div class="players-grid" id="lobby-players"></div>
-      <div class="player-count" id="lobby-count"></div>
-    </div>
-    <div id="master-start-area" style="display:none;">
-      <button class="btn-primary" onclick="startGame()" style="width:100%;">▶ Start Game</button>
-    </div>
-    <div id="player-wait-area" style="text-align:center; color: var(--text2); font-size: 14px;">
-      Waiting for the host to start the game...
-    </div>
+    <div><label class="form-label">Players</label><div class="players-grid" id="lobby-players"></div><div class="player-count" id="lobby-count"></div></div>
+    <div id="master-start-area" style="display:none"><button class="btn-primary" onclick="startGame()" style="width:100%">▶ Start Game</button></div>
+    <div id="player-wait-area" style="text-align:center;color:var(--text2);font-size:14px">Waiting for the host to start...</div>
   </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-lobby"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ GAME SCREEN ═══ -->
+<!-- GAME -->
 <div id="game-screen" class="screen">
-  <div class="game-status">
-    <span id="game-round-info">Round 1/5</span>
-    <span>Score: <span class="score" id="game-score">0</span></span>
-  </div>
+  <div class="game-status"><span id="game-round-info">Round 1/5</span><span>Score: <span class="score" id="game-score">0</span></span></div>
   <div class="timer-bar-wrap"><div class="timer-bar-fill" id="game-timer-bar" style="width:100%"></div></div>
-
-  <!-- Question state -->
-  <div id="game-question" class="game-center" style="display:none;">
-    <div class="question-category" id="q-category">Movie Posters</div>
-    <div class="question-number" id="q-number">Question 1 of 10</div>
-    <div class="options-grid" id="q-options"></div>
-  </div>
-
-  <!-- Waiting state -->
-  <div id="game-waiting" class="game-center">
-    <div class="waiting-icon">👀</div>
-    <div class="waiting-text">Look at the TV!</div>
-    <div class="waiting-sub">Waiting for next question...</div>
-  </div>
-
-  <!-- Reveal state -->
-  <div id="game-reveal" class="game-center" style="display:none;">
+  <div id="game-question" class="game-center" style="display:none"><div class="question-category" id="q-category">Movie Posters</div><div class="question-number" id="q-number">Question 1 of 10</div><div class="options-grid" id="q-options"></div></div>
+  <div id="game-waiting" class="game-center"><div class="waiting-icon">👀</div><div class="waiting-text">Look at the TV!</div><div class="waiting-sub">Waiting for next question...</div></div>
+  <div id="game-reveal" class="game-center" style="display:none">
     <div class="reveal-section">
-      <div style="font-size:36px; margin-bottom:6px;" id="reveal-icon">🎬</div>
+      <img id="reveal-poster-img" class="reveal-poster-img" src="" style="display:none" crossorigin="anonymous">
       <div class="reveal-answer" id="reveal-answer">The Dark Knight</div>
       <div class="reveal-year" id="reveal-year">2008</div>
       <div class="reveal-results" id="reveal-results"></div>
     </div>
   </div>
-
-  <!-- Round Intro state -->
-  <div id="game-round-intro" class="game-center" style="display:none;">
-    <div class="round-intro-icon" id="round-icon">🎬</div>
-    <div class="round-intro-title" id="round-title-label">ROUND 1 OF 5</div>
-    <div class="round-intro-name" id="round-name">Movie Posters</div>
-    <div class="round-intro-count" id="round-q-count">10 Questions</div>
-  </div>
-
-  <!-- Host controls (only visible to game master) -->
-  <div class="host-controls" id="host-controls" style="display:none;">
-    <button class="ctrl-btn primary" id="ctrl-next" onclick="requestNext()" style="display:none;">▶ Next</button>
+  <div id="game-round-intro" class="game-center" style="display:none"><div class="round-intro-icon" id="round-icon">🎬</div><div class="round-intro-title" id="round-title-label">ROUND 1 OF 5</div><div class="round-intro-name" id="round-name">Movie Posters</div><div class="round-intro-count" id="round-q-count">10 Questions</div></div>
+  <div class="host-controls" id="host-controls" style="display:none">
+    <button class="ctrl-btn primary" id="ctrl-next" onclick="requestNext()" style="display:none">▶ Next</button>
     <button class="ctrl-btn" onclick="socket.emit('skip-question')">⏭ Skip</button>
     <button class="ctrl-btn" id="ctrl-pause" onclick="togglePause()">⏸ Pause</button>
-    <button class="ctrl-btn danger" onclick="if(confirm('End game early?')) socket.emit('end-game-early')">🛑 End</button>
+    <button class="ctrl-btn danger" onclick="if(confirm('End game early?'))socket.emit('end-game-early')">🛑 End</button>
   </div>
-
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-game"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ FINAL RESULTS SCREEN ═══ -->
+<!-- RESULTS -->
 <div id="results-screen" class="screen">
-  <div class="results-screen" style="flex:1; overflow-y:auto;">
-    <div style="font-size:52px; animation: float 2s ease-in-out infinite;">🏆</div>
+  <div class="results-screen" style="flex:1;overflow-y:auto">
+    <div style="font-size:52px;animation:float 2s ease-in-out infinite">🏆</div>
     <div class="results-title" id="results-title">Final Results</div>
-    <div id="results-leaderboard" style="width:100%; max-width:400px;"></div>
-    <div id="results-master-area" style="display:none; margin-top: 20px;">
-      <button class="btn-primary" onclick="location.reload()">🔄 Play Again</button>
-    </div>
+    <div id="results-leaderboard" style="width:100%;max-width:400px"></div>
+    <div id="results-master-area" style="display:none;margin-top:20px"><button class="btn-primary" onclick="location.reload()">🔄 Play Again</button></div>
   </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-results"></span></div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
 
-<!-- ═══ TV HOST DISPLAY (minimal on phone, they should go to host.html) ═══ -->
-<div id="tv-redirect" class="screen">
-  <div class="game-center">
-    <div style="font-size:48px;">📺</div>
-    <div style="font-size:18px; font-weight:700; margin-top:12px;">TV Connected!</div>
-    <div style="font-size:14px; color: var(--text2); margin-top: 8px; text-align: center; max-width: 280px; line-height: 1.5;">
-      For the best experience, open <strong>/host.html</strong> on the TV instead.<br><br>
-      This small screen will only show basic info.
-    </div>
-    <div style="margin-top: 20px; font-family: 'Space Mono', monospace; font-size: 32px; color: var(--gold);" id="tv-mini-code">----</div>
-    <div style="font-size: 13px; color: var(--text2); margin-top: 6px;" id="tv-mini-status">Waiting for players...</div>
-  </div>
-  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="footer-year-tv"></span></div>
-</div>
-
-<!-- Toast container -->
 <div id="toast-container"></div>
-
-<!-- Feedback overlay -->
-<div id="feedback-overlay" class="feedback-overlay" style="display:none;"></div>
+<div id="feedback-overlay" class="feedback-overlay" style="display:none"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-(function() {
-  // ─── Footer year ───────────────────────────────────
-  const year = new Date().getFullYear();
-  document.querySelectorAll('[id^="footer-year"]').forEach(el => el.textContent = year);
+(function(){
+  const year=new Date().getFullYear();
+  document.querySelectorAll('.yr').forEach(el=>el.textContent=year);
 
-  // ─── State ─────────────────────────────────────────
-  let socket = null;
-  let myName = '';
-  let myScore = 0;
-  let isMaster = false;
-  let roomCode = '';
-  let selectedDifficulty = 'medium';
-  let selectedRounds = ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'];
-  let currentOptions = [];
-  let hasAnswered = false;
-  let isPaused = false;
-  let timerInterval = null;
-  let timerDuration = 50;
-  let timerStart = 0;
+  let socket=null,myName='',myScore=0,isMaster=false,roomCode='';
+  let selectedDifficulty='medium',selectedRounds=['movie_posters','tv_posters','movie_scenes','tv_scenes','characters'];
+  let hasAnswered=false,isPaused=false,timerInterval=null,timerDuration=50,timerStart=0;
 
-  // Expose socket globally for inline onclick
-  window.socket = null;
+  window.socket=null;
 
-  // ─── Screen Management ─────────────────────────────
-  window.showScreen = function(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  };
+  window.showScreen=function(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')};
 
-  // ─── Toast ─────────────────────────────────────────
-  function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.getElementById('toast-container').appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-  }
+  function showToast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3000)}
 
-  // ─── Connect Socket ────────────────────────────────
-  function connectSocket() {
-    if (socket) return;
-    socket = io();
-    window.socket = socket;
+  function connectSocket(){
+    if(socket)return;
+    socket=io();window.socket=socket;
+    socket.on('connect',()=>console.log('[Socket] Connected:',socket.id));
+    socket.on('disconnect',()=>showToast('Disconnected! Reconnecting...'));
+    socket.on('player-list-update',(players)=>renderPlayerList(players));
 
-    socket.on('connect', () => console.log('[Socket] Connected:', socket.id));
-    socket.on('disconnect', () => showToast('Disconnected! Reconnecting...'));
-
-    // Player list updates
-    socket.on('player-list-update', (players) => renderPlayerList(players));
-
-    // Round intro
-    socket.on('round-intro', (data) => {
+    socket.on('round-intro',(data)=>{
       showGameSection('game-round-intro');
-      document.getElementById('round-icon').textContent = data.roundIcon;
-      document.getElementById('round-title-label').textContent = `ROUND ${data.roundNumber} OF ${data.totalRounds}`;
-      document.getElementById('round-name').textContent = data.roundLabel;
-      document.getElementById('round-q-count').textContent = `${data.questionsCount} Questions`;
-      document.getElementById('game-round-info').textContent = `Round ${data.roundNumber}/${data.totalRounds}`;
-      if (isMaster) {
-        document.getElementById('ctrl-next').style.display = 'none';
-      }
+      document.getElementById('round-icon').textContent=data.roundIcon;
+      document.getElementById('round-title-label').textContent=`ROUND ${data.roundNumber} OF ${data.totalRounds}`;
+      document.getElementById('round-name').textContent=data.roundLabel;
+      document.getElementById('round-q-count').textContent=`${data.questionsCount} Questions`;
+      document.getElementById('game-round-info').textContent=`Round ${data.roundNumber}/${data.totalRounds}`;
+      if(isMaster)document.getElementById('ctrl-next').style.display='none';
     });
 
-    // Question start
-    socket.on('question-start', (data) => {
-      hasAnswered = false;
-      currentOptions = data.options;
-      timerDuration = data.timer;
-      timerStart = Date.now();
-
+    socket.on('question-start',(data)=>{
+      hasAnswered=false;timerDuration=data.timer;timerStart=Date.now();
       showGameSection('game-question');
-      document.getElementById('q-category').textContent = data.category;
-      document.getElementById('q-number').textContent = `Question ${data.questionNumber} of ${data.totalQuestions}`;
-      document.getElementById('game-round-info').textContent = `Round ${data.roundNumber}/${data.totalRounds}`;
-
-      const grid = document.getElementById('q-options');
-      grid.innerHTML = '';
-      const letters = ['A', 'B', 'C', 'D'];
-      data.options.forEach((opt, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'option-answer';
-        btn.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
-        btn.onclick = () => submitAnswer(opt, btn);
-        grid.appendChild(btn);
+      document.getElementById('q-category').textContent=data.category;
+      document.getElementById('q-number').textContent=`Question ${data.questionNumber} of ${data.totalQuestions}`;
+      document.getElementById('game-round-info').textContent=`Round ${data.roundNumber}/${data.totalRounds}`;
+      const grid=document.getElementById('q-options');grid.innerHTML='';
+      const letters=['A','B','C','D'];
+      data.options.forEach((opt,i)=>{
+        const btn=document.createElement('button');btn.className='option-answer';
+        btn.innerHTML=`<span class="letter">${letters[i]}</span><span>${opt}</span>`;
+        btn.onclick=()=>submitAnswer(opt,btn);grid.appendChild(btn);
       });
-
       startTimerBar();
     });
 
-    // Answer progress
-    socket.on('answer-progress', (data) => {
-      // Could show progress indicator
-    });
+    socket.on('answer-progress',()=>{});
 
-    // Question reveal
-    socket.on('question-reveal', (data) => {
+    socket.on('question-reveal',(data)=>{
       clearInterval(timerInterval);
       showGameSection('game-reveal');
-      document.getElementById('reveal-answer').textContent = data.answer;
-      document.getElementById('reveal-year').textContent = data.year || '';
 
-      const resultsDiv = document.getElementById('reveal-results');
-      resultsDiv.innerHTML = '';
-      const sortedNames = Object.entries(data.results).sort((a, b) => b[1].points - a[1].points);
-      sortedNames.forEach(([name, r]) => {
-        const div = document.createElement('div');
-        div.className = 'reveal-player';
-        div.innerHTML = `
-          <span>${name}${name === myName ? ' (you)' : ''}</span>
-          <span class="pts ${r.correct ? 'correct' : 'wrong'}">${r.correct ? '+' + r.points : '✗'}</span>
-        `;
-        resultsDiv.appendChild(div);
+      // Show poster image
+      const imgEl=document.getElementById('reveal-poster-img');
+      if(data.image){
+        imgEl.src=data.image;imgEl.style.display='block';
+        imgEl.className='reveal-poster-img';
+        if(data.image.includes('w1280'))imgEl.classList.add('scene');
+      }else{imgEl.style.display='none'}
+
+      document.getElementById('reveal-answer').textContent=data.answer;
+      document.getElementById('reveal-year').textContent=data.year||'';
+      const rd=document.getElementById('reveal-results');rd.innerHTML='';
+      const sorted=Object.entries(data.results).sort((a,b)=>b[1].points-a[1].points);
+      sorted.forEach(([name,r])=>{
+        const d=document.createElement('div');d.className='reveal-player';
+        d.innerHTML=`<span>${name}${name===myName?' (you)':''}</span><span class="pts ${r.correct?'correct':'wrong'}">${r.correct?'+'+r.points:'✗'}</span>`;
+        rd.appendChild(d);
       });
-
-      // Update my score
-      if (data.leaderboard) {
-        const me = data.leaderboard.find(p => p.name === myName);
-        if (me) { myScore = me.score; document.getElementById('game-score').textContent = myScore; }
-      }
-
-      if (isMaster) {
-        document.getElementById('ctrl-next').style.display = '';
-      }
+      if(data.leaderboard){const me=data.leaderboard.find(p=>p.name===myName);if(me){myScore=me.score;document.getElementById('game-score').textContent=myScore}}
+      if(isMaster)document.getElementById('ctrl-next').style.display='';
     });
 
-    // Round results
-    socket.on('round-results', (data) => {
+    socket.on('round-results',(data)=>{
       showGameSection('game-reveal');
-      document.getElementById('reveal-icon').textContent = '🏆';
-      document.getElementById('reveal-answer').textContent = `${data.roundLabel} Complete!`;
-      document.getElementById('reveal-year').textContent = `Round ${data.roundNumber} of ${data.totalRounds}`;
-
-      const resultsDiv = document.getElementById('reveal-results');
-      resultsDiv.innerHTML = '';
-      data.leaderboard.forEach((p, i) => {
-        const div = document.createElement('div');
-        div.className = 'reveal-player';
-        div.style.animationDelay = `${i * 0.05}s`;
-        const rank = i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-        div.innerHTML = `
-          <span>${rank} ${p.name}${p.name === myName ? ' (you)' : ''}</span>
-          <span class="pts correct">${p.score}</span>
-        `;
-        resultsDiv.appendChild(div);
+      document.getElementById('reveal-poster-img').style.display='none';
+      document.getElementById('reveal-answer').textContent=`${data.roundLabel} Complete!`;
+      document.getElementById('reveal-year').textContent=`Round ${data.roundNumber} of ${data.totalRounds}`;
+      const rd=document.getElementById('reveal-results');rd.innerHTML='';
+      data.leaderboard.forEach((p,i)=>{
+        const d=document.createElement('div');d.className='reveal-player';d.style.animationDelay=`${i*0.05}s`;
+        const rank=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+        d.innerHTML=`<span>${rank} ${p.name}${p.name===myName?' (you)':''}</span><span class="pts correct">${p.score}</span>`;
+        rd.appendChild(d);
       });
-
-      if (isMaster) {
-        document.getElementById('ctrl-next').style.display = '';
-      }
+      if(isMaster)document.getElementById('ctrl-next').style.display='';
     });
 
-    // Final results
-    socket.on('final-results', (data) => {
+    socket.on('final-results',(data)=>{
       showScreen('results-screen');
-      const winner = data.leaderboard[0];
-      document.getElementById('results-title').innerHTML = `🏆 ${winner ? winner.name + ' Wins!' : 'Game Over!'}`;
-
-      const lb = document.getElementById('results-leaderboard');
-      lb.innerHTML = '';
-      data.leaderboard.forEach((p, i) => {
-        const div = document.createElement('div');
-        div.className = `lb-row ${i === 0 ? 'first' : ''}`;
-        div.style.animationDelay = `${i * 0.08}s`;
-        const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-        div.innerHTML = `
-          <span class="lb-rank">${rank}</span>
-          <span class="lb-name">${p.name}${p.name === myName ? ' (you)' : ''}</span>
-          <span class="lb-score">${p.score}</span>
-        `;
-        lb.appendChild(div);
+      const w=data.leaderboard[0];
+      document.getElementById('results-title').innerHTML=`🏆 ${w?w.name+' Wins!':'Game Over!'}`;
+      const lb=document.getElementById('results-leaderboard');lb.innerHTML='';
+      data.leaderboard.forEach((p,i)=>{
+        const d=document.createElement('div');d.className=`lb-row ${i===0?'first':''}`;d.style.animationDelay=`${i*0.08}s`;
+        const rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+        d.innerHTML=`<span class="lb-rank">${rank}</span><span class="lb-name">${p.name}${p.name===myName?' (you)':''}</span><span class="lb-score">${p.score}</span>`;
+        lb.appendChild(d);
       });
-
-      if (isMaster) document.getElementById('results-master-area').style.display = '';
+      if(isMaster)document.getElementById('results-master-area').style.display='';
     });
 
-    socket.on('game-paused', () => {
-      isPaused = true;
-      clearInterval(timerInterval);
-      showToast('Game paused');
-    });
-
-    socket.on('game-resumed', (data) => {
-      isPaused = false;
-      showToast('Game resumed');
-    });
+    socket.on('game-paused',()=>{isPaused=true;clearInterval(timerInterval);showToast('Game paused')});
+    socket.on('game-resumed',()=>{isPaused=false;showToast('Game resumed')});
   }
 
-  // ─── Timer Bar ─────────────────────────────────────
-  function startTimerBar() {
+  function startTimerBar(){
     clearInterval(timerInterval);
-    const bar = document.getElementById('game-timer-bar');
-    bar.style.width = '100%';
-    bar.classList.remove('urgent');
-
-    timerInterval = setInterval(() => {
-      const elapsed = (Date.now() - timerStart) / 1000;
-      const pct = Math.max(0, 1 - elapsed / timerDuration) * 100;
-      bar.style.width = pct + '%';
-      if (pct < 20) bar.classList.add('urgent');
-      if (pct <= 0) clearInterval(timerInterval);
-    }, 200);
+    const bar=document.getElementById('game-timer-bar');bar.style.width='100%';bar.classList.remove('urgent');
+    timerInterval=setInterval(()=>{
+      const el=(Date.now()-timerStart)/1000,pct=Math.max(0,1-el/timerDuration)*100;
+      bar.style.width=pct+'%';if(pct<20)bar.classList.add('urgent');if(pct<=0)clearInterval(timerInterval);
+    },200);
   }
 
-  // ─── Show Game Section ─────────────────────────────
-  function showGameSection(id) {
+  function showGameSection(id){
     showScreen('game-screen');
-    ['game-question', 'game-waiting', 'game-reveal', 'game-round-intro'].forEach(s => {
-      document.getElementById(s).style.display = s === id ? 'flex' : 'none';
-    });
-    if (isMaster) document.getElementById('host-controls').style.display = '';
+    ['game-question','game-waiting','game-reveal','game-round-intro'].forEach(s=>{document.getElementById(s).style.display=s===id?'flex':'none'});
+    if(isMaster)document.getElementById('host-controls').style.display='';
   }
 
-  // ─── Submit Answer ─────────────────────────────────
-  function submitAnswer(choice, btnEl) {
-    if (hasAnswered) return;
-    hasAnswered = true;
-
-    // Disable all buttons
-    document.querySelectorAll('.option-answer').forEach(b => b.classList.add('disabled'));
+  function submitAnswer(choice,btnEl){
+    if(hasAnswered)return;hasAnswered=true;
+    document.querySelectorAll('.option-answer').forEach(b=>b.classList.add('disabled'));
     btnEl.classList.add('selected');
-
-    socket.emit('submit-answer', { choice }, (res) => {
-      if (!res) return;
-
-      // Show correct/wrong on the button
-      if (res.correct) {
-        btnEl.classList.remove('selected');
-        btnEl.classList.add('correct');
-        showFeedback(true, res.points);
-        myScore += res.points;
-        document.getElementById('game-score').textContent = myScore;
-      } else {
-        btnEl.classList.add('wrong');
-        // Highlight the correct answer
-        document.querySelectorAll('.option-answer').forEach(b => {
-          if (b.querySelector('span:last-child').textContent === res.answer) b.classList.add('correct');
-        });
-        showFeedback(false, 0, res.answer);
-      }
+    socket.emit('submit-answer',{choice},(res)=>{
+      if(!res)return;
+      if(res.correct){btnEl.classList.remove('selected');btnEl.classList.add('correct');showFeedback(true,res.points);myScore+=res.points;document.getElementById('game-score').textContent=myScore}
+      else{btnEl.classList.add('wrong');document.querySelectorAll('.option-answer').forEach(b=>{if(b.querySelector('span:last-child').textContent===res.answer)b.classList.add('correct')});showFeedback(false,0,res.answer)}
     });
   }
 
-  // ─── Feedback Overlay ──────────────────────────────
-  function showFeedback(correct, points, answer) {
-    const overlay = document.getElementById('feedback-overlay');
-    overlay.style.display = 'flex';
-    overlay.innerHTML = `
-      <div class="feedback-card ${correct ? 'correct' : 'wrong'}">
-        <div class="feedback-icon">${correct ? '🎉' : '😔'}</div>
-        <div class="feedback-text">${correct ? 'Correct!' : 'Wrong!'}</div>
-        ${correct ? `<div class="feedback-pts">+${points}</div>` : ''}
-        ${!correct && answer ? `<div class="feedback-answer">Answer: ${answer}</div>` : ''}
-      </div>
-    `;
-    setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+  function showFeedback(correct,points,answer){
+    const o=document.getElementById('feedback-overlay');o.style.display='flex';
+    o.innerHTML=`<div class="feedback-card ${correct?'correct':'wrong'}"><div class="feedback-icon">${correct?'🎉':'😔'}</div><div class="feedback-text">${correct?'Correct!':'Wrong!'}</div>${correct?`<div class="feedback-pts">+${points}</div>`:''}${!correct&&answer?`<div class="feedback-answer">Answer: ${answer}</div>`:''}</div>`;
+    setTimeout(()=>{o.style.display='none'},2000);
   }
 
-  // ─── Render Player List ────────────────────────────
-  function renderPlayerList(players) {
-    const grid = document.getElementById('lobby-players');
-    if (!grid) return;
-    grid.innerHTML = '';
-    players.forEach((p, i) => {
-      const div = document.createElement('div');
-      div.className = 'player-chip';
-      div.style.animationDelay = `${i * 0.05}s`;
-      div.innerHTML = `
-        <span style="font-size:20px;">🎮</span>
-        <span class="name">${p.name}</span>
-        ${p.isMaster ? '<span class="badge">HOST</span>' : ''}
-        ${!p.connected ? '<span style="font-size:11px; color: var(--red);">disconnected</span>' : ''}
-      `;
-      grid.appendChild(div);
-    });
-    document.getElementById('lobby-count').textContent = `${players.length}/8 players`;
+  function renderPlayerList(players){
+    const g=document.getElementById('lobby-players');if(!g)return;g.innerHTML='';
+    players.forEach((p,i)=>{const d=document.createElement('div');d.className='player-chip';d.style.animationDelay=`${i*0.05}s`;d.innerHTML=`<span style="font-size:20px">🎮</span><span class="name">${p.name}</span>${p.isMaster?'<span class="badge">HOST</span>':''}${!p.connected?'<span style="font-size:11px;color:var(--red)">disconnected</span>':''}`;g.appendChild(d)});
+    document.getElementById('lobby-count').textContent=`${players.length}/8 players`;
   }
 
-  // ─── Difficulty ────────────────────────────────────
-  window.selectDifficulty = function(val) {
-    selectedDifficulty = val;
-    document.querySelectorAll('#difficulty-row .option-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.val === val);
-    });
-  };
+  window.selectDifficulty=function(val){selectedDifficulty=val;document.querySelectorAll('#difficulty-row .option-btn').forEach(b=>{b.classList.toggle('active',b.dataset.val===val)})};
+  window.toggleRound=function(el){el.classList.toggle('active');selectedRounds=[];document.querySelectorAll('.round-toggle.active').forEach(t=>{selectedRounds.push(t.dataset.round)})};
 
-  // ─── Round Toggles ─────────────────────────────────
-  window.toggleRound = function(el) {
-    el.classList.toggle('active');
-    selectedRounds = [];
-    document.querySelectorAll('.round-toggle.active').forEach(t => {
-      selectedRounds.push(t.dataset.round);
-    });
-  };
-
-  // ─── Create Game ───────────────────────────────────
-  window.createGame = function() {
-    const name = document.getElementById('create-name').value.trim();
-    if (!name) return showToast('Enter your name');
-    if (selectedRounds.length === 0) return showToast('Select at least one round');
-
-    connectSocket();
-    myName = name;
-    isMaster = true;
-
-    socket.emit('create-game', {
-      playerName: name,
-      difficulty: selectedDifficulty,
-      rounds: selectedRounds
-    }, (res) => {
-      if (res.error) return showToast(res.error);
-      roomCode = res.code;
-      document.getElementById('lobby-code').textContent = roomCode;
-      document.getElementById('master-start-area').style.display = '';
-      document.getElementById('player-wait-area').style.display = 'none';
+  window.createGame=function(){
+    const name=document.getElementById('create-name').value.trim();
+    if(!name)return showToast('Enter your name');
+    if(selectedRounds.length===0)return showToast('Select at least one round');
+    connectSocket();myName=name;isMaster=true;
+    document.getElementById('create-status').style.display='block';
+    socket.emit('create-game',{playerName:name,difficulty:selectedDifficulty,rounds:selectedRounds},(res)=>{
+      document.getElementById('create-status').style.display='none';
+      if(res.error)return showToast(res.error);
+      roomCode=res.code;document.getElementById('lobby-code').textContent=roomCode;
+      document.getElementById('master-start-area').style.display='';document.getElementById('player-wait-area').style.display='none';
       showScreen('lobby-screen');
     });
   };
 
-  // ─── Join Game ─────────────────────────────────────
-  window.joinGame = function() {
-    const code = document.getElementById('join-code').value.trim().toUpperCase();
-    const name = document.getElementById('join-name').value.trim();
-    if (!code || code.length !== 4) return showToast('Enter a 4-character room code');
-    if (!name) return showToast('Enter your name');
-
-    connectSocket();
-    myName = name;
-    isMaster = false;
-    roomCode = code;
-
-    socket.emit('join-game', { code, playerName: name }, (res) => {
-      if (res.error) return showToast(res.error);
-      document.getElementById('lobby-code').textContent = roomCode;
-      document.getElementById('master-start-area').style.display = 'none';
-      document.getElementById('player-wait-area').style.display = '';
-      renderPlayerList(res.players);
-      showScreen('lobby-screen');
+  window.joinGame=function(){
+    const code=document.getElementById('join-code').value.trim().toUpperCase();
+    const name=document.getElementById('join-name').value.trim();
+    if(!code||code.length!==4)return showToast('Enter a 4-character room code');
+    if(!name)return showToast('Enter your name');
+    connectSocket();myName=name;isMaster=false;roomCode=code;
+    socket.emit('join-game',{code,playerName:name},(res)=>{
+      if(res.error)return showToast(res.error);
+      document.getElementById('lobby-code').textContent=roomCode;
+      document.getElementById('master-start-area').style.display='none';document.getElementById('player-wait-area').style.display='';
+      renderPlayerList(res.players);showScreen('lobby-screen');
     });
   };
 
-  // ─── Auto-fill from URL params ─────────────────────
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('code')) {
-    document.getElementById('join-code').value = params.get('code');
-    showScreen('join-screen');
-  }
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('code')){document.getElementById('join-code').value=params.get('code');showScreen('join-screen')}
 
-  // ─── Start Game ────────────────────────────────────
-  window.startGame = function() {
-    socket.emit('start-game', null, (res) => {
-      if (res && res.error) showToast(res.error);
-    });
-  };
-
-  // ─── Host Controls ─────────────────────────────────
-  window.requestNext = function() {
-    socket.emit('next-question-request');
-    document.getElementById('ctrl-next').style.display = 'none';
-  };
-
-  window.togglePause = function() {
-    if (isPaused) {
-      socket.emit('resume-game');
-      document.getElementById('ctrl-pause').textContent = '⏸ Pause';
-    } else {
-      socket.emit('pause-game');
-      document.getElementById('ctrl-pause').textContent = '▶ Resume';
-    }
-  };
-
-  // ─── Connect as Host (TV) ──────────────────────────
-  window.connectAsHost = function() {
-    const code = document.getElementById('host-code-input').value.trim().toUpperCase();
-    if (!code || code.length !== 4) return showToast('Enter a 4-character room code');
-
-    // Redirect to host.html with the code
-    window.location.href = `/host.html?code=${code}`;
-  };
-
+  window.startGame=function(){socket.emit('start-game',null,(res)=>{if(res&&res.error)showToast(res.error)})};
+  window.requestNext=function(){socket.emit('next-question-request');document.getElementById('ctrl-next').style.display='none'};
+  window.togglePause=function(){if(isPaused){socket.emit('resume-game');document.getElementById('ctrl-pause').textContent='⏸ Pause'}else{socket.emit('pause-game');document.getElementById('ctrl-pause').textContent='▶ Resume'}};
+  window.connectAsHost=function(){const code=document.getElementById('host-code-input').value.trim().toUpperCase();if(!code||code.length!==4)return showToast('Enter a 4-character room code');window.location.href=`/host.html?code=${code}`};
 })();
 </script>
 </body>
