@@ -346,19 +346,79 @@ async function getCachedImage(key, query, fallback) {
   return fallback;
 }
 
-// Get currency image from Pexels or flag fallback
+// Banknote filenames on Wikimedia Commons — server resolves to thumbnail URLs
+const BANKNOTE_FILES = {
+  US:'US_one_dollar_bill,_obverse,_series_2009.jpg',
+  GB:'Bank_of_England_£50_obverse.jpg',
+  JP:'Series_E_10K_Yen_Bank_of_Japan_note_-_front.jpg',
+  CN:'RMB4_100_a.jpg',
+  BR:'50_BRL_note_(2010)_obverse.jpg',
+  CA:'Canadian_Frontier_Banknotes_faces.png',
+  AU:'Australian_five_dollar_note_-_Polymer_front.jpg',
+  IN:'India_500_INR,_MG_series,_2016,_obverse.jpg',
+  MX:'MXN_200_F_new.png',
+  RU:'Banknote_5000_rubles_2010_front.jpg',
+  KR:'10000_won_serieVI_obverse.jpeg',
+  TR:'100_türk_lirası_front.jpg',
+  EG:'EGP_200_2022_obverse.jpg',
+  SA:'Saudi_Riyal_500.jpg',
+  AE:'United_Arab_Emirates_100_dirham_note_front.jpg',
+  JO:'20_JOD_-_front.jpg',
+  TH:'1000_THB-XVII_Obverse.jpg',
+  CH:'CHF_50_9_front.jpg',
+  SE:'100_SEK_front.jpg',
+  NO:'200-krone_2017_obverse.jpg',
+  DK:'DKK_500_obverse_(2009).jpg',
+  PL:'100_zł_a_2012.jpg',
+  CZ:'1000_CZK_2008_obverse.jpg',
+  HU:'HUF_10000_2019_obverse.jpg',
+  AR:'1000_Pesos_Argentina_front.jpg',
+  NZ:'New_Zealand,_$5_note,_2015_(obverse).jpg',
+  ZA:'South_Africa-Rand-200-Obverse.jpg',
+  PK:'SBP_1000_rupee_note.jpg',
+  MY:'RM50_4th.jpg',
+  SG:'SGD_50_front.jpg',
+  KW:'20_Kuwaiti_dinar.jpg',
+  QA:'500_Qatari_Riyal.jpg',
+  NG:'1000_naira_front.jpg',
+  KE:'Kenya_1000_shillings_2019_obv.jpg',
+  ID:'100000_rupiah_bill,_2022_revision_(obverse).jpg',
+  PH:'PHP_1000_2010_obverse.jpg',
+  VN:'Vietnam_500000_Dong_Front.jpg',
+  BD:'1000_Taka_front_Bangladesh_Bank_(2011).jpg'
+};
+
+// Resolve Wikimedia Commons filename to a CORS-friendly thumbnail URL via API
+async function resolveWikimediaImage(filename) {
+  try {
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(filename)}&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'PartyGame/1.0' } });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const pages = d.query?.pages;
+    if (!pages) return null;
+    const page = Object.values(pages)[0];
+    if (page?.imageinfo?.[0]?.thumburl) return page.imageinfo[0].thumburl;
+    if (page?.imageinfo?.[0]?.url) return page.imageinfo[0].url;
+  } catch (e) {}
+  return null;
+}
+
+// Get currency image — resolve from Wikimedia, cache, fallback to Pexels then flag
 async function getCurrencyImage(code, cur, flagUrl) {
   const cacheKey = 'cur_' + code;
   if (imageCache[cacheKey]) return imageCache[cacheKey];
 
-  // Search Pexels for banknote image
+  // Try Wikimedia Commons banknote image
+  if (BANKNOTE_FILES[code]) {
+    const img = await resolveWikimediaImage(BANKNOTE_FILES[code]);
+    if (img) { imageCache[cacheKey] = img; return img; }
+  }
+
+  // Fallback to Pexels
   if (PEXELS_KEY) {
-    // Try specific banknote search first, then generic
-    const searches = [cur.q, `${cur.name} money`, `${cur.name} cash`];
-    for (const q of searches) {
-      const img = await searchImage(q);
-      if (img) { imageCache[cacheKey] = img; return img; }
-    }
+    const pImg = await searchImage(cur.q);
+    if (pImg) { imageCache[cacheKey] = pImg; return pImg; }
   }
 
   return flagUrl;
