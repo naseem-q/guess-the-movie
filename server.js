@@ -346,60 +346,19 @@ async function getCachedImage(key, query, fallback) {
   return fallback;
 }
 
-// Direct Wikimedia Commons banknote image URLs — reliable, no API needed
-const BANKNOTE_IMAGES = {
-  US:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/US_one_dollar_bill%2C_obverse%2C_series_2009.jpg/800px-US_one_dollar_bill%2C_obverse%2C_series_2009.jpg',
-  GB:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Bank_of_England_%C2%A350_obverse.jpg/800px-Bank_of_England_%C2%A350_obverse.jpg',
-  JP:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Series_E_10K_Yen_Bank_of_Japan_note_-_front.jpg/800px-Series_E_10K_Yen_Bank_of_Japan_note_-_front.jpg',
-  CN:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/RMB4_100_a.jpg/800px-RMB4_100_a.jpg',
-  BR:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/50_BRL_note_%282010%29_obverse.jpg/800px-50_BRL_note_%282010%29_obverse.jpg',
-  CA:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Canadian_Frontier_Banknotes_faces.png/800px-Canadian_Frontier_Banknotes_faces.png',
-  AU:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Australian_five_dollar_note_-_Polymer_front.jpg/800px-Australian_five_dollar_note_-_Polymer_front.jpg',
-  IN:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/India_500_INR%2C_MG_series%2C_2016%2C_obverse.jpg/800px-India_500_INR%2C_MG_series%2C_2016%2C_obverse.jpg',
-  MX:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/MXN_200_F_new.png/800px-MXN_200_F_new.png',
-  RU:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Banknote_5000_rubles_2010_front.jpg/800px-Banknote_5000_rubles_2010_front.jpg',
-  KR:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/10000_won_serieVI_obverse.jpeg/800px-10000_won_serieVI_obverse.jpeg',
-  TR:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/100_t%C3%BCrk_liras%C4%B1_front.jpg/800px-100_t%C3%BCrk_liras%C4%B1_front.jpg',
-  EG:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/EGP_200_2022_obverse.jpg/800px-EGP_200_2022_obverse.jpg',
-  SA:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Saudi_Riyal_500.jpg/800px-Saudi_Riyal_500.jpg',
-  AE:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/United_Arab_Emirates_100_dirham_note_front.jpg/800px-United_Arab_Emirates_100_dirham_note_front.jpg',
-  JO:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/20_JOD_-_front.jpg/800px-20_JOD_-_front.jpg',
-  TH:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/1000_THB-XVII_Obverse.jpg/800px-1000_THB-XVII_Obverse.jpg',
-  CH:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/CHF_50_9_front.jpg/800px-CHF_50_9_front.jpg',
-  SE:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/100_SEK_front.jpg/800px-100_SEK_front.jpg',
-  NO:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/200-krone_2017_obverse.jpg/800px-200-krone_2017_obverse.jpg',
-  DK:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/DKK_500_obverse_%282009%29.jpg/800px-DKK_500_obverse_%282009%29.jpg',
-  PL:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/100_z%C5%82_a_2012.jpg/800px-100_z%C5%82_a_2012.jpg',
-  CZ:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/1000_CZK_2008_obverse.jpg/800px-1000_CZK_2008_obverse.jpg',
-  HU:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/HUF_10000_2019_obverse.jpg/800px-HUF_10000_2019_obverse.jpg',
-  AR:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/1000_Pesos_Argentina_front.jpg/800px-1000_Pesos_Argentina_front.jpg',
-  NZ:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/New_Zealand%2C_%245_note%2C_2015_%28obverse%29.jpg/800px-New_Zealand%2C_%245_note%2C_2015_%28obverse%29.jpg',
-  ZA:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/South_Africa-Rand-200-Obverse.jpg/800px-South_Africa-Rand-200-Obverse.jpg',
-  PK:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/SBP_1000_rupee_note.jpg/800px-SBP_1000_rupee_note.jpg',
-  MY:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/RM50_4th.jpg/800px-RM50_4th.jpg',
-  SG:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/SGD_50_front.jpg/800px-SGD_50_front.jpg',
-  KW:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/20_Kuwaiti_dinar.jpg/800px-20_Kuwaiti_dinar.jpg',
-  QA:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/500_Qatari_Riyal.jpg/800px-500_Qatari_Riyal.jpg',
-  NG:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/1000_naira_front.jpg/800px-1000_naira_front.jpg',
-  KE:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Kenya_1000_shillings_2019_obv.jpg/800px-Kenya_1000_shillings_2019_obv.jpg',
-  ID:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/100000_rupiah_bill%2C_2022_revision_%28obverse%29.jpg/800px-100000_rupiah_bill%2C_2022_revision_%28obverse%29.jpg',
-  PH:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/PHP_1000_2010_obverse.jpg/800px-PHP_1000_2010_obverse.jpg',
-  VN:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Vietnam_500000_Dong_Front.jpg/800px-Vietnam_500000_Dong_Front.jpg',
-  BD:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/1000_Taka_front_Bangladesh_Bank_%282011%29.jpg/800px-1000_Taka_front_Bangladesh_Bank_%282011%29.jpg'
-};
-
-// Get currency image — hardcoded Wikimedia first, then Pexels, then flag
+// Get currency image from Pexels or flag fallback
 async function getCurrencyImage(code, cur, flagUrl) {
-  // Direct hardcoded banknote image — most reliable
-  if (BANKNOTE_IMAGES[code]) return BANKNOTE_IMAGES[code];
-
   const cacheKey = 'cur_' + code;
   if (imageCache[cacheKey]) return imageCache[cacheKey];
 
-  // Fallback to Pexels search for banknote
+  // Search Pexels for banknote image
   if (PEXELS_KEY) {
-    const pImg = await searchImage(cur.q);
-    if (pImg) { imageCache[cacheKey] = pImg; return pImg; }
+    // Try specific banknote search first, then generic
+    const searches = [cur.q, `${cur.name} money`, `${cur.name} cash`];
+    for (const q of searches) {
+      const img = await searchImage(q);
+      if (img) { imageCache[cacheKey] = img; return img; }
+    }
   }
 
   return flagUrl;
