@@ -462,6 +462,47 @@ function genFlagContinentQ(diff) {
 }
 
 // Round 4: Guess the Currency — currency banknote photo
+const CURRENCIES = {
+  US:{name:'US Dollar',symbol:'$',q:'us dollar banknote'},
+  GB:{name:'British Pound',symbol:'£',q:'british pound sterling banknote'},
+  JP:{name:'Japanese Yen',symbol:'¥',q:'japanese yen banknote'},
+  CN:{name:'Chinese Yuan',symbol:'¥',q:'chinese yuan renminbi banknote'},
+  BR:{name:'Brazilian Real',symbol:'R$',q:'brazilian real banknote'},
+  CA:{name:'Canadian Dollar',symbol:'C$',q:'canadian dollar banknote'},
+  AU:{name:'Australian Dollar',symbol:'A$',q:'australian dollar banknote'},
+  IN:{name:'Indian Rupee',symbol:'₹',q:'indian rupee banknote'},
+  MX:{name:'Mexican Peso',symbol:'$',q:'mexican peso banknote'},
+  RU:{name:'Russian Ruble',symbol:'₽',q:'russian ruble banknote'},
+  KR:{name:'South Korean Won',symbol:'₩',q:'south korean won banknote'},
+  TR:{name:'Turkish Lira',symbol:'₺',q:'turkish lira banknote'},
+  EG:{name:'Egyptian Pound',symbol:'E£',q:'egyptian pound banknote'},
+  SA:{name:'Saudi Riyal',symbol:'﷼',q:'saudi riyal banknote'},
+  AE:{name:'UAE Dirham',symbol:'د.إ',q:'uae dirham banknote'},
+  JO:{name:'Jordanian Dinar',symbol:'د.ا',q:'jordanian dinar banknote'},
+  TH:{name:'Thai Baht',symbol:'฿',q:'thai baht banknote'},
+  CH:{name:'Swiss Franc',symbol:'CHF',q:'swiss franc banknote'},
+  SE:{name:'Swedish Krona',symbol:'kr',q:'swedish krona banknote'},
+  NO:{name:'Norwegian Krone',symbol:'kr',q:'norwegian krone banknote'},
+  DK:{name:'Danish Krone',symbol:'kr',q:'danish krone banknote'},
+  PL:{name:'Polish Zloty',symbol:'zł',q:'polish zloty banknote'},
+  CZ:{name:'Czech Koruna',symbol:'Kč',q:'czech koruna banknote'},
+  HU:{name:'Hungarian Forint',symbol:'Ft',q:'hungarian forint banknote'},
+  AR:{name:'Argentine Peso',symbol:'$',q:'argentine peso banknote'},
+  NZ:{name:'New Zealand Dollar',symbol:'NZ$',q:'new zealand dollar banknote'},
+  ZA:{name:'South African Rand',symbol:'R',q:'south african rand banknote'},
+  PK:{name:'Pakistani Rupee',symbol:'₨',q:'pakistani rupee banknote'},
+  MY:{name:'Malaysian Ringgit',symbol:'RM',q:'malaysian ringgit banknote'},
+  SG:{name:'Singapore Dollar',symbol:'S$',q:'singapore dollar banknote'},
+  KW:{name:'Kuwaiti Dinar',symbol:'د.ك',q:'kuwaiti dinar banknote'},
+  QA:{name:'Qatari Riyal',symbol:'﷼',q:'qatari riyal banknote'},
+  NG:{name:'Nigerian Naira',symbol:'₦',q:'nigerian naira banknote'},
+  KE:{name:'Kenyan Shilling',symbol:'KSh',q:'kenyan shilling banknote'},
+  ID:{name:'Indonesian Rupiah',symbol:'Rp',q:'indonesian rupiah banknote'},
+  PH:{name:'Philippine Peso',symbol:'₱',q:'philippine peso banknote'},
+  VN:{name:'Vietnamese Dong',symbol:'₫',q:'vietnamese dong banknote'},
+  BD:{name:'Bangladeshi Taka',symbol:'৳',q:'bangladeshi taka banknote'}
+};
+
 // EURO RULE: skip euro countries unless only 1 euro option in choices
 const EURO_COUNTRIES = new Set(['FR','DE','IT','ES','PT','NL','IE','GR','AT','BE','FI','SK','SI','EE','LV','LT','CY','MT','LU','HR']);
 
