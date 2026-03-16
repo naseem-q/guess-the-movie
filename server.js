@@ -234,90 +234,115 @@ const flagCache = { countries: null, ts: 0 };
 const FLAG_EASY = ['US','GB','FR','DE','IT','ES','JP','CN','BR','CA','AU','IN','MX','RU','KR','TR','EG','SA','AE','GR','NL','SE','NO','PL','AR','CO','CL','PT','ZA','NZ','IE','CH','AT','BE','DK','TH','ID','PH','VN','MY','SG','IL','JO','QA','KW','NG','KE','PK','BD'];
 const FLAG_HARD_EXCLUDE = new Set(FLAG_EASY);
 
-// Wikimedia Commons helper — convert filename to direct image URL
-function wmc(filename, width = 800) {
-  const f = filename.replace(/ /g, '_');
-  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=${width}`;
+// Wikimedia thumbnail helper — reliable URL format
+function wiki(file, w = 800) {
+  const f = file.replace(/ /g, '_');
+  const md5 = require('crypto').createHash('md5').update(f).digest('hex');
+  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${md5[0]}/${md5[0]}${md5[1]}/${f}/${w}px-${f}`;
 }
 
-// Landmarks with Wikimedia Commons images
+// Simpler: use Pexels-style search URLs pre-resolved. Instead, use flagcdn for flags
+// and for landmarks/capitals, use a search-based image proxy that always works.
+// Most reliable: use the country code to get images from teleport or similar.
+
+// For landmarks and capitals, we'll use a simple approach:
+// Search Pexels at game-creation time if PEXELS_KEY is set, otherwise fallback to flags
+const PEXELS_KEY = process.env.PEXELS_KEY || '';
+
+async function searchImage(query) {
+  if (!PEXELS_KEY) return null;
+  try {
+    const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`, {
+      headers: { 'Authorization': PEXELS_KEY }
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (d.photos && d.photos.length > 0) {
+      const photo = d.photos[Math.floor(Math.random() * Math.min(d.photos.length, 3))];
+      return photo.src.landscape || photo.src.large;
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Landmarks with search queries for Pexels
 const LANDMARKS = {
-  US:{name:'Statue of Liberty',img:wmc('Statue of Liberty 7.jpg')},
-  GB:{name:'Big Ben',img:wmc('Clock Tower - Palace of Westminster, London - May 2007.jpg')},
-  FR:{name:'Eiffel Tower',img:wmc('Tour Eiffel Wikimedia Commons (cropped).jpg')},
-  DE:{name:'Brandenburg Gate',img:wmc('Brandenburger Tor abends.jpg')},
-  IT:{name:'Colosseum',img:wmc('Colosseo 2020.jpg')},
-  ES:{name:'Sagrada Familia',img:wmc('Sagrada Familia 8-12-21 (1).jpg')},
-  JP:{name:'Mount Fuji',img:wmc('FujiSunriseKawworz.jpg')},
-  CN:{name:'Great Wall of China',img:wmc('The Great Wall of China at Jinshanling-edit.jpg')},
-  BR:{name:'Christ the Redeemer',img:wmc('Christ on Corcovado mountain.JPG')},
-  CA:{name:'CN Tower',img:wmc('Toronto - ON - Toronto Harbourfront7.jpg')},
-  AU:{name:'Sydney Opera House',img:wmc('Sydney Opera House, botanic gardens 1.jpg')},
-  IN:{name:'Taj Mahal',img:wmc('Taj Mahal, Agra, India edit3.jpg')},
-  MX:{name:'Chichen Itza',img:wmc('Chichen Itza 3.jpg')},
-  RU:{name:'Saint Basil\'s Cathedral',img:wmc('Saint Basil\'s Cathedral in Moscow.jpg')},
-  KR:{name:'Gyeongbokgung Palace',img:wmc('Gyeongbokgung-GessungJeon.jpg')},
-  TR:{name:'Hagia Sophia',img:wmc('Hagia Sophia Mars 2013.jpg')},
-  EG:{name:'Pyramids of Giza',img:wmc('All Gizah Pyramids.jpg')},
-  SA:{name:'Kaaba',img:wmc('Kaaba at night.jpg')},
-  AE:{name:'Burj Khalifa',img:wmc('Burj Khalifa.jpg')},
-  GR:{name:'Parthenon',img:wmc('The Parthenon in Athens.jpg')},
-  NL:{name:'Windmills of Kinderdijk',img:wmc('Kinderdijk-molens.jpg')},
-  TH:{name:'Wat Arun',img:wmc('Wat Arun Bangkok Thailand.jpg')},
-  ID:{name:'Borobudur',img:wmc('Borobudur-Nothwest-view.jpg')},
-  PE:{name:'Machu Picchu',img:wmc('Machu Picchu, Peru.jpg')},
-  JO:{name:'Petra',img:wmc('Al Khazneh.jpg')},
-  KH:{name:'Angkor Wat',img:wmc('Ankor Wat temple.jpg')},
-  MA:{name:'Hassan II Mosque',img:wmc('Mosque Hassan II.jpg')},
-  CZ:{name:'Prague Castle',img:wmc('Prague castle night.jpg')},
-  NP:{name:'Mount Everest',img:wmc('Mt. Everest from Gokyo Ri November 5, 2012 Cropped.jpg')},
-  CH:{name:'Matterhorn',img:wmc('Matterhorn-EastAndNorthside-viewedFromZerm662.jpg')},
-  PT:{name:'Tower of Belém',img:wmc('Belem Tower Lisbonne.jpg')},
-  AT:{name:'Schönbrunn Palace',img:wmc('Wien - Schloss Schönbrunn.jpg')},
-  HU:{name:'Hungarian Parliament',img:wmc('Parliament Building, Budapest, outside.jpg')},
-  HR:{name:'Dubrovnik Old Town',img:wmc('Dubrovnik crop.jpg')},
-  IS:{name:'Blue Lagoon',img:wmc('Blue Lagoon (geothermal spa) in Grindavík, Iceland.jpg')},
-  SG:{name:'Marina Bay Sands',img:wmc('Marina Bay Sands in the evening - 20101120.jpg')},
-  MY:{name:'Petronas Towers',img:wmc('Petronas Panorama II.jpg')},
-  KW:{name:'Kuwait Towers',img:wmc('Kuwait towers.jpg')},
-  QA:{name:'Museum of Islamic Art',img:wmc('Museum of Islamic Art, Doha, Qatar.jpg')},
-  PK:{name:'Badshahi Mosque',img:wmc('Badshahi Mosque, Lahore I.jpg')},
-  ZA:{name:'Table Mountain',img:wmc('Table Mountain DanieVDM.jpg')},
-  SE:{name:'Stockholm Palace',img:wmc('Stockholm palace.jpg')},
-  DK:{name:'Little Mermaid',img:wmc('Copenhague - La Sirenita.jpg')},
-  IE:{name:'Cliffs of Moher',img:wmc('Cliffs of Moher.jpg')},
-  FI:{name:'Helsinki Cathedral',img:wmc('Helsinki July 2013-27a.jpg')},
-  LB:{name:'Baalbek',img:wmc('Baalbek - Temple of Bacchus.jpg')},
-  PH:{name:'Chocolate Hills',img:wmc('Chocolate Hills overview.JPG')},
-  VN:{name:'Ha Long Bay',img:wmc('Halong Bay.jpg')},
-  NO:{name:'Geirangerfjord',img:wmc('Geirangerfjord from Flydalsjuvet, 2013 June.jpg')},
-  BE:{name:'Grand Place',img:wmc('Grand-Place 1.jpg')},
-  NZ:{name:'Milford Sound',img:wmc('Milford Sound (New Zealand).JPG')}
+  US:{name:'Statue of Liberty',q:'statue of liberty new york'},
+  GB:{name:'Big Ben',q:'big ben london'},
+  FR:{name:'Eiffel Tower',q:'eiffel tower paris'},
+  DE:{name:'Brandenburg Gate',q:'brandenburg gate berlin'},
+  IT:{name:'Colosseum',q:'colosseum rome'},
+  ES:{name:'Sagrada Familia',q:'sagrada familia barcelona'},
+  JP:{name:'Mount Fuji',q:'mount fuji japan'},
+  CN:{name:'Great Wall of China',q:'great wall china'},
+  BR:{name:'Christ the Redeemer',q:'christ redeemer rio'},
+  CA:{name:'CN Tower',q:'cn tower toronto'},
+  AU:{name:'Sydney Opera House',q:'sydney opera house'},
+  IN:{name:'Taj Mahal',q:'taj mahal india'},
+  MX:{name:'Chichen Itza',q:'chichen itza mexico'},
+  RU:{name:'Saint Basil\'s Cathedral',q:'saint basils cathedral moscow'},
+  KR:{name:'Gyeongbokgung Palace',q:'gyeongbokgung palace seoul'},
+  TR:{name:'Hagia Sophia',q:'hagia sophia istanbul'},
+  EG:{name:'Pyramids of Giza',q:'pyramids giza egypt'},
+  SA:{name:'Kaaba',q:'kaaba mecca'},
+  AE:{name:'Burj Khalifa',q:'burj khalifa dubai'},
+  GR:{name:'Parthenon',q:'parthenon athens'},
+  NL:{name:'Windmills of Kinderdijk',q:'kinderdijk windmills netherlands'},
+  TH:{name:'Wat Arun',q:'wat arun bangkok'},
+  ID:{name:'Borobudur',q:'borobudur temple java'},
+  PE:{name:'Machu Picchu',q:'machu picchu peru'},
+  JO:{name:'Petra',q:'petra jordan treasury'},
+  KH:{name:'Angkor Wat',q:'angkor wat cambodia'},
+  MA:{name:'Hassan II Mosque',q:'hassan mosque casablanca'},
+  CZ:{name:'Prague Castle',q:'prague castle'},
+  NP:{name:'Mount Everest',q:'mount everest nepal'},
+  CH:{name:'Matterhorn',q:'matterhorn switzerland'},
+  PT:{name:'Tower of Belém',q:'belem tower lisbon'},
+  AT:{name:'Schönbrunn Palace',q:'schonbrunn palace vienna'},
+  HU:{name:'Hungarian Parliament',q:'hungarian parliament budapest'},
+  HR:{name:'Dubrovnik Old Town',q:'dubrovnik croatia'},
+  IS:{name:'Blue Lagoon',q:'blue lagoon iceland'},
+  SG:{name:'Marina Bay Sands',q:'marina bay sands singapore'},
+  MY:{name:'Petronas Towers',q:'petronas towers kuala lumpur'},
+  KW:{name:'Kuwait Towers',q:'kuwait towers'},
+  QA:{name:'Museum of Islamic Art',q:'museum islamic art doha'},
+  PK:{name:'Badshahi Mosque',q:'badshahi mosque lahore'},
+  ZA:{name:'Table Mountain',q:'table mountain cape town'},
+  SE:{name:'Stockholm Palace',q:'stockholm palace sweden'},
+  DK:{name:'Little Mermaid',q:'little mermaid copenhagen'},
+  IE:{name:'Cliffs of Moher',q:'cliffs of moher ireland'},
+  NO:{name:'Geirangerfjord',q:'geirangerfjord norway'},
+  BE:{name:'Grand Place',q:'grand place brussels'},
+  NZ:{name:'Milford Sound',q:'milford sound new zealand'},
+  LB:{name:'Baalbek',q:'baalbek lebanon temple'},
+  PH:{name:'Chocolate Hills',q:'chocolate hills bohol'},
+  VN:{name:'Ha Long Bay',q:'halong bay vietnam'},
+  FI:{name:'Helsinki Cathedral',q:'helsinki cathedral finland'}
 };
 
-// Capital city images from Wikimedia Commons
-const CAPITAL_IMAGES = {
-  US:wmc('NYC wbread.jpg'),GB:wmc('City of London skyline from London City Hall - Oct 2008.jpg'),
-  FR:wmc('Eiffelturm, Paris, Frankreich.jpg'),DE:wmc('Cityscape Berlin.jpg'),
-  IT:wmc('Colosseum in Rome, Italy - April 2007.jpg'),ES:wmc('Madrid Skyline II.jpg'),
-  JP:wmc('Skyscrapers of Shinjuku 2009 January.jpg'),CN:wmc('Beijing montage.png'),
-  BR:wmc('Congresso Brasilia.jpg'),CA:wmc('Ottawa skyline.jpg'),
-  AU:wmc('Canberra viewed from Mount Ainslie.jpg'),IN:wmc('India Gate in New Delhi 03-2016.jpg'),
-  MX:wmc('Ciudad.de" México City- Pair of views.jpg'),RU:wmc('Moscow July 2011-16.jpg'),
-  KR:wmc('Seoul (metropolitan area), South Korea - panoramio.jpg'),TR:wmc('Ankara Kocatepe Camii.jpg'),
-  EG:wmc('Cairo From Tower of Cairo.jpg'),SA:wmc('Riyadh Skyline New.jpg'),
-  AE:wmc('Abu Dhabi Skyline from Marina.jpg'),GR:wmc('Athens view from Acropolis 2017.jpg'),
-  JO:wmc('Amman BW 0.JPG'),TH:wmc('Bangkok skytrain sunset.jpg'),
-  AR:wmc('Buenos Aires Congreso.jpg'),NL:wmc('Amsterdam Canals - July 2006.jpg'),
-  PT:wmc('Ponte 25 de Abril - Lisboa (Portugal).jpg'),CH:wmc('Bern luftbild.png'),
-  SE:wmc('Stockholm gamlastan etc.jpg'),NO:wmc('Oslo (6139403453).jpg'),
-  AT:wmc('Panorama Wien.jpg'),BE:wmc('BrusselsGrandPlace.jpg'),
-  DK:wmc('Copenhagen - Denmark (9250023487).jpg'),PL:wmc('Warsaw 6-2.jpg'),
-  IE:wmc('Dublin Skyline, 2022.jpg'),CZ:wmc('Prague Panorama - Oct 2010.jpg'),
-  HU:wmc('Budapest Panorama Danube.jpg'),SG:wmc('1 Singapore city skyline 2010.jpg'),
-  KW:wmc('Flickr - HuTect ShOts - Kuwait City.jpg'),QA:wmc('Doha skyline (12464834905).jpg'),
-  PK:wmc('Islamabad Faisal Masjid.jpg'),ZA:wmc('Pretoria Union Buildings-001.jpg')
+// Capital search queries
+const CAPITAL_QUERIES = {
+  US:'washington dc capitol',GB:'london skyline',FR:'paris skyline',DE:'berlin skyline',
+  IT:'rome skyline',ES:'madrid skyline',JP:'tokyo skyline',CN:'beijing skyline',
+  BR:'brasilia congress',CA:'ottawa parliament',AU:'canberra parliament',IN:'new delhi india gate',
+  MX:'mexico city zocalo',RU:'moscow kremlin',KR:'seoul skyline',TR:'ankara skyline',
+  EG:'cairo skyline',SA:'riyadh skyline',AE:'abu dhabi skyline',GR:'athens acropolis',
+  JO:'amman skyline',TH:'bangkok skyline',AR:'buenos aires skyline',NL:'amsterdam canals',
+  PT:'lisbon skyline',CH:'bern switzerland',SE:'stockholm skyline',NO:'oslo skyline',
+  AT:'vienna skyline',BE:'brussels skyline',DK:'copenhagen skyline',PL:'warsaw skyline',
+  IE:'dublin skyline',CZ:'prague skyline',HU:'budapest danube',SG:'singapore skyline',
+  KW:'kuwait city skyline',QA:'doha skyline',PK:'islamabad faisal mosque',ZA:'pretoria skyline',
+  NZ:'wellington new zealand',MY:'kuala lumpur skyline',PH:'manila skyline',VN:'hanoi vietnam'
 };
+
+// Image cache to avoid re-fetching during same session
+const imageCache = {};
+async function getCachedImage(key, query, fallback) {
+  if (imageCache[key]) return imageCache[key];
+  const img = await searchImage(query);
+  if (img) { imageCache[key] = img; return img; }
+  return fallback;
+}
 
 // Subtle hints per country — fun facts that don't give away the answer directly
 const HINTS = {
@@ -382,13 +407,12 @@ function genFlagCountryQ(diff) {
   return { type: 'flag_country', category: 'Guess the Flag', question: 'What country does this flag belong to?', hint: getHint(c), image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: c.name, landscape: true };
 }
 
-// Round 2: Guess the Capital — show capital city photo
-function genFlagCapitalQ(diff) {
+// Round 2: Guess the Capital — show capital city photo from Pexels
+async function genFlagCapitalQ(diff) {
   const pool = getFlagPool(diff).filter(c => c.capital !== 'N/A');
-  const withImg = pool.filter(c => CAPITAL_IMAGES[c.code]);
-  const src = withImg.length >= 4 ? withImg : pool;
-  const c = src[Math.floor(Math.random() * src.length)];
-  const img = CAPITAL_IMAGES[c.code] || c.flag;
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  const q = CAPITAL_QUERIES[c.code] || `${c.capital} city skyline`;
+  const img = await getCachedImage('cap_' + c.code, q, c.flag);
   return { type: 'flag_capital', category: 'Guess the Capital', question: `What is the capital of ${c.name}?`, hint: getHint(c), image: img, revealImage: img, answer: c.capital, options: shuffle([c.capital, ...flagWrong(c, pool, 'capital')]), year: '', info: `${c.capital}, ${c.name}`, landscape: true };
 }
 
@@ -399,21 +423,22 @@ function genFlagContinentQ(diff) {
   return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', hint: `This country is called ${c.name}`, image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...shuffle(allRegions).slice(0, 3)]), year: '', info: `${c.name} — ${c.region}`, landscape: true };
 }
 
-// Round 4: Flag Challenge — show flag, harder pool, different hint
+// Round 4: Flag Challenge — flag with only a capital-initial hint
 function genFlagChallengeQ(diff) {
   const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
   const hint = c.capital !== 'N/A' ? `Its capital starts with "${c.capital[0]}"` : `Located in ${c.subregion}`;
-  return { type: 'flag_map', category: 'Flag Challenge', question: 'Which country does this flag represent?', hint: hint, image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: `${c.name} — ${c.subregion}`, landscape: true };
+  return { type: 'flag_challenge', category: 'Flag Challenge', question: 'Which country does this flag represent?', hint: hint, image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: `${c.name} — ${c.subregion}`, landscape: true };
 }
 
-// Round 5: Guess the Landmark — show landmark PHOTO (not flag)
-function genFlagLandmarkQ(diff) {
+// Round 5: Guess the Landmark — show landmark PHOTO from Pexels
+async function genFlagLandmarkQ(diff) {
   const pool = getFlagPool(diff).filter(c => LANDMARKS[c.code]);
   if (pool.length < 4) return genFlagCountryQ(diff);
   const c = pool[Math.floor(Math.random() * pool.length)];
   const lm = LANDMARKS[c.code];
+  const img = await getCachedImage('lm_' + c.code, lm.q, c.flag);
   const wrongPool = shuffle(pool.filter(x => x.code !== c.code && LANDMARKS[x.code])).slice(0, 3);
-  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, hint: getHint(c), image: lm.img, revealImage: lm.img, answer: lm.name, options: shuffle([lm.name, ...wrongPool.map(x => LANDMARKS[x.code].name)]), year: '', info: `${lm.name} — ${c.name}`, landscape: true };
+  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, hint: getHint(c), image: img, revealImage: img, answer: lm.name, options: shuffle([lm.name, ...wrongPool.map(x => LANDMARKS[x.code].name)]), year: '', info: `${lm.name} — ${c.name}`, landscape: true };
 }
 
 let currentDifficulty = 'medium';
@@ -421,7 +446,7 @@ const FLAG_GENS = {
   flag_country: () => genFlagCountryQ(currentDifficulty),
   flag_capital: () => genFlagCapitalQ(currentDifficulty),
   flag_continent: () => genFlagContinentQ(currentDifficulty),
-  flag_map: () => genFlagChallengeQ(currentDifficulty),
+  flag_challenge: () => genFlagChallengeQ(currentDifficulty),
   flag_landmark: () => genFlagLandmarkQ(currentDifficulty)
 };
 Object.assign(GENS, FLAG_GENS);
@@ -432,16 +457,16 @@ async function genRound(type, n = 10) { const qs = [], used = new Set(); for (le
 const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower: 1.4 }, medium: { timer: 50, startBlur: 42, startRadius: 5, blurDecayPower: 1.7 }, hard: { timer: 60, startBlur: 60, startRadius: 3, blurDecayPower: 2.0 } };
 const LABELS = {
   movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
-  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_map: 'Flag Challenge', flag_landmark: 'Guess the Landmark'
+  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_challenge: 'Flag Challenge', flag_landmark: 'Guess the Landmark'
 };
 const ICONS = {
   movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
-  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_map: '🗺️', flag_landmark: '🏰'
+  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_challenge: '🗺️', flag_landmark: '🏰'
 };
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
-  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_map', 'flag_landmark'] },
+  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_challenge', 'flag_landmark'] },
   famous_people: { name: 'Famous People', icon: '👤', available: false, rounds: [] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
