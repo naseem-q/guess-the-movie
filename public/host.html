@@ -50,6 +50,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .tv-opt{padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
 .tv-opt .lt{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
 .ans-prog{text-align:center;padding:4px;font-size:12px;color:var(--text2);z-index:10;position:relative;flex-shrink:0}
+.room-code-badge{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--gold);padding:6px 12px;border-radius:10px;background:rgba(255,230,109,0.08);border:1px solid rgba(255,230,109,0.15);letter-spacing:3px}
 .rev-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.8);backdrop-filter:blur(10px);animation:fadeIn 0.3s ease}
 .rev-card{text-align:center;padding:28px 44px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);animation:popIn 0.4s ease;max-width:600px}
 .rev-poster{max-width:240px;max-height:350px;border-radius:14px;margin-bottom:14px;box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:cover}
@@ -73,6 +74,8 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .mute-btn{position:fixed;top:76px;right:16px;z-index:999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}.mute-btn.muted{opacity:0.5}
 .fs-btn{position:fixed;top:76px;left:16px;z-index:999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.08);color:var(--green);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 .fs-btn:hover{background:rgba(52,211,153,0.18)}
+.home-btn{position:fixed;top:76px;left:70px;z-index:999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);text-decoration:none}
+.home-btn:hover{background:rgba(255,255,255,0.12)}
 .confetti-c{position:fixed;inset:0;pointer-events:none;z-index:999}
 .conf{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
 .particles{position:fixed;inset:0;pointer-events:none;z-index:0}
@@ -94,6 +97,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 <div class="particles" id="pbg"></div>
 <button class="mute-btn" id="mute-btn" onclick="GameAudio.toggleMute();this.textContent=GameAudio.isMuted()?'🔇':'🔊';this.classList.toggle('muted',GameAudio.isMuted())">🔊</button>
 <button class="fs-btn" id="fs-btn" onclick="toggleFS()">⛶</button>
+<a href="/" class="home-btn" title="Back to Home">🏠</a>
 
 <div id="s-connect" class="screen active connect-screen">
   <div class="icon">📺</div><h1>TV DISPLAY</h1><p>Enter the room code from the game master's phone</p>
@@ -121,7 +125,10 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   <div class="game-header">
     <div class="round-badge" id="g-round">R1/5</div>
     <div class="cat-badge" id="g-cat">Movie Posters</div>
-    <div class="timer-text" id="g-timer">45</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="room-code-badge" id="g-room-code">JOIN: ----</div>
+      <div class="timer-text" id="g-timer">45</div>
+    </div>
   </div>
   <div class="tbar-bg"><div class="tbar" id="g-tbar" style="width:100%"></div></div>
   <div class="q-text" id="g-q"></div>
@@ -276,6 +283,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       document.getElementById('g-round').textContent=`R${d.roundNumber}/${d.totalRounds} • Q${d.questionNumber}/${d.totalQuestions}`;
       document.getElementById('g-cat').textContent=d.category;
       document.getElementById('g-q').textContent=d.question||'';
+      document.getElementById('g-room-code').textContent='JOIN: '+roomCode;
       diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};timerDur=d.timer;timerStart=Date.now();curType=d.type;
 
       const isL=d.type==='movie_scene'||d.type==='tv_scene';
