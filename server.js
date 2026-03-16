@@ -15,7 +15,7 @@ const TMDB_KEY = process.env.TMDB_API_KEY;
 const TMDB_IMG = 'https://image.tmdb.org/t/p/';
 const rooms = {};
 
-function genCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code; do { code = Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join(''); } while (rooms[code]); return code; }
+function genCode() { let code; do { code = String(Math.floor(100000 + Math.random() * 900000)); } while (rooms[code]); return code; }
 function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 function normalize(s) { return s.toLowerCase().replace(/^(the|a|an)\s+/i, '').replace(/[^a-z0-9]/g, ''); }
 async function tmdb(ep) { const url = `https://api.themoviedb.org/3${ep}${ep.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=en-US`; const r = await fetch(url); if (!r.ok) throw new Error(`TMDB ${r.status}`); return r.json(); }
@@ -323,7 +323,24 @@ io.on('connection', (socket) => {
   socket.on('resume-game', () => { const r = rooms[socket.roomCode]; if (r?.masterId === socket.id) { r.state = 'question'; const rem = r.diff.timer - ((Date.now() - r.qStart) / 1000); io.to(r.code).emit('game-resumed'); r.qTimer = setTimeout(() => reveal(r), rem * 1000); } });
   socket.on('end-game-early', () => { const r = rooms[socket.roomCode]; if (r?.masterId === socket.id) { clearTimeout(r.qTimer); finalResults(r); } });
   socket.on('next-question-request', () => { const r = rooms[socket.roomCode]; if (!r || r.masterId !== socket.id) return; if (r.state === 'question_reveal') nextQ(r); if (r.state === 'round_results') { r.rIdx++; r.qIdx = 0; r.rIdx >= r.activeRounds.length ? finalResults(r) : startRound(r); } });
-  socket.on('play-again', () => { const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code]; if (r.masterId !== socket.id) return; io.to(code).emit('game-reset'); clearTimeout(r.qTimer); delete rooms[code]; console.log(`[${code}] Game reset by host`); });
+
+  // New game in same room - keeps players, resets scores
+  socket.on('new-game', async ({ difficulty, category }, cb) => {
+    const code = socket.roomCode; if (!code || !rooms[code]) return cb?.({ error: 'No room' });
+    const r = rooms[code]; if (r.masterId !== socket.id) return cb?.({ error: 'Only master can restart' });
+    const cat = CATEGORIES[category]; if (!cat || !cat.available) return cb?.({ error: 'Invalid category' });
+    await loadTMDB(); const diff = DIFF[difficulty] || DIFF.medium;
+    console.log(`[${code}] New game: ${cat.name}`);
+    const allQ = {}; for (const rd of cat.rounds) { allQ[rd] = await genRound(rd, 10); }
+    r.diff = diff; r.diffName = difficulty; r.category = category; r.categoryName = cat.name;
+    r.activeRounds = cat.rounds; r.allQ = allQ; r.state = 'lobby'; r.rIdx = 0; r.qIdx = 0; r.answers = {}; clearTimeout(r.qTimer);
+    Object.values(r.players).forEach(p => { p.score = 0; });
+    const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster }));
+    io.to(code).emit('new-game-ready', { categoryName: cat.name, players: pl });
+    cb?.({ ok: true, categoryName: cat.name }); console.log(`[${code}] New game ready!`);
+  });
+
+  socket.on('play-again', () => { const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code]; if (r.masterId !== socket.id) return; io.to(code).emit('game-reset'); clearTimeout(r.qTimer); delete rooms[code]; });
 
   socket.on('disconnect', () => {
     const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code];
