@@ -1,0 +1,33 @@
+{
+  "name": "The Ultimate Party Game",
+  "short_name": "Party Game",
+  "description": "Guess movies, TV shows, characters and more with friends!",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a1a",
+  "theme_color": "#FFE66D",
+  "id": "/",
+  "icons": [
+    {
+      "src": "/hero.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/hero.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/hero.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "prefer_related_applications": false
+}

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>How to Play — The Ultimate Party Game</title>
+<meta name="theme-color" content="#0a0a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/hero.png">
+<link rel="icon" type="image/png" href="/hero.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a1a;--bg2:#141428;--sf:rgba(255,255,255,0.04);--bd:rgba(255,255,255,0.08);--text:#E8E8F0;--text2:rgba(232,232,240,0.5);--gold:#FFE66D;--orange:#FB923C;--green:#34D399;--red:#FF6B6B;--blue:#60A5FA}
+html{height:100%}
+body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%);color:var(--text);min-height:100%;padding-bottom:40px}
+
+.top-bar{display:flex;align-items:center;gap:12px;padding:16px 20px;position:sticky;top:0;z-index:10;background:rgba(10,10,26,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--bd)}
+.back-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.top-title{font-size:18px;font-weight:800}
+
+.content{max-width:640px;margin:0 auto;padding:20px}
+
+.hero-section{text-align:center;padding:24px 0 16px}
+.hero-section img{width:140px;height:auto;filter:drop-shadow(0 6px 20px rgba(255,230,109,0.15))}
+.hero-section h1{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;margin-top:10px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-section p{font-size:13px;color:var(--text2);margin-top:4px}
+
+.section{margin-top:28px}
+.section-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title span{font-size:18px}
+
+.step-card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+.step-num{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:15px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-content{flex:1}
+.step-title{font-size:15px;font-weight:800;margin-bottom:4px}
+.step-desc{font-size:13px;color:var(--text2);line-height:1.6}
+
+.tip-card{background:rgba(255,230,109,0.04);border:1px solid rgba(255,230,109,0.12);border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
+.tip-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.tip-text{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6}
+.tip-text strong{color:var(--gold)}
+
+.tab-row{display:flex;gap:6px;margin-bottom:14px;background:var(--sf);border-radius:12px;padding:4px;border:1px solid var(--bd)}
+.tab-btn{flex:1;padding:10px 8px;border-radius:9px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;text-align:center;transition:all 0.2s}
+.tab-btn.active{background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+.play-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:var(--bg);font-size:16px;font-weight:800;font-family:'Outfit',sans-serif;cursor:pointer;margin-top:24px;text-decoration:none;text-transform:uppercase;letter-spacing:1px;box-shadow:0 4px 24px rgba(255,230,109,0.25)}
+.play-btn:active{transform:scale(0.97)}
+
+.footer{padding:20px;text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-top:30px;border-top:1px solid var(--bd)}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="/" class="back-btn">←</a>
+  <span class="top-title">How to Play</span>
+</div>
+
+<div class="content">
+
+  <div class="hero-section">
+    <img src="/hero.png" alt="Party Game">
+    <h1>THE ULTIMATE PARTY GAME</h1>
+    <p>Guess • Compete • Win</p>
+  </div>
+
+  <!-- ═══ WHAT IS THIS GAME ═══ -->
+  <div class="section">
+    <div class="section-title"><span>🎮</span> What is this game?</div>
+    <div class="step-card">
+      <div class="step-num">!</div>
+      <div class="step-content">
+        <div class="step-desc">A multiplayer party game where everyone plays from their phones. A blurred image slowly reveals on a shared TV screen — guess what it is before your friends do! The faster you answer, the more points you earn.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ START A GAME ═══ -->
+  <div class="section">
+    <div class="section-title"><span>🚀</span> Start a game</div>
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Create a game</div>
+        <div class="step-desc">Open the app on your phone. Tap <strong>"Create Game"</strong>, enter your name, pick a category and difficulty, then tap <strong>"Create Room"</strong>.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Connect the TV</div>
+        <div class="step-desc">Open the app on the TV browser. Tap <strong>"Display on TV"</strong> and enter the room code shown on your phone. The TV is now your game screen.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Invite friends</div>
+        <div class="step-desc">Friends open the app on their phones, tap <strong>"Join Game"</strong>, enter the same room code + their name. Everyone appears in the lobby.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Start playing</div>
+        <div class="step-desc">The game master taps <strong>"Start Game"</strong>. The TV shows the image, players answer from their phones. 5 rounds, 10 questions each!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HOW SCORING WORKS ═══ -->
+  <div class="section">
+    <div class="section-title"><span>⭐</span> Scoring</div>
+    <div class="tip-card">
+      <div class="tip-icon">⚡</div>
+      <div class="tip-text"><strong>Speed matters!</strong> The faster you answer correctly, the more points you get — up to 1,000 points per question.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">❌</div>
+      <div class="tip-text"><strong>Wrong answers</strong> give 0 points — but there's no penalty, so guess fast!</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">⏱️</div>
+      <div class="tip-text"><strong>If time runs out</strong> before you answer, you get 0 points for that question.</div>
+    </div>
+  </div>
+
+  <!-- ═══ CONNECT TO TV ═══ -->
+  <div class="section">
+    <div class="section-title"><span>📺</span> Connect to a TV</div>
+    <div class="step-card">
+      <div class="step-num">A</div>
+      <div class="step-content">
+        <div class="step-title">Smart TV browser</div>
+        <div class="step-desc">Open the website on your Smart TV's browser, tap "Display on TV", enter the room code.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">B</div>
+      <div class="step-content">
+        <div class="step-title">Laptop + HDMI</div>
+        <div class="step-desc">Open the website on a laptop, connect the laptop to the TV with an HDMI cable, then tap "Display on TV".</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">C</div>
+      <div class="step-content">
+        <div class="step-title">Cast / AirPlay</div>
+        <div class="step-desc">Open the website on your phone or laptop, then cast the browser tab to your TV using Chromecast or AirPlay.</div>
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text">Tap the <strong>⛶ fullscreen button</strong> on the TV page for the best experience — hides the browser bar completely.</div>
+    </div>
+  </div>
+
+  <!-- ═══ INSTALL THE APP ═══ -->
+  <div class="section">
+    <div class="section-title"><span>📲</span> Install the app</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5">Install the game as an app on your phone for quick access — no app store needed!</p>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="showTab('android')">Android</button>
+      <button class="tab-btn" onclick="showTab('ios')">iPhone / iPad</button>
+      <button class="tab-btn" onclick="showTab('desktop')">Desktop</button>
+    </div>
+
+    <div class="tab-content active" id="tab-android">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-desc">Open the website in <strong>Chrome</strong>.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-desc">You should see an <strong>"Install"</strong> banner at the bottom — tap <strong>Install</strong>.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-desc">If no banner appears: tap the <strong>⋮ menu</strong> (top right) → <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong>.</div>
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">✅</div>
+        <div class="tip-text">The app icon will appear on your home screen. It opens in fullscreen — no browser bar!</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-ios">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-desc">Open the website in <strong>Safari</strong> (not Chrome).</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-desc">Tap the <strong>Share button</strong> ↗ (square with arrow, bottom center).</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-desc">Scroll down and tap <strong>"Add to Home Screen"</strong>.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-desc">Tap <strong>"Add"</strong> in the top right corner.</div>
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">⚠️</div>
+        <div class="tip-text">This only works in <strong>Safari</strong>. Chrome on iPhone doesn't support home screen apps properly.</div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-desktop">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-desc">Open the website in <strong>Chrome</strong> or <strong>Edge</strong>.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-desc">Click the <strong>install icon</strong> in the address bar (⊕ or ↓), or go to <strong>⋮ menu → "Install App"</strong>.</div>
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">✅</div>
+        <div class="tip-text">The app will open as its own window — great for the TV display!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GAME MASTER TIPS ═══ -->
+  <div class="section">
+    <div class="section-title"><span>👑</span> Game master controls</div>
+    <div class="tip-card">
+      <div class="tip-icon">⏭</div>
+      <div class="tip-text"><strong>Skip</strong> — skip a broken or too-hard question.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">⏸</div>
+      <div class="tip-text"><strong>Pause</strong> — freeze the timer. Tap again to resume.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🛑</div>
+      <div class="tip-text"><strong>End Game</strong> — jump to final results immediately.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">▶</div>
+      <div class="tip-text"><strong>Next</strong> — appears after each answer reveal. Tap to move on.</div>
+    </div>
+  </div>
+
+  <!-- ═══ FAQ ═══ -->
+  <div class="section">
+    <div class="section-title"><span>❓</span> FAQ</div>
+    <div class="tip-card">
+      <div class="tip-icon">📶</div>
+      <div class="tip-text"><strong>Do all phones need to be on the same WiFi?</strong> No! The game runs online — everyone just needs internet access.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">👥</div>
+      <div class="tip-text"><strong>How many players?</strong> 2 to 8 players per game.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🔇</div>
+      <div class="tip-text"><strong>Can I mute the music?</strong> Yes — tap the 🔊 button on the TV screen.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">📱</div>
+      <div class="tip-text"><strong>Can the game master play too?</strong> Yes! The creator plays from their phone like everyone else.</div>
+    </div>
+  </div>
+
+  <a href="/" class="play-btn">🎮 Let's Play!</a>
+
+</div>
+
+<div class="footer">Powered by Naseem Q. All rights reserved &copy; <span id="yr"></span></div>
+
+<script>
+  document.getElementById('yr').textContent=new Date().getFullYear();
+
+  function showTab(id){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>
