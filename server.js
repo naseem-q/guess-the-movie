@@ -320,19 +320,21 @@ const LANDMARKS = {
   FI:{name:'Helsinki Cathedral',q:'helsinki cathedral finland'}
 };
 
-// Capital search queries
+// Capital search queries — must include "city" to avoid wrong results
 const CAPITAL_QUERIES = {
-  US:'washington dc capitol',GB:'london skyline',FR:'paris skyline',DE:'berlin skyline',
-  IT:'rome skyline',ES:'madrid skyline',JP:'tokyo skyline',CN:'beijing skyline',
-  BR:'brasilia congress',CA:'ottawa parliament',AU:'canberra parliament',IN:'new delhi india gate',
-  MX:'mexico city zocalo',RU:'moscow kremlin',KR:'seoul skyline',TR:'ankara skyline',
-  EG:'cairo skyline',SA:'riyadh skyline',AE:'abu dhabi skyline',GR:'athens acropolis',
-  JO:'amman skyline',TH:'bangkok skyline',AR:'buenos aires skyline',NL:'amsterdam canals',
-  PT:'lisbon skyline',CH:'bern switzerland',SE:'stockholm skyline',NO:'oslo skyline',
-  AT:'vienna skyline',BE:'brussels skyline',DK:'copenhagen skyline',PL:'warsaw skyline',
-  IE:'dublin skyline',CZ:'prague skyline',HU:'budapest danube',SG:'singapore skyline',
-  KW:'kuwait city skyline',QA:'doha skyline',PK:'islamabad faisal mosque',ZA:'pretoria skyline',
-  NZ:'wellington new zealand',MY:'kuala lumpur skyline',PH:'manila skyline',VN:'hanoi vietnam'
+  US:'washington dc city aerial view',GB:'london city skyline aerial',FR:'paris city aerial view',DE:'berlin city skyline aerial',
+  IT:'rome city panoramic view',ES:'madrid city skyline aerial',JP:'tokyo city skyline night',CN:'beijing city skyline aerial',
+  BR:'brasilia city congress building',CA:'ottawa city parliament hill',AU:'canberra city parliament house',IN:'new delhi city india gate aerial',
+  MX:'mexico city downtown aerial',RU:'moscow city skyline red square',KR:'seoul city skyline night',TR:'ankara city skyline',
+  EG:'cairo city skyline aerial',SA:'riyadh city skyline night',AE:'abu dhabi city skyline',GR:'athens city acropolis aerial',
+  JO:'amman city skyline aerial view',TH:'bangkok city skyline temple',AR:'buenos aires city obelisk aerial',NL:'amsterdam city canals aerial',
+  PT:'lisbon city panoramic view',CH:'bern city old town aerial',SE:'stockholm city skyline aerial',NO:'oslo city skyline aerial',
+  AT:'vienna city skyline aerial',BE:'brussels city grand place aerial',DK:'copenhagen city nyhavn aerial',PL:'warsaw city skyline old town',
+  IE:'dublin city skyline river',CZ:'prague city castle aerial',HU:'budapest city parliament danube',SG:'singapore city skyline night',
+  KW:'kuwait city skyline towers',QA:'doha city skyline corniche',PK:'islamabad city faisal mosque aerial',ZA:'pretoria city union buildings',
+  NZ:'wellington city harbour aerial',MY:'kuala lumpur city petronas towers',PH:'manila city skyline aerial',VN:'hanoi city old quarter aerial',
+  CO:'bogota city skyline aerial',PE:'lima city skyline aerial',MA:'rabat city hassan tower',PS:'jerusalem city old town aerial',
+  LB:'beirut city skyline aerial',KE:'nairobi city skyline aerial',NG:'abuja city mosque aerial'
 };
 
 // Image cache to avoid re-fetching during same session
@@ -342,6 +344,43 @@ async function getCachedImage(key, query, fallback) {
   const img = await searchImage(query);
   if (img) { imageCache[key] = img; return img; }
   return fallback;
+}
+
+// Wikidata SPARQL query to get banknote image for a currency
+async function getWikidataBanknoteImage(currencyName) {
+  try {
+    const sparql = `SELECT ?image WHERE {
+      ?item rdfs:label "${currencyName}"@en .
+      ?item wdt:P31/wdt:P279* wd:Q8142 .
+      ?item wdt:P18 ?image .
+    } LIMIT 1`;
+    const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'PartyGame/1.0' } });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (d.results?.bindings?.length > 0) {
+      const imgUrl = d.results.bindings[0].image.value;
+      // Convert commons URL to thumbnail
+      return imgUrl.replace('http://commons.wikimedia.org', 'https://commons.wikimedia.org');
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Get currency image — try Wikidata first, then Pexels, then flag fallback
+async function getCurrencyImage(code, cur, flagUrl) {
+  const cacheKey = 'cur_' + code;
+  if (imageCache[cacheKey]) return imageCache[cacheKey];
+
+  // Try Wikidata for actual banknote image
+  const wdImg = await getWikidataBanknoteImage(cur.name);
+  if (wdImg) { imageCache[cacheKey] = wdImg; return wdImg; }
+
+  // Fallback to Pexels search
+  const pImg = await searchImage(cur.q);
+  if (pImg) { imageCache[cacheKey] = pImg; return pImg; }
+
+  return flagUrl;
 }
 
 // 3 rotating hints per country — harder, no obvious giveaways
@@ -512,11 +551,12 @@ async function genFlagCurrencyQ(diff) {
   if (pool.length < 4) return genFlagCountryQ(diff);
   const c = pool[Math.floor(Math.random() * pool.length)];
   const cur = CURRENCIES[c.code];
-  const img = await getCachedImage('cur_' + c.code, cur.q, c.flag);
+  // Try Wikidata for banknote image, then Pexels, then flag
+  const img = await getCurrencyImage(c.code, cur, c.flag);
   // Currency hint: symbol only, no country name
   const curHints = [`The symbol for this currency is ${cur.symbol}`,`This currency is subdivided into 100 smaller units`,getHints(c)[0]];
   const wrong = flagWrong(c, pool.filter(x => CURRENCIES[x.code] && !EURO_COUNTRIES.has(x.code)), 'name', true);
-  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hints: curHints, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true };
+  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hints: curHints, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true, noBlur: true };
 }
 
 // Round 5: Guess the Landmark — landmark photo, CLEAR (no blur)
