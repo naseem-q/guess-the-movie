@@ -189,7 +189,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
   let socket=null,roomCode='',timerInt=null,timerDur=50,timerStart=0;
   let diff={},animFrame=null,cPos={x:50,y:50},cVel={x:0.4,y:0.3};
-  let playerList=[],curImg=null,curType='',curNoBlur=false;
+  let playerList=[],curImg=null,curType='',curNoBlur=false,curLightBg=false;
   const canvas=document.getElementById('poster-canvas'),ctx=canvas.getContext('2d');
   let revActive=false;
 
@@ -203,8 +203,10 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
     const w=canvas.width,h=canvas.height;
     ctx.clearRect(0,0,w,h);
 
-    // If noBlur, just draw image fully clear — no blur, no circle
+    // If noBlur, draw image fully clear
     if(curNoBlur){
+      // Light background for silhouettes
+      if(curLightBg){ctx.fillStyle='#e8e8e8';ctx.fillRect(0,0,w,h)}
       ctx.drawImage(img,0,0,w,h);
       return;
     }
@@ -299,8 +301,9 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       const isL=d.landscape||d.type==='movie_scene'||d.type==='tv_scene'||d.type?.startsWith('flag_');
       diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};
 
-      // noBlur: show image fully clear (for capitals, landmarks)
+      // noBlur: show image fully clear (for capitals, landmarks, map shapes)
       curNoBlur=d.noBlur||false;
+      curLightBg=d.lightBg||false;
       if(curNoBlur){
         diff={...diff,startBlur:0,startRadius:100,blurDecayPower:0.1};
       }
@@ -313,6 +316,8 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
       const box=document.getElementById('poster-box');
       box.className='poster-box '+(isL?'landscape-img':'portrait-img');
+      if(d.lightBg) box.style.background='#e8e8e8';
+      else box.style.background='#111';
       const area=document.getElementById('poster-area');
       area.className='poster-area '+(isL?'landscape-mode':'portrait');
 
