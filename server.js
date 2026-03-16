@@ -227,16 +227,144 @@ async function genCharacterQ() {
 }
 
 const GENS = { movie_posters: genMoviePosterQ, tv_posters: genTVPosterQ, movie_scenes: genMovieSceneQ, tv_scenes: genTVSceneQ, characters: genCharacterQ };
+
+// ═══ FLAGS CATEGORY ══════════════════════════════════
+const flagCache = { countries: null, ts: 0 };
+
+// Country difficulty tiers
+const FLAG_EASY = ['US','GB','FR','DE','IT','ES','JP','CN','BR','CA','AU','IN','MX','RU','KR','TR','EG','SA','AE','GR','NL','SE','NO','PL','AR','CO','CL','PT','ZA','NZ','IE','CH','AT','BE','DK','TH','ID','PH','VN','MY','SG','IL','JO','QA','KW','NG','KE','PK','BD'];
+const FLAG_HARD_EXCLUDE = new Set(FLAG_EASY); // medium = everything, hard = exclude easy
+
+// Famous landmarks per country code (hardcoded — reliable, no API needed)
+const LANDMARKS = {
+  US:'Statue of Liberty',GB:'Big Ben',FR:'Eiffel Tower',DE:'Brandenburg Gate',IT:'Colosseum',ES:'Sagrada Familia',
+  JP:'Mount Fuji',CN:'Great Wall of China',BR:'Christ the Redeemer',CA:'CN Tower',AU:'Sydney Opera House',
+  IN:'Taj Mahal',MX:'Chichen Itza',RU:'Kremlin',KR:'Gyeongbokgung Palace',TR:'Hagia Sophia',EG:'Pyramids of Giza',
+  SA:'Kaaba',AE:'Burj Khalifa',GR:'Parthenon',NL:'Windmills of Kinderdijk',SE:'Stockholm Palace',
+  NO:'Northern Lights',PL:'Wawel Castle',AR:'Obelisco de Buenos Aires',CO:'Cartagena Old Town',
+  CL:'Easter Island Moai',PT:'Tower of Belém',ZA:'Table Mountain',NZ:'Milford Sound',IE:'Cliffs of Moher',
+  CH:'Matterhorn',AT:'Schönbrunn Palace',BE:'Grand Place Brussels',DK:'Little Mermaid Statue',
+  TH:'Wat Arun',ID:'Borobudur',PH:'Chocolate Hills',VN:'Ha Long Bay',MY:'Petronas Towers',
+  SG:'Marina Bay Sands',IL:'Western Wall',JO:'Petra',QA:'The Pearl Qatar',KW:'Kuwait Towers',
+  PE:'Machu Picchu',MA:'Hassan II Mosque',HR:'Dubrovnik Old Town',CZ:'Prague Castle',HU:'Hungarian Parliament',
+  RO:'Bran Castle',NG:'Zuma Rock',KE:'Maasai Mara',PK:'Badshahi Mosque',BD:'Sundarbans',
+  MM:'Shwedagon Pagoda',KH:'Angkor Wat',NP:'Mount Everest',LK:'Sigiriya',GE:'Narikala Fortress',
+  IS:'Blue Lagoon',FI:'Helsinki Cathedral',SK:'Bratislava Castle',BG:'Alexander Nevsky Cathedral',
+  MT:'Valletta',CY:'Kourion',LB:'Baalbek',TN:'Carthage Ruins',ET:'Rock Churches of Lalibela'
+};
+
+async function loadFlags() {
+  if (flagCache.countries && Date.now() - flagCache.ts < 86400000) return; // cache 24h
+  console.log('[FLAGS] Loading countries...');
+  try {
+    const r = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,region,subregion,maps');
+    const data = await r.json();
+    flagCache.countries = data.filter(c => c.cca2 && c.name?.common).map(c => ({
+      code: c.cca2,
+      name: c.name.common,
+      capital: (c.capital && c.capital[0]) || 'N/A',
+      region: c.region || 'Unknown',
+      subregion: c.subregion || c.region || 'Unknown',
+      flag: `https://flagcdn.com/w640/${c.cca2.toLowerCase()}.png`,
+      flagSmall: `https://flagcdn.com/256x192/${c.cca2.toLowerCase()}.png`
+    }));
+    flagCache.ts = Date.now();
+    console.log(`[FLAGS] ${flagCache.countries.length} countries loaded`);
+  } catch (e) {
+    console.error('[FLAGS] Failed to load:', e.message);
+    if (!flagCache.countries) flagCache.countries = [];
+  }
+}
+
+function getFlagPool(difficulty) {
+  const all = flagCache.countries || [];
+  if (difficulty === 'easy') return all.filter(c => FLAG_EASY.includes(c.code));
+  if (difficulty === 'hard') return all.filter(c => !FLAG_HARD_EXCLUDE.has(c.code) && c.capital !== 'N/A');
+  return all.filter(c => c.capital !== 'N/A'); // medium = all countries with capitals
+}
+
+function flagWrongOptions(correct, pool, field = 'name', sameRegion = true, count = 3) {
+  const region = correct.region;
+  let candidates = sameRegion ? pool.filter(c => c.region === region && c[field] !== correct[field]) : pool.filter(c => c[field] !== correct[field]);
+  if (candidates.length < count) candidates = pool.filter(c => c[field] !== correct[field]);
+  return shuffle(candidates).slice(0, count).map(c => c[field]);
+}
+
+// Round 1: What country does this flag belong to?
+function genFlagCountryQ(difficulty) {
+  const pool = getFlagPool(difficulty);
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  const wrong = flagWrongOptions(c, pool, 'name', true);
+  return { type: 'flag_country', category: 'Guess the Flag', question: 'What country does this flag belong to?', image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${c.name} (${c.region})` };
+}
+
+// Round 2: What is the capital of this country?
+function genFlagCapitalQ(difficulty) {
+  const pool = getFlagPool(difficulty).filter(c => c.capital && c.capital !== 'N/A');
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  const wrong = flagWrongOptions(c, pool, 'capital', true);
+  return { type: 'flag_capital', category: 'Guess the Capital', question: `What is the capital of ${c.name}?`, image: c.flag, revealImage: c.flag, answer: c.capital, options: shuffle([c.capital, ...wrong]), year: '', info: `${c.capital}, ${c.name}` };
+}
+
+// Round 3: What continent is this country in?
+function genFlagContinentQ(difficulty) {
+  const pool = getFlagPool(difficulty);
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  const allRegions = [...new Set(pool.map(x => x.region))].filter(r => r !== c.region);
+  const wrong = shuffle(allRegions).slice(0, 3);
+  return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...wrong]), year: '', info: `${c.name} — ${c.region}` };
+}
+
+// Round 4: What country has this map outline? (uses Google Static Maps silhouette-style)
+function genFlagMapQ(difficulty) {
+  const pool = getFlagPool(difficulty);
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  // Use flag as image (we don't have map silhouettes via free API), but ask different question
+  const mapUrl = `https://flagcdn.com/w640/${c.code.toLowerCase()}.png`;
+  const wrong = flagWrongOptions(c, pool, 'name', true);
+  return { type: 'flag_map', category: 'Flag Challenge', question: 'Which country does this flag represent?', image: mapUrl, revealImage: mapUrl, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${c.name} — ${c.subregion}` };
+}
+
+// Round 5: What famous landmark is in this country?
+function genFlagLandmarkQ(difficulty) {
+  const pool = getFlagPool(difficulty).filter(c => LANDMARKS[c.code]);
+  if (pool.length < 4) return genFlagCountryQ(difficulty); // fallback
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  const landmark = LANDMARKS[c.code];
+  const wrongCountries = shuffle(pool.filter(x => x.code !== c.code && LANDMARKS[x.code])).slice(0, 3);
+  const wrong = wrongCountries.map(x => LANDMARKS[x.code]);
+  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, image: c.flag, revealImage: c.flag, answer: landmark, options: shuffle([landmark, ...wrong]), year: '', info: `${landmark} — ${c.name}` };
+}
+
+// Flag generators need difficulty, so we wrap them
+let currentDifficulty = 'medium';
+const FLAG_GENS = {
+  flag_country: () => genFlagCountryQ(currentDifficulty),
+  flag_capital: () => genFlagCapitalQ(currentDifficulty),
+  flag_continent: () => genFlagContinentQ(currentDifficulty),
+  flag_map: () => genFlagMapQ(currentDifficulty),
+  flag_landmark: () => genFlagLandmarkQ(currentDifficulty)
+};
+
+// Merge into main GENS
+Object.assign(GENS, FLAG_GENS);
+
 async function genRound(type, n = 10) { const qs = [], used = new Set(); for (let i = 0; i < n; i++) { let q, a = 0; do { a++; q = await GENS[type](); } while (used.has(normalize(q.answer)) && a < 30); used.add(normalize(q.answer)); qs.push(q); console.log(`  [Q${i + 1}] ${q.answer}`); } return qs; }
 
 // ═══ CONFIG ══════════════════════════════════════════
 const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower: 1.4 }, medium: { timer: 50, startBlur: 42, startRadius: 5, blurDecayPower: 1.7 }, hard: { timer: 60, startBlur: 60, startRadius: 3, blurDecayPower: 2.0 } };
-const LABELS = { movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character' };
-const ICONS = { movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟' };
+const LABELS = {
+  movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
+  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_map: 'Flag Challenge', flag_landmark: 'Guess the Landmark'
+};
+const ICONS = {
+  movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
+  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_map: '🗺️', flag_landmark: '🏰'
+};
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
-  flags: { name: 'Flags', icon: '🚩', available: false, rounds: [] },
+  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_map', 'flag_landmark'] },
   famous_people: { name: 'Famous People', icon: '👤', available: false, rounds: [] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
@@ -254,11 +382,21 @@ io.on('connection', (socket) => {
     const cat = CATEGORIES[category];
     if (!cat) return cb({ error: `Invalid category: ${category}` });
     if (!cat.available) return cb({ error: `${cat.name} coming soon!` });
-    await loadTMDB();
-    if (!cache.movies?.length) return cb({ error: 'Cannot load movies. Check TMDB API key.' });
+
+    // Load data for the selected category
+    if (category === 'movies_tv') {
+      await loadTMDB();
+      if (!cache.movies?.length) return cb({ error: 'Cannot load movies. Check TMDB API key.' });
+    } else if (category === 'flags') {
+      await loadFlags();
+      if (!flagCache.countries?.length) return cb({ error: 'Cannot load country data.' });
+    }
+
+    // Set difficulty for generators that need it
+    currentDifficulty = difficulty || 'medium';
 
     const code = genCode(); const diff = DIFF[difficulty] || DIFF.medium;
-    console.log(`[${code}] Generating ${cat.name}...`);
+    console.log(`[${code}] Generating ${cat.name} (${difficulty})...`);
     const allQ = {};
     for (const r of cat.rounds) { console.log(`[${code}] ${LABELS[r]}`); allQ[r] = await genRound(r, 10); }
     console.log(`[${code}] Ready!`);
@@ -329,8 +467,13 @@ io.on('connection', (socket) => {
     const code = socket.roomCode; if (!code || !rooms[code]) return cb?.({ error: 'No room' });
     const r = rooms[code]; if (r.masterId !== socket.id) return cb?.({ error: 'Only master can restart' });
     const cat = CATEGORIES[category]; if (!cat || !cat.available) return cb?.({ error: 'Invalid category' });
-    await loadTMDB(); const diff = DIFF[difficulty] || DIFF.medium;
-    console.log(`[${code}] New game: ${cat.name}`);
+
+    if (category === 'movies_tv') { await loadTMDB(); }
+    else if (category === 'flags') { await loadFlags(); }
+    currentDifficulty = difficulty || 'medium';
+
+    const diff = DIFF[difficulty] || DIFF.medium;
+    console.log(`[${code}] New game: ${cat.name} (${difficulty})`);
     const allQ = {}; for (const rd of cat.rounds) { allQ[rd] = await genRound(rd, 10); }
     r.diff = diff; r.diffName = difficulty; r.category = category; r.categoryName = cat.name;
     r.activeRounds = cat.rounds; r.allQ = allQ; r.state = 'lobby'; r.rIdx = 0; r.qIdx = 0; r.answers = {}; clearTimeout(r.qTimer);
