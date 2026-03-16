@@ -29,7 +29,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .game-header{display:flex;align-items:center;justify-content:space-between;padding:10px 32px;z-index:10;flex-shrink:0}
 .round-badge{font-size:14px;font-weight:800;padding:6px 14px;border-radius:24px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)}
 .cat-badge{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
-.q-text{font-size:14px;text-align:center;padding:2px 32px;color:var(--text2);font-weight:600;font-style:italic;z-index:10;position:relative;flex-shrink:0}
+.q-text{font-size:14px;text-align:center;padding:4px 32px 8px;color:var(--text2);font-weight:600;z-index:10;position:relative;flex-shrink:0}
 .timer-text{font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:var(--gold);transition:color 0.3s}
 .timer-text.urgent{color:var(--red);animation:pulse 0.5s ease infinite}
 .tbar-bg{height:4px;background:rgba(255,255,255,0.06);margin:0 32px;border-radius:3px;overflow:hidden;z-index:10;position:relative;flex-shrink:0}
@@ -286,11 +286,23 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       show('s-game');document.getElementById('rev-overlay').style.display='none';
       document.getElementById('g-round').textContent=`R${d.roundNumber}/${d.totalRounds} • Q${d.questionNumber}/${d.totalQuestions}`;
       document.getElementById('g-cat').textContent=d.category;
-      document.getElementById('g-q').textContent=d.question||'';
       document.getElementById('g-room-code').textContent='JOIN: '+roomCode;
-      diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};timerDur=d.timer;timerStart=Date.now();curType=d.type;
 
-      const isL=d.type==='movie_scene'||d.type==='tv_scene';
+      // Question text — larger
+      const qEl=document.getElementById('g-q');
+      qEl.innerHTML=`<div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">${d.question||''}</div>${d.hint?'<div style="font-size:13px;color:var(--text2);font-style:italic;opacity:0.7">'+d.hint+'</div>':''}`;
+
+      // Determine layout: landscape if flag/landmark or scene type
+      const isL=d.landscape||d.type==='movie_scene'||d.type==='tv_scene'||d.type?.startsWith('flag_');
+      diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};
+
+      // Darker blur for flags (colors are too visible in light blur)
+      if(d.type?.startsWith('flag_')){
+        diff={...diff,startBlur:Math.max(diff.startBlur,50),blurDecayPower:Math.max(diff.blurDecayPower||1.7,2.0)};
+      }
+
+      timerDur=d.timer;timerStart=Date.now();curType=d.type;
+
       const box=document.getElementById('poster-box');
       box.className='poster-box '+(isL?'landscape-img':'portrait-img');
       const area=document.getElementById('poster-area');
