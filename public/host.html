@@ -101,14 +101,15 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
 <div id="s-connect" class="screen active connect-screen">
   <div class="icon">📺</div><h1>TV DISPLAY</h1><p>Enter the room code from the game master's phone</p>
-  <input type="text" id="connect-code" class="connect-input" maxlength="4" placeholder="CODE">
+  <input type="tel" id="connect-code" class="connect-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="123456">
   <button class="connect-btn" onclick="connectHost()">CONNECT</button>
   <div id="connect-status"></div>
 </div>
 
 <div id="s-lobby" class="screen lobby-screen">
   <div class="lobby-sub">JOIN WITH CODE</div>
-  <div class="lobby-code" id="lobby-code">----</div>
+  <div class="lobby-code" id="lobby-code">------</div>
+  <div id="lobby-qr-tv" style="margin:12px auto;width:160px;height:160px;background:white;border-radius:10px;padding:6px"></div>
   <div class="lobby-sub" id="lobby-cat"></div>
   <div class="lobby-pg" id="lobby-pg"></div>
   <div class="lobby-sub" style="margin-top:10px">Waiting for host to start...</div>
@@ -159,6 +160,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 <div class="tv-footer">Powered by Naseem Q. All rights reserved &copy; <span id="yr"></span></div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/audio.js"></script>
 <script>
 (function(){
@@ -261,7 +263,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
   window.connectHost=function(){
     const code=document.getElementById('connect-code').value.trim().toUpperCase();
-    if(!code||code.length!==4)return alert('Enter 4-character code');
+    if(!code||code.length!==6)return alert('Enter 6-digit room code');
     document.getElementById('connect-status').textContent='Connecting...';roomCode=code;
     socket=io({reconnection:true,timeout:10000});
     socket.on('connect',()=>{
@@ -271,6 +273,8 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
         document.getElementById('lobby-code').textContent=roomCode;
         document.getElementById('lobby-cat').textContent=res.categoryName||'';
         renderLobby(res.players);playerList=res.players;show('s-lobby');
+        // Generate QR code on TV lobby
+        setTimeout(()=>{const qc=document.getElementById('lobby-qr-tv');if(qc){qc.innerHTML='';try{new QRCode(qc,{text:`${location.origin}/?code=${roomCode}`,width:148,height:148,colorDark:'#0a0a1a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){}}},300);
       });
     });
     socket.on('connect_error',()=>{document.getElementById('connect-status').textContent='Failed...'});
@@ -358,6 +362,16 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       show('s-connect');
       document.getElementById('connect-code').value='';
       document.getElementById('connect-status').textContent='Game ended. Enter a new room code to continue.';
+    });
+
+    // When host starts new game in same room, TV goes back to lobby
+    socket.on('new-game-ready',(d)=>{
+      stopAnim();GameAudio.stopMusic();clearInterval(timerInt);
+      document.getElementById('lobby-code').textContent=roomCode;
+      document.getElementById('lobby-cat').textContent=d.categoryName||'';
+      renderLobby(d.players);playerList=d.players;
+      show('s-lobby');
+      setTimeout(()=>{const qc=document.getElementById('lobby-qr-tv');if(qc){qc.innerHTML='';try{new QRCode(qc,{text:`${location.origin}/?code=${roomCode}`,width:148,height:148,colorDark:'#0a0a1a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){}}},300);
     });
   };
 
