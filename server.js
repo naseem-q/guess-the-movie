@@ -231,7 +231,7 @@ const GENS = { movie_posters: genMoviePosterQ, tv_posters: genTVPosterQ, movie_s
 // ═══ FLAGS CATEGORY ══════════════════════════════════
 const flagCache = { countries: null, ts: 0 };
 
-const FLAG_EASY = ['US','GB','FR','DE','IT','ES','JP','CN','BR','CA','AU','IN','MX','RU','KR','TR','EG','SA','AE','GR','NL','SE','NO','PL','AR','CO','CL','PT','ZA','NZ','IE','CH','AT','BE','DK','TH','ID','PH','VN','MY','SG','IL','JO','QA','KW','NG','KE','PK','BD'];
+const FLAG_EASY = ['US','GB','FR','DE','IT','ES','JP','CN','BR','CA','AU','IN','MX','RU','KR','TR','EG','SA','AE','GR','NL','SE','NO','PL','AR','CO','CL','PT','ZA','NZ','IE','CH','AT','BE','DK','TH','ID','PH','VN','MY','SG','JO','QA','KW','NG','KE','PK','BD'];
 const FLAG_HARD_EXCLUDE = new Set(FLAG_EASY);
 
 // Wikimedia thumbnail helper — reliable URL format
@@ -365,7 +365,7 @@ const HINTS = {
   PT:'Birthplace of fado music and port wine',ZA:'Known as the Rainbow Nation',
   NZ:'Famous for kiwis, rugby, and stunning landscapes',IE:'Known as the Emerald Isle',
   DK:'Home of LEGO and Hans Christian Andersen',BE:'Famous for chocolate, waffles, and comic strips',
-  IL:'A small nation at the crossroads of three continents',PK:'Home to K2, the world\'s second highest peak',
+  PK:'Home to K2, the world\'s second highest peak',
   KW:'A small oil-rich nation on the Persian Gulf',QA:'Host of the 2022 FIFA World Cup'
 };
 
@@ -375,7 +375,7 @@ async function loadFlags() {
   try {
     const r = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,region,subregion');
     const data = await r.json();
-    flagCache.countries = data.filter(c => c.cca2 && c.name?.common).map(c => ({
+    flagCache.countries = data.filter(c => c.cca2 && c.name?.common && c.cca2 !== 'IL').map(c => ({
       code: c.cca2, name: c.name.common,
       capital: (c.capital && c.capital[0]) || 'N/A',
       region: c.region || 'Unknown', subregion: c.subregion || c.region || 'Unknown',
