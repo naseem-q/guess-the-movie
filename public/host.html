@@ -288,16 +288,33 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       document.getElementById('g-cat').textContent=d.category;
       document.getElementById('g-room-code').textContent='JOIN: '+roomCode;
 
-      // Question text — larger
+      // Question text — larger + rotating hints
       const qEl=document.getElementById('g-q');
-      qEl.innerHTML=`<div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">${d.question||''}</div>${d.hint?'<div style="font-size:13px;color:var(--text2);font-style:italic;opacity:0.7">'+d.hint+'</div>':''}`;
+      const hints=d.hints||[];
+      qEl.innerHTML=`<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">${d.question||''}</div>${hints.length?'<div id="g-hint" style="font-size:14px;color:var(--gold);font-style:italic;opacity:0.6;transition:opacity 0.4s;min-height:20px">'+hints[0]+'</div>':''}`;
 
-      // Determine layout: landscape if flag/landmark or scene type
+      // Rotate hints every 3 seconds
+      if(window._hintTimer) clearInterval(window._hintTimer);
+      if(hints.length>1){
+        let hIdx=0;
+        window._hintTimer=setInterval(()=>{
+          hIdx=(hIdx+1)%hints.length;
+          const hEl=document.getElementById('g-hint');
+          if(hEl){hEl.style.opacity='0';setTimeout(()=>{hEl.textContent=hints[hIdx];hEl.style.opacity='0.6'},400)}
+        },3000);
+      }
+
+      // Determine layout
       const isL=d.landscape||d.type==='movie_scene'||d.type==='tv_scene'||d.type?.startsWith('flag_');
       diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};
 
-      // Darker blur for flags (colors are too visible in light blur)
-      if(d.type?.startsWith('flag_')){
+      // noBlur: show image fully clear (for capitals, landmarks)
+      const useNoBlur=d.noBlur||false;
+      if(useNoBlur){
+        diff={...diff,startBlur:0,startRadius:100,blurDecayPower:0.1};
+      }
+      // Darker blur for flags
+      else if(d.type?.startsWith('flag_')){
         diff={...diff,startBlur:Math.max(diff.startBlur,50),blurDecayPower:Math.max(diff.blurDecayPower||1.7,2.0)};
       }
 
