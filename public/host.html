@@ -36,19 +36,19 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .tbar{height:100%;border-radius:3px;transition:width 1s linear;background:linear-gradient(90deg,var(--gold),var(--orange))}
 .tbar.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
 .poster-area{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:5}
-.poster-area.portrait{flex-direction:row;gap:24px}
+.poster-area.portrait{flex-direction:row;justify-content:center;gap:0}
 .poster-area.landscape-mode{flex-direction:column;gap:12px}
 .poster-box{position:relative;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7);background:#111}
-.poster-box.portrait-img{max-width:380px;width:100%}
+.poster-box.portrait-img{max-width:360px;width:100%}
 .poster-box.landscape-img{max-width:700px;width:100%}
 #poster-canvas{width:100%;display:block;border-radius:20px}
 .sidebar{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
 .sb-p{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
 .sb-p .score{margin-left:auto;color:var(--gold);font-size:13px}
 .tv-opts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:0 32px;margin-bottom:6px;z-index:10;position:relative}
-.tv-opts.side-opts{flex-direction:column;padding:0;max-width:260px;min-width:220px;justify-content:center;align-self:center}
-.tv-opt{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
-.tv-opt .lt{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.tv-opts.side-opts{flex-direction:column;padding:0;width:240px;min-width:220px;justify-content:center;align-self:center;position:absolute;left:24px;top:50%;transform:translateY(-50%)}
+.tv-opt{padding:12px 18px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px}
+.tv-opt .lt{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
 .ans-prog{text-align:center;padding:6px;font-size:13px;color:var(--text2);z-index:10;position:relative}
 .rev-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.8);backdrop-filter:blur(10px);animation:fadeIn 0.3s ease}
 .rev-card{text-align:center;padding:28px 44px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);animation:popIn 0.4s ease;max-width:600px}
@@ -70,8 +70,8 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .lb-rk{font-size:24px;width:40px;text-align:center}.lb-nm{flex:1;font-weight:700;font-size:20px;margin-left:12px}.lb-sc{font-weight:800;font-size:24px;color:var(--gold)}
 .final-screen{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px}
 .f-trophy{font-size:72px;animation:float 2s ease-in-out infinite}.f-winner{font-size:42px;font-weight:900;color:var(--gold)}.f-sub{font-size:18px;color:var(--text2);margin-bottom:16px}
-.mute-btn{position:fixed;top:16px;right:16px;z-index:999;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}.mute-btn.muted{opacity:0.5}
-.fs-btn{position:fixed;top:16px;left:16px;z-index:999;height:48px;padding:0 18px;border-radius:24px;border:1px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.08);color:var(--green);font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;backdrop-filter:blur(8px)}
+.mute-btn{position:fixed;top:76px;right:16px;z-index:999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}.mute-btn.muted{opacity:0.5}
+.fs-btn{position:fixed;top:76px;left:16px;z-index:999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.08);color:var(--green);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 .fs-btn:hover{background:rgba(52,211,153,0.18)}
 .confetti-c{position:fixed;inset:0;pointer-events:none;z-index:999}
 .conf{position:absolute;top:-10px;border-radius:2px;animation:confettiFall linear forwards}
@@ -93,7 +93,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 <body>
 <div class="particles" id="pbg"></div>
 <button class="mute-btn" id="mute-btn" onclick="GameAudio.toggleMute();this.textContent=GameAudio.isMuted()?'🔇':'🔊';this.classList.toggle('muted',GameAudio.isMuted())">🔊</button>
-<button class="fs-btn" id="fs-btn" onclick="goFullscreen()">⛶ Fullscreen</button>
+<button class="fs-btn" id="fs-btn" onclick="toggleFS()">⛶</button>
 
 <div id="s-connect" class="screen active connect-screen">
   <div class="icon">📺</div><h1>TV DISPLAY</h1><p>Enter the room code from the game master's phone</p>
@@ -157,14 +157,24 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 (function(){
   document.getElementById('yr').textContent=new Date().getFullYear();
 
-  // ═══ FULLSCREEN ════════════════════════════════════
-  window.goFullscreen=function(){
+  // ═══ FULLSCREEN TOGGLE ══════════════════════════════
+  window.toggleFS=function(){
     const el=document.documentElement;
-    if(el.requestFullscreen) el.requestFullscreen();
-    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if(el.msRequestFullscreen) el.msRequestFullscreen();
-    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+    const btn=document.getElementById('fs-btn');
+    if(!document.fullscreenElement&&!document.webkitFullscreenElement&&!document.msFullscreenElement){
+      if(el.requestFullscreen) el.requestFullscreen();
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if(el.msRequestFullscreen) el.msRequestFullscreen();
+      btn.textContent='✕';
+    }else{
+      if(document.exitFullscreen) document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if(document.msExitFullscreen) document.msExitFullscreen();
+      btn.textContent='⛶';
+    }
   };
+  document.addEventListener('fullscreenchange',()=>{document.getElementById('fs-btn').textContent=document.fullscreenElement?'✕':'⛶'});
+  document.addEventListener('webkitfullscreenchange',()=>{document.getElementById('fs-btn').textContent=document.webkitFullscreenElement?'✕':'⛶'});
 
   const pbg=document.getElementById('pbg');for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=2+Math.random()*4;p.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${15+Math.random()*25}s;animation-delay:${Math.random()*10}s;`;pbg.appendChild(p)}
 
