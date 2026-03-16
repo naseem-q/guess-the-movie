@@ -231,122 +231,199 @@ const GENS = { movie_posters: genMoviePosterQ, tv_posters: genTVPosterQ, movie_s
 // ═══ FLAGS CATEGORY ══════════════════════════════════
 const flagCache = { countries: null, ts: 0 };
 
-// Country difficulty tiers
 const FLAG_EASY = ['US','GB','FR','DE','IT','ES','JP','CN','BR','CA','AU','IN','MX','RU','KR','TR','EG','SA','AE','GR','NL','SE','NO','PL','AR','CO','CL','PT','ZA','NZ','IE','CH','AT','BE','DK','TH','ID','PH','VN','MY','SG','IL','JO','QA','KW','NG','KE','PK','BD'];
-const FLAG_HARD_EXCLUDE = new Set(FLAG_EASY); // medium = everything, hard = exclude easy
+const FLAG_HARD_EXCLUDE = new Set(FLAG_EASY);
 
-// Famous landmarks per country code (hardcoded — reliable, no API needed)
+// Wikimedia Commons helper — convert filename to direct image URL
+function wmc(filename, width = 800) {
+  const f = filename.replace(/ /g, '_');
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=${width}`;
+}
+
+// Landmarks with Wikimedia Commons images
 const LANDMARKS = {
-  US:'Statue of Liberty',GB:'Big Ben',FR:'Eiffel Tower',DE:'Brandenburg Gate',IT:'Colosseum',ES:'Sagrada Familia',
-  JP:'Mount Fuji',CN:'Great Wall of China',BR:'Christ the Redeemer',CA:'CN Tower',AU:'Sydney Opera House',
-  IN:'Taj Mahal',MX:'Chichen Itza',RU:'Kremlin',KR:'Gyeongbokgung Palace',TR:'Hagia Sophia',EG:'Pyramids of Giza',
-  SA:'Kaaba',AE:'Burj Khalifa',GR:'Parthenon',NL:'Windmills of Kinderdijk',SE:'Stockholm Palace',
-  NO:'Northern Lights',PL:'Wawel Castle',AR:'Obelisco de Buenos Aires',CO:'Cartagena Old Town',
-  CL:'Easter Island Moai',PT:'Tower of Belém',ZA:'Table Mountain',NZ:'Milford Sound',IE:'Cliffs of Moher',
-  CH:'Matterhorn',AT:'Schönbrunn Palace',BE:'Grand Place Brussels',DK:'Little Mermaid Statue',
-  TH:'Wat Arun',ID:'Borobudur',PH:'Chocolate Hills',VN:'Ha Long Bay',MY:'Petronas Towers',
-  SG:'Marina Bay Sands',IL:'Western Wall',JO:'Petra',QA:'The Pearl Qatar',KW:'Kuwait Towers',
-  PE:'Machu Picchu',MA:'Hassan II Mosque',HR:'Dubrovnik Old Town',CZ:'Prague Castle',HU:'Hungarian Parliament',
-  RO:'Bran Castle',NG:'Zuma Rock',KE:'Maasai Mara',PK:'Badshahi Mosque',BD:'Sundarbans',
-  MM:'Shwedagon Pagoda',KH:'Angkor Wat',NP:'Mount Everest',LK:'Sigiriya',GE:'Narikala Fortress',
-  IS:'Blue Lagoon',FI:'Helsinki Cathedral',SK:'Bratislava Castle',BG:'Alexander Nevsky Cathedral',
-  MT:'Valletta',CY:'Kourion',LB:'Baalbek',TN:'Carthage Ruins',ET:'Rock Churches of Lalibela'
+  US:{name:'Statue of Liberty',img:wmc('Statue of Liberty 7.jpg')},
+  GB:{name:'Big Ben',img:wmc('Clock Tower - Palace of Westminster, London - May 2007.jpg')},
+  FR:{name:'Eiffel Tower',img:wmc('Tour Eiffel Wikimedia Commons (cropped).jpg')},
+  DE:{name:'Brandenburg Gate',img:wmc('Brandenburger Tor abends.jpg')},
+  IT:{name:'Colosseum',img:wmc('Colosseo 2020.jpg')},
+  ES:{name:'Sagrada Familia',img:wmc('Sagrada Familia 8-12-21 (1).jpg')},
+  JP:{name:'Mount Fuji',img:wmc('FujiSunriseKawworz.jpg')},
+  CN:{name:'Great Wall of China',img:wmc('The Great Wall of China at Jinshanling-edit.jpg')},
+  BR:{name:'Christ the Redeemer',img:wmc('Christ on Corcovado mountain.JPG')},
+  CA:{name:'CN Tower',img:wmc('Toronto - ON - Toronto Harbourfront7.jpg')},
+  AU:{name:'Sydney Opera House',img:wmc('Sydney Opera House, botanic gardens 1.jpg')},
+  IN:{name:'Taj Mahal',img:wmc('Taj Mahal, Agra, India edit3.jpg')},
+  MX:{name:'Chichen Itza',img:wmc('Chichen Itza 3.jpg')},
+  RU:{name:'Saint Basil\'s Cathedral',img:wmc('Saint Basil\'s Cathedral in Moscow.jpg')},
+  KR:{name:'Gyeongbokgung Palace',img:wmc('Gyeongbokgung-GessungJeon.jpg')},
+  TR:{name:'Hagia Sophia',img:wmc('Hagia Sophia Mars 2013.jpg')},
+  EG:{name:'Pyramids of Giza',img:wmc('All Gizah Pyramids.jpg')},
+  SA:{name:'Kaaba',img:wmc('Kaaba at night.jpg')},
+  AE:{name:'Burj Khalifa',img:wmc('Burj Khalifa.jpg')},
+  GR:{name:'Parthenon',img:wmc('The Parthenon in Athens.jpg')},
+  NL:{name:'Windmills of Kinderdijk',img:wmc('Kinderdijk-molens.jpg')},
+  TH:{name:'Wat Arun',img:wmc('Wat Arun Bangkok Thailand.jpg')},
+  ID:{name:'Borobudur',img:wmc('Borobudur-Nothwest-view.jpg')},
+  PE:{name:'Machu Picchu',img:wmc('Machu Picchu, Peru.jpg')},
+  JO:{name:'Petra',img:wmc('Al Khazneh.jpg')},
+  KH:{name:'Angkor Wat',img:wmc('Ankor Wat temple.jpg')},
+  MA:{name:'Hassan II Mosque',img:wmc('Mosque Hassan II.jpg')},
+  CZ:{name:'Prague Castle',img:wmc('Prague castle night.jpg')},
+  NP:{name:'Mount Everest',img:wmc('Mt. Everest from Gokyo Ri November 5, 2012 Cropped.jpg')},
+  CH:{name:'Matterhorn',img:wmc('Matterhorn-EastAndNorthside-viewedFromZerm662.jpg')},
+  PT:{name:'Tower of Belém',img:wmc('Belem Tower Lisbonne.jpg')},
+  AT:{name:'Schönbrunn Palace',img:wmc('Wien - Schloss Schönbrunn.jpg')},
+  HU:{name:'Hungarian Parliament',img:wmc('Parliament Building, Budapest, outside.jpg')},
+  HR:{name:'Dubrovnik Old Town',img:wmc('Dubrovnik crop.jpg')},
+  IS:{name:'Blue Lagoon',img:wmc('Blue Lagoon (geothermal spa) in Grindavík, Iceland.jpg')},
+  SG:{name:'Marina Bay Sands',img:wmc('Marina Bay Sands in the evening - 20101120.jpg')},
+  MY:{name:'Petronas Towers',img:wmc('Petronas Panorama II.jpg')},
+  KW:{name:'Kuwait Towers',img:wmc('Kuwait towers.jpg')},
+  QA:{name:'Museum of Islamic Art',img:wmc('Museum of Islamic Art, Doha, Qatar.jpg')},
+  PK:{name:'Badshahi Mosque',img:wmc('Badshahi Mosque, Lahore I.jpg')},
+  ZA:{name:'Table Mountain',img:wmc('Table Mountain DanieVDM.jpg')},
+  SE:{name:'Stockholm Palace',img:wmc('Stockholm palace.jpg')},
+  DK:{name:'Little Mermaid',img:wmc('Copenhague - La Sirenita.jpg')},
+  IE:{name:'Cliffs of Moher',img:wmc('Cliffs of Moher.jpg')},
+  FI:{name:'Helsinki Cathedral',img:wmc('Helsinki July 2013-27a.jpg')},
+  LB:{name:'Baalbek',img:wmc('Baalbek - Temple of Bacchus.jpg')},
+  PH:{name:'Chocolate Hills',img:wmc('Chocolate Hills overview.JPG')},
+  VN:{name:'Ha Long Bay',img:wmc('Halong Bay.jpg')},
+  NO:{name:'Geirangerfjord',img:wmc('Geirangerfjord from Flydalsjuvet, 2013 June.jpg')},
+  BE:{name:'Grand Place',img:wmc('Grand-Place 1.jpg')},
+  NZ:{name:'Milford Sound',img:wmc('Milford Sound (New Zealand).JPG')}
+};
+
+// Capital city images from Wikimedia Commons
+const CAPITAL_IMAGES = {
+  US:wmc('NYC wbread.jpg'),GB:wmc('City of London skyline from London City Hall - Oct 2008.jpg'),
+  FR:wmc('Eiffelturm, Paris, Frankreich.jpg'),DE:wmc('Cityscape Berlin.jpg'),
+  IT:wmc('Colosseum in Rome, Italy - April 2007.jpg'),ES:wmc('Madrid Skyline II.jpg'),
+  JP:wmc('Skyscrapers of Shinjuku 2009 January.jpg'),CN:wmc('Beijing montage.png'),
+  BR:wmc('Congresso Brasilia.jpg'),CA:wmc('Ottawa skyline.jpg'),
+  AU:wmc('Canberra viewed from Mount Ainslie.jpg'),IN:wmc('India Gate in New Delhi 03-2016.jpg'),
+  MX:wmc('Ciudad.de" México City- Pair of views.jpg'),RU:wmc('Moscow July 2011-16.jpg'),
+  KR:wmc('Seoul (metropolitan area), South Korea - panoramio.jpg'),TR:wmc('Ankara Kocatepe Camii.jpg'),
+  EG:wmc('Cairo From Tower of Cairo.jpg'),SA:wmc('Riyadh Skyline New.jpg'),
+  AE:wmc('Abu Dhabi Skyline from Marina.jpg'),GR:wmc('Athens view from Acropolis 2017.jpg'),
+  JO:wmc('Amman BW 0.JPG'),TH:wmc('Bangkok skytrain sunset.jpg'),
+  AR:wmc('Buenos Aires Congreso.jpg'),NL:wmc('Amsterdam Canals - July 2006.jpg'),
+  PT:wmc('Ponte 25 de Abril - Lisboa (Portugal).jpg'),CH:wmc('Bern luftbild.png'),
+  SE:wmc('Stockholm gamlastan etc.jpg'),NO:wmc('Oslo (6139403453).jpg'),
+  AT:wmc('Panorama Wien.jpg'),BE:wmc('BrusselsGrandPlace.jpg'),
+  DK:wmc('Copenhagen - Denmark (9250023487).jpg'),PL:wmc('Warsaw 6-2.jpg'),
+  IE:wmc('Dublin Skyline, 2022.jpg'),CZ:wmc('Prague Panorama - Oct 2010.jpg'),
+  HU:wmc('Budapest Panorama Danube.jpg'),SG:wmc('1 Singapore city skyline 2010.jpg'),
+  KW:wmc('Flickr - HuTect ShOts - Kuwait City.jpg'),QA:wmc('Doha skyline (12464834905).jpg'),
+  PK:wmc('Islamabad Faisal Masjid.jpg'),ZA:wmc('Pretoria Union Buildings-001.jpg')
+};
+
+// Subtle hints per country — fun facts that don't give away the answer directly
+const HINTS = {
+  US:'Home to Hollywood and the Grand Canyon',GB:'This island nation invented football and afternoon tea',
+  FR:'Famous for wine, cheese, and a revolution in 1789',DE:'Known for engineering, Oktoberfest, and autobahns',
+  IT:'Shaped like a boot, famous for pasta and Renaissance art',ES:'Known for flamenco, tapas, and La Tomatina festival',
+  JP:'Island nation famous for cherry blossoms and bullet trains',CN:'Has the world\'s largest population and longest wall',
+  BR:'Largest country in South America, loves carnival and football',CA:'Second largest country by area, known for maple syrup',
+  AU:'A continent and a country, home to kangaroos',IN:'World\'s largest democracy, birthplace of yoga',
+  MX:'Famous for tacos, Day of the Dead, and ancient civilizations',RU:'Spans 11 time zones across two continents',
+  KR:'Known for K-pop, kimchi, and advanced technology',TR:'Straddles two continents — Europe and Asia',
+  EG:'Home to one of the oldest civilizations and the Nile River',SA:'Largest country in the Arabian Peninsula',
+  AE:'A federation of seven emirates in the Persian Gulf',GR:'Birthplace of democracy, philosophy, and the Olympics',
+  NL:'Famous for tulips, bicycles, and being below sea level',SE:'Known for IKEA, ABBA, and long summer nights',
+  NO:'Land of fjords, Vikings, and the midnight sun',PL:'Known for pierogi, Chopin, and amber coastline',
+  AR:'Famous for tango, steak, and Patagonia',JO:'Home to the Dead Sea and an ancient carved city',
+  TH:'Known as the Land of Smiles',ID:'Archipelago nation with over 17,000 islands',
+  SG:'A city-state known as the Lion City',MY:'Famous for its twin skyscrapers and diverse cuisine',
+  CH:'Known for chocolate, watches, and neutrality',AT:'Birthplace of Mozart, famous for classical music',
+  PT:'Birthplace of fado music and port wine',ZA:'Known as the Rainbow Nation',
+  NZ:'Famous for kiwis, rugby, and stunning landscapes',IE:'Known as the Emerald Isle',
+  DK:'Home of LEGO and Hans Christian Andersen',BE:'Famous for chocolate, waffles, and comic strips',
+  IL:'A small nation at the crossroads of three continents',PK:'Home to K2, the world\'s second highest peak',
+  KW:'A small oil-rich nation on the Persian Gulf',QA:'Host of the 2022 FIFA World Cup'
 };
 
 async function loadFlags() {
-  if (flagCache.countries && Date.now() - flagCache.ts < 86400000) return; // cache 24h
+  if (flagCache.countries && Date.now() - flagCache.ts < 86400000) return;
   console.log('[FLAGS] Loading countries...');
   try {
-    const r = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,region,subregion,maps');
+    const r = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,region,subregion');
     const data = await r.json();
     flagCache.countries = data.filter(c => c.cca2 && c.name?.common).map(c => ({
-      code: c.cca2,
-      name: c.name.common,
+      code: c.cca2, name: c.name.common,
       capital: (c.capital && c.capital[0]) || 'N/A',
-      region: c.region || 'Unknown',
-      subregion: c.subregion || c.region || 'Unknown',
-      flag: `https://flagcdn.com/w640/${c.cca2.toLowerCase()}.png`,
-      flagSmall: `https://flagcdn.com/256x192/${c.cca2.toLowerCase()}.png`
+      region: c.region || 'Unknown', subregion: c.subregion || c.region || 'Unknown',
+      flag: `https://flagcdn.com/w640/${c.cca2.toLowerCase()}.png`
     }));
     flagCache.ts = Date.now();
     console.log(`[FLAGS] ${flagCache.countries.length} countries loaded`);
-  } catch (e) {
-    console.error('[FLAGS] Failed to load:', e.message);
-    if (!flagCache.countries) flagCache.countries = [];
-  }
+  } catch (e) { console.error('[FLAGS]', e.message); if (!flagCache.countries) flagCache.countries = []; }
 }
 
-function getFlagPool(difficulty) {
+function getFlagPool(diff) {
   const all = flagCache.countries || [];
-  if (difficulty === 'easy') return all.filter(c => FLAG_EASY.includes(c.code));
-  if (difficulty === 'hard') return all.filter(c => !FLAG_HARD_EXCLUDE.has(c.code) && c.capital !== 'N/A');
-  return all.filter(c => c.capital !== 'N/A'); // medium = all countries with capitals
+  if (diff === 'easy') return all.filter(c => FLAG_EASY.includes(c.code));
+  if (diff === 'hard') return all.filter(c => !FLAG_HARD_EXCLUDE.has(c.code) && c.capital !== 'N/A');
+  return all.filter(c => c.capital !== 'N/A');
 }
 
-function flagWrongOptions(correct, pool, field = 'name', sameRegion = true, count = 3) {
-  const region = correct.region;
-  let candidates = sameRegion ? pool.filter(c => c.region === region && c[field] !== correct[field]) : pool.filter(c => c[field] !== correct[field]);
-  if (candidates.length < count) candidates = pool.filter(c => c[field] !== correct[field]);
-  return shuffle(candidates).slice(0, count).map(c => c[field]);
+function flagWrong(correct, pool, field = 'name', sameRegion = true, count = 3) {
+  let cands = sameRegion ? pool.filter(c => c.region === correct.region && c[field] !== correct[field]) : pool.filter(c => c[field] !== correct[field]);
+  if (cands.length < count) cands = pool.filter(c => c[field] !== correct[field]);
+  return shuffle(cands).slice(0, count).map(c => c[field]);
 }
 
-// Round 1: What country does this flag belong to?
-function genFlagCountryQ(difficulty) {
-  const pool = getFlagPool(difficulty);
-  const c = pool[Math.floor(Math.random() * pool.length)];
-  const wrong = flagWrongOptions(c, pool, 'name', true);
-  return { type: 'flag_country', category: 'Guess the Flag', question: 'What country does this flag belong to?', image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${c.name} (${c.region})` };
+function getHint(c) { return HINTS[c.code] || `Located in ${c.subregion}`; }
+
+// Round 1: Guess the Flag — flag image (landscape), hint below
+function genFlagCountryQ(diff) {
+  const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
+  return { type: 'flag_country', category: 'Guess the Flag', question: 'What country does this flag belong to?', hint: getHint(c), image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: c.name, landscape: true };
 }
 
-// Round 2: What is the capital of this country?
-function genFlagCapitalQ(difficulty) {
-  const pool = getFlagPool(difficulty).filter(c => c.capital && c.capital !== 'N/A');
-  const c = pool[Math.floor(Math.random() * pool.length)];
-  const wrong = flagWrongOptions(c, pool, 'capital', true);
-  return { type: 'flag_capital', category: 'Guess the Capital', question: `What is the capital of ${c.name}?`, image: c.flag, revealImage: c.flag, answer: c.capital, options: shuffle([c.capital, ...wrong]), year: '', info: `${c.capital}, ${c.name}` };
+// Round 2: Guess the Capital — show capital city photo
+function genFlagCapitalQ(diff) {
+  const pool = getFlagPool(diff).filter(c => c.capital !== 'N/A');
+  const withImg = pool.filter(c => CAPITAL_IMAGES[c.code]);
+  const src = withImg.length >= 4 ? withImg : pool;
+  const c = src[Math.floor(Math.random() * src.length)];
+  const img = CAPITAL_IMAGES[c.code] || c.flag;
+  return { type: 'flag_capital', category: 'Guess the Capital', question: `What is the capital of ${c.name}?`, hint: getHint(c), image: img, revealImage: img, answer: c.capital, options: shuffle([c.capital, ...flagWrong(c, pool, 'capital')]), year: '', info: `${c.capital}, ${c.name}`, landscape: true };
 }
 
-// Round 3: What continent is this country in?
-function genFlagContinentQ(difficulty) {
-  const pool = getFlagPool(difficulty);
-  const c = pool[Math.floor(Math.random() * pool.length)];
+// Round 3: Guess the Continent — flag image, hint
+function genFlagContinentQ(diff) {
+  const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
   const allRegions = [...new Set(pool.map(x => x.region))].filter(r => r !== c.region);
-  const wrong = shuffle(allRegions).slice(0, 3);
-  return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...wrong]), year: '', info: `${c.name} — ${c.region}` };
+  return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', hint: `This country is called ${c.name}`, image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...shuffle(allRegions).slice(0, 3)]), year: '', info: `${c.name} — ${c.region}`, landscape: true };
 }
 
-// Round 4: What country has this map outline? (uses Google Static Maps silhouette-style)
-function genFlagMapQ(difficulty) {
-  const pool = getFlagPool(difficulty);
+// Round 4: Flag Challenge — show flag, harder pool, different hint
+function genFlagChallengeQ(diff) {
+  const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
+  const hint = c.capital !== 'N/A' ? `Its capital starts with "${c.capital[0]}"` : `Located in ${c.subregion}`;
+  return { type: 'flag_map', category: 'Flag Challenge', question: 'Which country does this flag represent?', hint: hint, image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: `${c.name} — ${c.subregion}`, landscape: true };
+}
+
+// Round 5: Guess the Landmark — show landmark PHOTO (not flag)
+function genFlagLandmarkQ(diff) {
+  const pool = getFlagPool(diff).filter(c => LANDMARKS[c.code]);
+  if (pool.length < 4) return genFlagCountryQ(diff);
   const c = pool[Math.floor(Math.random() * pool.length)];
-  // Use flag as image (we don't have map silhouettes via free API), but ask different question
-  const mapUrl = `https://flagcdn.com/w640/${c.code.toLowerCase()}.png`;
-  const wrong = flagWrongOptions(c, pool, 'name', true);
-  return { type: 'flag_map', category: 'Flag Challenge', question: 'Which country does this flag represent?', image: mapUrl, revealImage: mapUrl, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${c.name} — ${c.subregion}` };
+  const lm = LANDMARKS[c.code];
+  const wrongPool = shuffle(pool.filter(x => x.code !== c.code && LANDMARKS[x.code])).slice(0, 3);
+  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, hint: getHint(c), image: lm.img, revealImage: lm.img, answer: lm.name, options: shuffle([lm.name, ...wrongPool.map(x => LANDMARKS[x.code].name)]), year: '', info: `${lm.name} — ${c.name}`, landscape: true };
 }
 
-// Round 5: What famous landmark is in this country?
-function genFlagLandmarkQ(difficulty) {
-  const pool = getFlagPool(difficulty).filter(c => LANDMARKS[c.code]);
-  if (pool.length < 4) return genFlagCountryQ(difficulty); // fallback
-  const c = pool[Math.floor(Math.random() * pool.length)];
-  const landmark = LANDMARKS[c.code];
-  const wrongCountries = shuffle(pool.filter(x => x.code !== c.code && LANDMARKS[x.code])).slice(0, 3);
-  const wrong = wrongCountries.map(x => LANDMARKS[x.code]);
-  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, image: c.flag, revealImage: c.flag, answer: landmark, options: shuffle([landmark, ...wrong]), year: '', info: `${landmark} — ${c.name}` };
-}
-
-// Flag generators need difficulty, so we wrap them
 let currentDifficulty = 'medium';
 const FLAG_GENS = {
   flag_country: () => genFlagCountryQ(currentDifficulty),
   flag_capital: () => genFlagCapitalQ(currentDifficulty),
   flag_continent: () => genFlagContinentQ(currentDifficulty),
-  flag_map: () => genFlagMapQ(currentDifficulty),
+  flag_map: () => genFlagChallengeQ(currentDifficulty),
   flag_landmark: () => genFlagLandmarkQ(currentDifficulty)
 };
-
-// Merge into main GENS
 Object.assign(GENS, FLAG_GENS);
 
 async function genRound(type, n = 10) { const qs = [], used = new Set(); for (let i = 0; i < n; i++) { let q, a = 0; do { a++; q = await GENS[type](); } while (used.has(normalize(q.answer)) && a < 30); used.add(normalize(q.answer)); qs.push(q); console.log(`  [Q${i + 1}] ${q.answer}`); } return qs; }
@@ -495,7 +572,7 @@ io.on('connection', (socket) => {
 
 // ═══ GAME FLOW ═══════════════════════════════════════
 function startRound(r) { r.state = 'round_intro'; const rt = r.activeRounds[r.rIdx]; io.to(r.code).emit('round-intro', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundType: rt, roundLabel: LABELS[rt], roundIcon: ICONS[rt], questionsCount: 10, musicTrack: r.rIdx % 4 }); setTimeout(() => { r.qIdx = 0; sendQ(r); }, 4000); }
-function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, timer: r.diff.timer, options: q.options }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
+function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hint: q.hint || '', timer: r.diff.timer, options: q.options, landscape: q.landscape || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
 function reveal(r) { r.state = 'question_reveal'; clearTimeout(r.qTimer); const q = r.allQ[r.activeRounds[r.rIdx]][r.qIdx]; const results = {}; Object.entries(r.answers).forEach(([sid, a]) => { const p = r.players[sid]; if (p) results[p.name] = a; }); Object.entries(r.players).forEach(([, p]) => { if (!results[p.name]) results[p.name] = { correct: false, points: 0, time: null, choice: null }; }); const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('question-reveal', { answer: q.answer, info: q.info, year: q.year, image: q.revealImage || q.image, results, leaderboard: pl, questionNumber: r.qIdx + 1, totalQuestions: 10 }); }
 function nextQ(r) { r.qIdx++; r.qIdx >= 10 ? roundResults(r) : sendQ(r); }
 function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); }
