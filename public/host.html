@@ -36,14 +36,18 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 .tbar{height:100%;border-radius:3px;transition:width 1s linear;background:linear-gradient(90deg,var(--gold),var(--orange))}
 .tbar.urgent{background:linear-gradient(90deg,var(--red),#FF4444)}
 .poster-area{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:5}
-.poster-box{position:relative;max-width:480px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7);background:#111}
-.poster-box.landscape{max-width:700px}
+.poster-area.portrait{flex-direction:row;gap:24px}
+.poster-area.landscape-mode{flex-direction:column;gap:12px}
+.poster-box{position:relative;border-radius:20px;overflow:hidden;box-shadow:0 10px 80px rgba(0,0,0,0.7);background:#111}
+.poster-box.portrait-img{max-width:380px;width:100%}
+.poster-box.landscape-img{max-width:700px;width:100%}
 #poster-canvas{width:100%;display:block;border-radius:20px}
 .sidebar{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:10}
 .sb-p{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
 .sb-p .score{margin-left:auto;color:var(--gold);font-size:13px}
 .tv-opts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:0 32px;margin-bottom:6px;z-index:10;position:relative}
-.tv-opt{padding:8px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.tv-opts.side-opts{flex-direction:column;padding:0;max-width:260px;min-width:220px;justify-content:center;align-self:center}
+.tv-opt{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
 .tv-opt .lt{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
 .ans-prog{text-align:center;padding:6px;font-size:13px;color:var(--text2);z-index:10;position:relative}
 .rev-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;background:rgba(8,8,26,0.8);backdrop-filter:blur(10px);animation:fadeIn 0.3s ease}
@@ -121,11 +125,12 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   </div>
   <div class="tbar-bg"><div class="tbar" id="g-tbar" style="width:100%"></div></div>
   <div class="q-text" id="g-q"></div>
-  <div class="poster-area">
+  <div class="poster-area" id="poster-area">
+    <div class="tv-opts side-opts" id="tv-opts-left" style="display:none"></div>
     <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas></div>
     <div class="sidebar" id="sidebar"></div>
   </div>
-  <div class="tv-opts" id="tv-opts"></div>
+  <div class="tv-opts" id="tv-opts-bottom" style="display:none"></div>
   <div class="ans-prog" id="ans-prog"></div>
   <div id="rev-overlay" class="rev-overlay" style="display:none"></div>
 </div>
@@ -220,11 +225,36 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       document.getElementById('g-cat').textContent=d.category;
       document.getElementById('g-q').textContent=d.question||'';
       diff=d.difficulty||{startBlur:42,startRadius:5,blurDecayPower:1.7};timerDur=d.timer;timerStart=Date.now();curType=d.type;
-      const box=document.getElementById('poster-box');box.className='poster-box';if(d.type==='movie_scene'||d.type==='tv_scene')box.classList.add('landscape');
+
+      const isL=d.type==='movie_scene'||d.type==='tv_scene';
+      const box=document.getElementById('poster-box');
+      box.className='poster-box '+(isL?'landscape-img':'portrait-img');
+      const area=document.getElementById('poster-area');
+      area.className='poster-area '+(isL?'landscape-mode':'portrait');
+
+      const optsLeft=document.getElementById('tv-opts-left');
+      const optsBottom=document.getElementById('tv-opts-bottom');
+      optsLeft.innerHTML='';optsBottom.innerHTML='';
+
+      // Build option elements
+      const optEls=[];
+      ['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-opt';e.innerHTML=`<span class="lt">${l}</span><span>${d.options[i]}</span>`;optEls.push(e)}});
+
+      if(isL){
+        // Landscape: options below poster
+        optsLeft.style.display='none';
+        optsBottom.style.display='flex';
+        optEls.forEach(e=>optsBottom.appendChild(e));
+      }else{
+        // Portrait: options on left side
+        optsLeft.style.display='flex';
+        optsBottom.style.display='none';
+        optEls.forEach(e=>optsLeft.appendChild(e));
+      }
+
       const img=new Image();img.crossOrigin='anonymous';
-      img.onload=function(){curImg=img;const isL=d.type==='movie_scene'||d.type==='tv_scene';canvas.width=isL?960:520;canvas.height=isL?540:780;startAnim()};
+      img.onload=function(){curImg=img;canvas.width=isL?960:520;canvas.height=isL?540:780;startAnim()};
       img.onerror=function(){console.error('Img fail')};img.src=d.image;
-      const od=document.getElementById('tv-opts');od.innerHTML='';['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-opt';e.innerHTML=`<span class="lt">${l}</span><span>${d.options[i]}</span>`;od.appendChild(e)}});
       renderSB(playerList);startTimer();
     });
 
@@ -257,6 +287,14 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
     socket.on('game-paused',()=>{clearInterval(timerInt);stopAnim()});
     socket.on('game-resumed',()=>{startAnim();startTimer()});
+
+    // When host clicks Play Again, TV goes back to connect screen
+    socket.on('game-reset',()=>{
+      stopAnim();GameAudio.stopMusic();clearInterval(timerInt);
+      show('s-connect');
+      document.getElementById('connect-code').value='';
+      document.getElementById('connect-status').textContent='Game ended. Enter a new room code to continue.';
+    });
   };
 
   function startTimer(){clearInterval(timerInt);const tE=document.getElementById('g-timer'),bE=document.getElementById('g-tbar');tE.classList.remove('urgent');bE.classList.remove('urgent');timerInt=setInterval(()=>{const el=(Date.now()-timerStart)/1000,rem=Math.max(0,timerDur-el);tE.textContent=Math.ceil(rem);bE.style.width=(rem/timerDur)*100+'%';if(rem<=5){tE.classList.add('urgent');bE.classList.add('urgent');if(Math.ceil(rem)!==Math.ceil(rem+0.2))GameAudio.tick()}if(rem<=0)clearInterval(timerInt)},200)}
