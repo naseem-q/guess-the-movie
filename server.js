@@ -344,30 +344,71 @@ async function getCachedImage(key, query, fallback) {
   return fallback;
 }
 
-// Subtle hints per country — fun facts that don't give away the answer directly
+// 3 rotating hints per country — harder, no obvious giveaways
 const HINTS = {
-  US:'Home to Hollywood and the Grand Canyon',GB:'This island nation invented football and afternoon tea',
-  FR:'Famous for wine, cheese, and a revolution in 1789',DE:'Known for engineering, Oktoberfest, and autobahns',
-  IT:'Shaped like a boot, famous for pasta and Renaissance art',ES:'Known for flamenco, tapas, and La Tomatina festival',
-  JP:'Island nation famous for cherry blossoms and bullet trains',CN:'Has the world\'s largest population and longest wall',
-  BR:'Largest country in South America, loves carnival and football',CA:'Second largest country by area, known for maple syrup',
-  AU:'A continent and a country, home to kangaroos',IN:'World\'s largest democracy, birthplace of yoga',
-  MX:'Famous for tacos, Day of the Dead, and ancient civilizations',RU:'Spans 11 time zones across two continents',
-  KR:'Known for K-pop, kimchi, and advanced technology',TR:'Straddles two continents — Europe and Asia',
-  EG:'Home to one of the oldest civilizations and the Nile River',SA:'Largest country in the Arabian Peninsula',
-  AE:'A federation of seven emirates in the Persian Gulf',GR:'Birthplace of democracy, philosophy, and the Olympics',
-  NL:'Famous for tulips, bicycles, and being below sea level',SE:'Known for IKEA, ABBA, and long summer nights',
-  NO:'Land of fjords, Vikings, and the midnight sun',PL:'Known for pierogi, Chopin, and amber coastline',
-  AR:'Famous for tango, steak, and Patagonia',JO:'Home to the Dead Sea and an ancient carved city',
-  TH:'Known as the Land of Smiles',ID:'Archipelago nation with over 17,000 islands',
-  SG:'A city-state known as the Lion City',MY:'Famous for its twin skyscrapers and diverse cuisine',
-  CH:'Known for chocolate, watches, and neutrality',AT:'Birthplace of Mozart, famous for classical music',
-  PT:'Birthplace of fado music and port wine',ZA:'Known as the Rainbow Nation',
-  NZ:'Famous for kiwis, rugby, and stunning landscapes',IE:'Known as the Emerald Isle',
-  DK:'Home of LEGO and Hans Christian Andersen',BE:'Famous for chocolate, waffles, and comic strips',
-  PK:'Home to K2, the world\'s second highest peak',
-  KW:'A small oil-rich nation on the Persian Gulf',QA:'Host of the 2022 FIFA World Cup'
+  US:['Has 50 states and a famous bald eagle','Independence declared on July 4th, 1776','Borders only two other countries'],
+  GB:['An island with a constitutional monarchy','Drives on the left side of the road','Once ruled the largest empire in history'],
+  FR:['Has a famous tower built for an 1889 exhibition','Borders 8 countries in mainland territory','Known for its wine regions and haute cuisine'],
+  DE:['Reunified in 1990 after decades of division','The most populous EU member state','Famous for its car industry and autobahns'],
+  IT:['Shaped like a piece of footwear','Contains the world\'s smallest country within it','Home to the oldest university in the Western world'],
+  ES:['Has 17 autonomous communities','Located on the Iberian Peninsula','Famous for its afternoon rest tradition'],
+  JP:['An archipelago of 6,852 islands','Has the world\'s oldest monarchy','Known for its bullet trains'],
+  CN:['Has the most spoken native language','Uses a logographic writing system','Home to giant pandas in the wild'],
+  BR:['Largest Portuguese-speaking country','Home to 60% of a massive rainforest','Won the most FIFA World Cups'],
+  CA:['Has the longest coastline of any country','Two official languages spoken nationwide','Famous for a sweet tree syrup'],
+  AU:['The only country that is also a continent','Has the world\'s largest coral reef','More sheep than people live here'],
+  IN:['Has 22 officially recognized languages','World\'s largest film industry by output','Home to a river considered sacred'],
+  MX:['Has 31 states plus a capital district','Ancient pyramids still stand in its jungles','One of the world\'s largest silver producers'],
+  RU:['Largest country by land area','Has 9 time zones','Contains the world\'s deepest freshwater lake'],
+  KR:['Internet speeds rank among the world\'s fastest','Has an alphabet invented by a king','Shares a heavily fortified border'],
+  TR:['Spans two continents','Its largest city was once called Constantinople','Famous for hot air balloon landscapes'],
+  EG:['The Nile runs through its heart','Over 5,000 years of continuous civilization','Ancient writing used picture symbols'],
+  SA:['Hosts millions of pilgrims annually','Named after its founding family','Has no rivers that flow year-round'],
+  AE:['A federation formed in 1971','Has the world\'s tallest building','Southeastern tip of the Arabian Peninsula'],
+  GR:['Birthplace of the Olympic Games','Has over 6,000 islands','The word "democracy" comes from its language'],
+  NL:['About one-third is below sea level','Has more bicycles than people','Famous for water management systems'],
+  SE:['Home to a famous flat-pack furniture brand','Has a right of public access to nature','Nobel Prize ceremony is held here'],
+  NO:['Has some of the deepest inlets in the world','Midnight sun occurs in summer','One of the top oil exporters'],
+  PL:['Home to one of Europe\'s oldest salt mines','A famous nocturne composer was born here','Central Europe with Baltic coastline'],
+  AR:['Named after the Latin word for silver','Home to the southernmost city in the world','Has the widest avenue on Earth'],
+  JO:['Home to one of the lowest points on Earth','An ancient city carved into rose-red cliffs','A kingdom in the heart of the Middle East'],
+  TH:['Never colonized by a European power','Its name means "Land of the Free"','Famous for its floating markets'],
+  ID:['The world\'s largest island country','Has over 270 million people','Spans three time zones'],
+  SG:['One of only three surviving city-states','One of the busiest ports in the world','Chewing gum sales are restricted here'],
+  MY:['Divided into two regions by a sea','Has one of the oldest tropical rainforests','National sport uses a rattan ball'],
+  CH:['Has four official languages','Landlocked and mountainous','Famous for banking and alpine scenery'],
+  AT:['Famous for its classical music heritage','Landlocked in Central Europe','Home to the world\'s oldest zoo'],
+  PT:['Westernmost country in mainland Europe','Famous for tiled building facades','Navigators sailed around Africa from here'],
+  ZA:['Has three capital cities','Two Nobel Peace Prize winners from one struggle','Southern tip of its continent'],
+  NZ:['First country where women could vote','Filming location for a famous fantasy trilogy','Has more sheep than people'],
+  IE:['Known for its emerald-green landscape','The harp is its national symbol','Ancient festivals inspired modern Halloween'],
+  DK:['The oldest monarchy in Europe','Famous for a toy brick company','Consistently ranked the happiest country'],
+  BE:['The EU headquarters is located here','Has three official languages','Known for over 1,500 varieties of a treat'],
+  PK:['Home to the second highest peak on Earth','World\'s largest canal-based irrigation','The Indus Valley civilization began here'],
+  KW:['One of the highest per-capita incomes','Located at the tip of the Persian Gulf','Gained independence in 1961'],
+  QA:['A peninsula in the Persian Gulf','One of the highest GDPs per capita','Hosted a major sporting event in 2022'],
+  PS:['Its capital is sacred to three religions','Along the Mediterranean and Jordan Valley','Home to one of the oldest cities in the world'],
+  NG:['Most populous country in Africa','Over 500 spoken languages','Major oil producer in West Africa'],
+  KE:['Famous for long-distance runners','Home to the Great Rift Valley','Its name means "mountain of brightness"'],
+  BD:['One of the most densely populated countries','Known for its vast river delta','Located in South Asia'],
+  VN:['Has a bay with limestone islands','World\'s largest exporter of a certain grain','Territory shaped like the letter S'],
+  PH:['An archipelago of over 7,000 islands','Named after a 16th century European king','Home to the world\'s smallest primate'],
+  CZ:['Has over 2,000 castles','Birthplace of contact lenses','One of the highest beer consumption rates'],
+  HU:['Its language is unrelated to neighbors','Famous for thermal bath culture','Landlocked in Central Europe'],
+  LB:['One of the smallest in the Middle East','A cedar tree is its national symbol','Once called the Paris of the Middle East'],
+  NP:['Home to 8 of the 14 highest peaks','Its flag is non-rectangular','Landlocked between two giant neighbors'],
+  FI:['Has more saunas than cars','Land of a Thousand Lakes','Birthplace of a famous mobile phone brand'],
+  IS:['Sits on the Mid-Atlantic Ridge','Has no standing army','Geothermal energy heats most buildings'],
+  HR:['Over 1,000 islands on the Adriatic','Home to a famous walled medieval city','Shaped like a crescent along its coast'],
+  CO:['World\'s top emerald producer','Coastline on two oceans','Named after an explorer who never visited'],
+  PE:['Home to an ancient citadel in the clouds','Has the deepest canyon in the world','A high-altitude lake on its border'],
+  MA:['Northwest corner of Africa','Atlantic and Mediterranean coastlines','Famous for colorful souks and medinas']
 };
+
+function getHints(c) {
+  if (HINTS[c.code]) return HINTS[c.code];
+  return [`Located in ${c.subregion}`,`Part of the ${c.region} region`,`Country code: ${c.code}`];
+}
 
 async function loadFlags() {
   if (flagCache.countries && Date.now() - flagCache.ts < 86400000) return;
@@ -375,12 +416,11 @@ async function loadFlags() {
   try {
     const r = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,region,subregion');
     const data = await r.json();
-    flagCache.countries = data.filter(c => c.cca2 && c.name?.common && c.cca2 !== 'IL').map(c => ({
-      code: c.cca2, name: c.name.common,
-      capital: (c.capital && c.capital[0]) || 'N/A',
-      region: c.region || 'Unknown', subregion: c.subregion || c.region || 'Unknown',
-      flag: `https://flagcdn.com/w640/${c.cca2.toLowerCase()}.png`
-    }));
+    flagCache.countries = data.filter(c => c.cca2 && c.name?.common && c.cca2 !== 'IL').map(c => {
+      let capital = (c.capital && c.capital[0]) || 'N/A';
+      if (c.cca2 === 'PS') capital = 'Jerusalem';
+      return { code: c.cca2, name: c.name.common, capital, region: c.region || 'Unknown', subregion: c.subregion || c.region || 'Unknown', flag: `https://flagcdn.com/w640/${c.cca2.toLowerCase()}.png` };
+    });
     flagCache.ts = Date.now();
     console.log(`[FLAGS] ${flagCache.countries.length} countries loaded`);
   } catch (e) { console.error('[FLAGS]', e.message); if (!flagCache.countries) flagCache.countries = []; }
@@ -399,95 +439,46 @@ function flagWrong(correct, pool, field = 'name', sameRegion = true, count = 3) 
   return shuffle(cands).slice(0, count).map(c => c[field]);
 }
 
-function getHint(c) { return HINTS[c.code] || `Located in ${c.subregion}`; }
-
-// Round 1: Guess the Flag — flag image (landscape), hint below
+// Round 1: Guess the Flag
 function genFlagCountryQ(diff) {
   const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
-  return { type: 'flag_country', category: 'Guess the Flag', question: 'What country does this flag belong to?', hint: getHint(c), image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: c.name, landscape: true };
+  return { type: 'flag_country', category: 'Guess the Flag', question: 'What country does this flag belong to?', hints: getHints(c), image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: c.name, landscape: true };
 }
 
-// Round 2: Guess the Capital — show capital city photo from Pexels
+// Round 2: Guess the Capital — capital city photo, CLEAR (no blur)
 async function genFlagCapitalQ(diff) {
   const pool = getFlagPool(diff).filter(c => c.capital !== 'N/A');
   const c = pool[Math.floor(Math.random() * pool.length)];
   const q = CAPITAL_QUERIES[c.code] || `${c.capital} city skyline`;
   const img = await getCachedImage('cap_' + c.code, q, c.flag);
-  return { type: 'flag_capital', category: 'Guess the Capital', question: `What is the capital of ${c.name}?`, hint: getHint(c), image: img, revealImage: img, answer: c.capital, options: shuffle([c.capital, ...flagWrong(c, pool, 'capital')]), year: '', info: `${c.capital}, ${c.name}`, landscape: true };
+  return { type: 'flag_capital', category: 'Guess the Capital', question: `What is the capital of ${c.name}?`, hints: getHints(c), image: img, revealImage: img, answer: c.capital, options: shuffle([c.capital, ...flagWrong(c, pool, 'capital')]), year: '', info: `${c.capital}, ${c.name}`, landscape: true, noBlur: true };
 }
 
-// Round 3: Guess the Continent — flag image, hint
+// Round 3: Guess the Continent
 function genFlagContinentQ(diff) {
   const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
   const allRegions = [...new Set(pool.map(x => x.region))].filter(r => r !== c.region);
-  return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', hint: `This country is called ${c.name}`, image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...shuffle(allRegions).slice(0, 3)]), year: '', info: `${c.name} — ${c.region}`, landscape: true };
+  return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', hints: [`This country is called ${c.name}`, ...getHints(c).slice(0,2)], image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...shuffle(allRegions).slice(0, 3)]), year: '', info: `${c.name} — ${c.region}`, landscape: true };
 }
 
-// Round 4: Guess the Currency — show currency image, guess the country
-const CURRENCIES = {
-  US:{name:'US Dollar',symbol:'$',q:'us dollar banknote'},
-  GB:{name:'British Pound',symbol:'£',q:'british pound sterling banknote'},
-  FR:{name:'Euro',symbol:'€',q:'euro banknote currency'},
-  DE:{name:'Euro',symbol:'€',q:'euro banknote'},
-  IT:{name:'Euro',symbol:'€',q:'euro coins banknote'},
-  ES:{name:'Euro',symbol:'€',q:'euro currency notes'},
-  JP:{name:'Japanese Yen',symbol:'¥',q:'japanese yen banknote'},
-  CN:{name:'Chinese Yuan',symbol:'¥',q:'chinese yuan renminbi banknote'},
-  BR:{name:'Brazilian Real',symbol:'R$',q:'brazilian real banknote'},
-  CA:{name:'Canadian Dollar',symbol:'C$',q:'canadian dollar banknote'},
-  AU:{name:'Australian Dollar',symbol:'A$',q:'australian dollar banknote'},
-  IN:{name:'Indian Rupee',symbol:'₹',q:'indian rupee banknote'},
-  MX:{name:'Mexican Peso',symbol:'$',q:'mexican peso banknote'},
-  RU:{name:'Russian Ruble',symbol:'₽',q:'russian ruble banknote'},
-  KR:{name:'South Korean Won',symbol:'₩',q:'south korean won banknote'},
-  TR:{name:'Turkish Lira',symbol:'₺',q:'turkish lira banknote'},
-  EG:{name:'Egyptian Pound',symbol:'E£',q:'egyptian pound banknote'},
-  SA:{name:'Saudi Riyal',symbol:'﷼',q:'saudi riyal banknote'},
-  AE:{name:'UAE Dirham',symbol:'د.إ',q:'uae dirham banknote'},
-  JO:{name:'Jordanian Dinar',symbol:'د.ا',q:'jordanian dinar banknote'},
-  TH:{name:'Thai Baht',symbol:'฿',q:'thai baht banknote'},
-  CH:{name:'Swiss Franc',symbol:'CHF',q:'swiss franc banknote'},
-  SE:{name:'Swedish Krona',symbol:'kr',q:'swedish krona banknote'},
-  NO:{name:'Norwegian Krone',symbol:'kr',q:'norwegian krone banknote'},
-  DK:{name:'Danish Krone',symbol:'kr',q:'danish krone banknote'},
-  PL:{name:'Polish Zloty',symbol:'zł',q:'polish zloty banknote'},
-  CZ:{name:'Czech Koruna',symbol:'Kč',q:'czech koruna banknote'},
-  HU:{name:'Hungarian Forint',symbol:'Ft',q:'hungarian forint banknote'},
-  AR:{name:'Argentine Peso',symbol:'$',q:'argentine peso banknote'},
-  NZ:{name:'New Zealand Dollar',symbol:'NZ$',q:'new zealand dollar banknote'},
-  ZA:{name:'South African Rand',symbol:'R',q:'south african rand banknote'},
-  PK:{name:'Pakistani Rupee',symbol:'₨',q:'pakistani rupee banknote'},
-  MY:{name:'Malaysian Ringgit',symbol:'RM',q:'malaysian ringgit banknote'},
-  SG:{name:'Singapore Dollar',symbol:'S$',q:'singapore dollar banknote'},
-  KW:{name:'Kuwaiti Dinar',symbol:'د.ك',q:'kuwaiti dinar banknote'},
-  QA:{name:'Qatari Riyal',symbol:'﷼',q:'qatari riyal banknote'},
-  NG:{name:'Nigerian Naira',symbol:'₦',q:'nigerian naira banknote'},
-  KE:{name:'Kenyan Shilling',symbol:'KSh',q:'kenyan shilling banknote'},
-  ID:{name:'Indonesian Rupiah',symbol:'Rp',q:'indonesian rupiah banknote'},
-  PH:{name:'Philippine Peso',symbol:'₱',q:'philippine peso banknote'},
-  VN:{name:'Vietnamese Dong',symbol:'₫',q:'vietnamese dong banknote'},
-  BD:{name:'Bangladeshi Taka',symbol:'৳',q:'bangladeshi taka banknote'},
-  PT:{name:'Euro',symbol:'€',q:'euro banknote portugal'},
-  NL:{name:'Euro',symbol:'€',q:'euro banknote netherlands'},
-  IE:{name:'Euro',symbol:'€',q:'euro banknote ireland'},
-  GR:{name:'Euro',symbol:'€',q:'euro banknote greece'},
-  AT:{name:'Euro',symbol:'€',q:'euro banknote austria'},
-  BE:{name:'Euro',symbol:'€',q:'euro banknote belgium'},
-  FI:{name:'Euro',symbol:'€',q:'euro banknote finland'}
-};
+// Round 4: Guess the Currency — currency banknote photo
+// EURO RULE: skip euro countries unless only 1 euro option in choices
+const EURO_COUNTRIES = new Set(['FR','DE','IT','ES','PT','NL','IE','GR','AT','BE','FI','SK','SI','EE','LV','LT','CY','MT','LU','HR']);
 
 async function genFlagCurrencyQ(diff) {
-  const pool = getFlagPool(diff).filter(c => CURRENCIES[c.code]);
+  // Filter to non-euro countries for cleaner questions
+  const pool = getFlagPool(diff).filter(c => CURRENCIES[c.code] && !EURO_COUNTRIES.has(c.code));
   if (pool.length < 4) return genFlagCountryQ(diff);
   const c = pool[Math.floor(Math.random() * pool.length)];
   const cur = CURRENCIES[c.code];
   const img = await getCachedImage('cur_' + c.code, cur.q, c.flag);
-  const hint = `This currency is called the ${cur.name} (${cur.symbol})`;
-  const wrong = flagWrong(c, pool.filter(x => CURRENCIES[x.code]), 'name', true);
-  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hint: hint, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true };
+  // Currency hint: symbol only, no country name
+  const curHints = [`The symbol for this currency is ${cur.symbol}`,`This currency is subdivided into 100 smaller units`,getHints(c)[0]];
+  const wrong = flagWrong(c, pool.filter(x => CURRENCIES[x.code] && !EURO_COUNTRIES.has(x.code)), 'name', true);
+  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hints: curHints, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true };
 }
 
-// Round 5: Guess the Landmark — show landmark PHOTO from Pexels
+// Round 5: Guess the Landmark — landmark photo, CLEAR (no blur)
 async function genFlagLandmarkQ(diff) {
   const pool = getFlagPool(diff).filter(c => LANDMARKS[c.code]);
   if (pool.length < 4) return genFlagCountryQ(diff);
@@ -495,8 +486,9 @@ async function genFlagLandmarkQ(diff) {
   const lm = LANDMARKS[c.code];
   const img = await getCachedImage('lm_' + c.code, lm.q, c.flag);
   const wrongPool = shuffle(pool.filter(x => x.code !== c.code && LANDMARKS[x.code])).slice(0, 3);
-  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, hint: getHint(c), image: img, revealImage: img, answer: lm.name, options: shuffle([lm.name, ...wrongPool.map(x => LANDMARKS[x.code].name)]), year: '', info: `${lm.name} — ${c.name}`, landscape: true };
+  return { type: 'flag_landmark', category: 'Guess the Landmark', question: `Which famous landmark is in ${c.name}?`, hints: getHints(c), image: img, revealImage: img, answer: lm.name, options: shuffle([lm.name, ...wrongPool.map(x => LANDMARKS[x.code].name)]), year: '', info: `${lm.name} — ${c.name}`, landscape: true, noBlur: true };
 }
+
 
 let currentDifficulty = 'medium';
 const FLAG_GENS = {
@@ -654,7 +646,7 @@ io.on('connection', (socket) => {
 
 // ═══ GAME FLOW ═══════════════════════════════════════
 function startRound(r) { r.state = 'round_intro'; const rt = r.activeRounds[r.rIdx]; io.to(r.code).emit('round-intro', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundType: rt, roundLabel: LABELS[rt], roundIcon: ICONS[rt], questionsCount: 10, musicTrack: r.rIdx % 4 }); setTimeout(() => { r.qIdx = 0; sendQ(r); }, 4000); }
-function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hint: q.hint || '', timer: r.diff.timer, options: q.options, landscape: q.landscape || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
+function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hints: q.hints || (q.hint ? [q.hint] : []), timer: r.diff.timer, options: q.options, landscape: q.landscape || false, noBlur: q.noBlur || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
 function reveal(r) { r.state = 'question_reveal'; clearTimeout(r.qTimer); const q = r.allQ[r.activeRounds[r.rIdx]][r.qIdx]; const results = {}; Object.entries(r.answers).forEach(([sid, a]) => { const p = r.players[sid]; if (p) results[p.name] = a; }); Object.entries(r.players).forEach(([, p]) => { if (!results[p.name]) results[p.name] = { correct: false, points: 0, time: null, choice: null }; }); const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('question-reveal', { answer: q.answer, info: q.info, year: q.year, image: q.revealImage || q.image, results, leaderboard: pl, questionNumber: r.qIdx + 1, totalQuestions: 10 }); }
 function nextQ(r) { r.qIdx++; r.qIdx >= 10 ? roundResults(r) : sendQ(r); }
 function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); }
