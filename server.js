@@ -586,18 +586,13 @@ const CURRENCIES = {
 // EURO RULE: skip euro countries unless only 1 euro option in choices
 const EURO_COUNTRIES = new Set(['FR','DE','IT','ES','PT','NL','IE','GR','AT','BE','FI','SK','SI','EE','LV','LT','CY','MT','LU','HR']);
 
-async function genFlagCurrencyQ(diff) {
-  // Filter to non-euro countries for cleaner questions
-  const pool = getFlagPool(diff).filter(c => CURRENCIES[c.code] && !EURO_COUNTRIES.has(c.code));
-  if (pool.length < 4) return genFlagCountryQ(diff);
+// Round 4: Guess the Map Shape — country silhouette from mapsicon
+function genFlagMapShapeQ(diff) {
+  const pool = getFlagPool(diff);
   const c = pool[Math.floor(Math.random() * pool.length)];
-  const cur = CURRENCIES[c.code];
-  // Try Wikidata for banknote image, then Pexels, then flag
-  const img = await getCurrencyImage(c.code, cur, c.flag);
-  // Currency hint: symbol only, no country name
-  const curHints = [`The symbol for this currency is ${cur.symbol}`,`This currency is subdivided into 100 smaller units`,getHints(c)[0]];
-  const wrong = flagWrong(c, pool.filter(x => CURRENCIES[x.code] && !EURO_COUNTRIES.has(x.code)), 'name', true);
-  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hints: curHints, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true };
+  // mapsicon uses lowercase ISO codes — 512px black silhouette PNG
+  const mapImg = `https://raw.githubusercontent.com/djaiss/mapsicon/master/all/${c.code.toLowerCase()}/512.png`;
+  return { type: 'flag_mapshape', category: 'Guess the Map Shape', question: 'Which country has this shape?', hints: getHints(c), image: mapImg, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: c.name, landscape: true, noBlur: true, lightBg: true };
 }
 
 // Round 5: Guess the Landmark — landmark photo, CLEAR (no blur)
@@ -617,7 +612,7 @@ const FLAG_GENS = {
   flag_country: () => genFlagCountryQ(currentDifficulty),
   flag_capital: () => genFlagCapitalQ(currentDifficulty),
   flag_continent: () => genFlagContinentQ(currentDifficulty),
-  flag_currency: () => genFlagCurrencyQ(currentDifficulty),
+  flag_mapshape: () => genFlagMapShapeQ(currentDifficulty),
   flag_landmark: () => genFlagLandmarkQ(currentDifficulty)
 };
 Object.assign(GENS, FLAG_GENS);
@@ -628,16 +623,16 @@ async function genRound(type, n = 10) { const qs = [], used = new Set(); for (le
 const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower: 1.4 }, medium: { timer: 50, startBlur: 42, startRadius: 5, blurDecayPower: 1.7 }, hard: { timer: 60, startBlur: 60, startRadius: 3, blurDecayPower: 2.0 } };
 const LABELS = {
   movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
-  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_currency: 'Guess the Currency', flag_landmark: 'Guess the Landmark'
+  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_mapshape: 'Guess the Map Shape', flag_landmark: 'Guess the Landmark'
 };
 const ICONS = {
   movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
-  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_currency: '💰', flag_landmark: '🏰'
+  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_mapshape: '🗺️', flag_landmark: '🏰'
 };
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
-  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_currency', 'flag_landmark'] },
+  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_mapshape', 'flag_landmark'] },
   famous_people: { name: 'Famous People', icon: '👤', available: false, rounds: [] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
@@ -768,7 +763,7 @@ io.on('connection', (socket) => {
 
 // ═══ GAME FLOW ═══════════════════════════════════════
 function startRound(r) { r.state = 'round_intro'; const rt = r.activeRounds[r.rIdx]; io.to(r.code).emit('round-intro', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundType: rt, roundLabel: LABELS[rt], roundIcon: ICONS[rt], questionsCount: 10, musicTrack: r.rIdx % 4 }); setTimeout(() => { r.qIdx = 0; sendQ(r); }, 4000); }
-function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hints: q.hints || (q.hint ? [q.hint] : []), timer: r.diff.timer, options: q.options, landscape: q.landscape || false, noBlur: q.noBlur || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
+function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hints: q.hints || (q.hint ? [q.hint] : []), timer: r.diff.timer, options: q.options, landscape: q.landscape || false, noBlur: q.noBlur || false, lightBg: q.lightBg || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
 function reveal(r) { r.state = 'question_reveal'; clearTimeout(r.qTimer); const q = r.allQ[r.activeRounds[r.rIdx]][r.qIdx]; const results = {}; Object.entries(r.answers).forEach(([sid, a]) => { const p = r.players[sid]; if (p) results[p.name] = a; }); Object.entries(r.players).forEach(([, p]) => { if (!results[p.name]) results[p.name] = { correct: false, points: 0, time: null, choice: null }; }); const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('question-reveal', { answer: q.answer, info: q.info, year: q.year, image: q.revealImage || q.image, results, leaderboard: pl, questionNumber: r.qIdx + 1, totalQuestions: 10 }); }
 function nextQ(r) { r.qIdx++; r.qIdx >= 10 ? roundResults(r) : sendQ(r); }
 function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); }
