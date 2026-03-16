@@ -175,6 +175,7 @@ io.on('connection', (socket) => {
   socket.on('resume-game', () => { const r = rooms[socket.roomCode]; if (r?.masterId === socket.id) { r.state = 'question'; const rem = r.diff.timer - ((Date.now() - r.qStart) / 1000); io.to(r.code).emit('game-resumed'); r.qTimer = setTimeout(() => reveal(r), rem * 1000); } });
   socket.on('end-game-early', () => { const r = rooms[socket.roomCode]; if (r?.masterId === socket.id) { clearTimeout(r.qTimer); finalResults(r); } });
   socket.on('next-question-request', () => { const r = rooms[socket.roomCode]; if (!r || r.masterId !== socket.id) return; if (r.state === 'question_reveal') nextQ(r); if (r.state === 'round_results') { r.rIdx++; r.qIdx = 0; r.rIdx >= r.activeRounds.length ? finalResults(r) : startRound(r); } });
+  socket.on('play-again', () => { const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code]; if (r.masterId !== socket.id) return; io.to(code).emit('game-reset'); clearTimeout(r.qTimer); delete rooms[code]; console.log(`[${code}] Game reset by host`); });
 
   socket.on('disconnect', () => {
     const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code];
