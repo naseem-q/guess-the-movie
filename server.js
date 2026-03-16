@@ -423,11 +423,68 @@ function genFlagContinentQ(diff) {
   return { type: 'flag_continent', category: 'Guess the Continent', question: 'What continent is this country in?', hint: `This country is called ${c.name}`, image: c.flag, revealImage: c.flag, answer: c.region, options: shuffle([c.region, ...shuffle(allRegions).slice(0, 3)]), year: '', info: `${c.name} — ${c.region}`, landscape: true };
 }
 
-// Round 4: Flag Challenge — flag with only a capital-initial hint
-function genFlagChallengeQ(diff) {
-  const pool = getFlagPool(diff); const c = pool[Math.floor(Math.random() * pool.length)];
-  const hint = c.capital !== 'N/A' ? `Its capital starts with "${c.capital[0]}"` : `Located in ${c.subregion}`;
-  return { type: 'flag_challenge', category: 'Flag Challenge', question: 'Which country does this flag represent?', hint: hint, image: c.flag, revealImage: c.flag, answer: c.name, options: shuffle([c.name, ...flagWrong(c, pool)]), year: '', info: `${c.name} — ${c.subregion}`, landscape: true };
+// Round 4: Guess the Currency — show currency image, guess the country
+const CURRENCIES = {
+  US:{name:'US Dollar',symbol:'$',q:'us dollar banknote'},
+  GB:{name:'British Pound',symbol:'£',q:'british pound sterling banknote'},
+  FR:{name:'Euro',symbol:'€',q:'euro banknote currency'},
+  DE:{name:'Euro',symbol:'€',q:'euro banknote'},
+  IT:{name:'Euro',symbol:'€',q:'euro coins banknote'},
+  ES:{name:'Euro',symbol:'€',q:'euro currency notes'},
+  JP:{name:'Japanese Yen',symbol:'¥',q:'japanese yen banknote'},
+  CN:{name:'Chinese Yuan',symbol:'¥',q:'chinese yuan renminbi banknote'},
+  BR:{name:'Brazilian Real',symbol:'R$',q:'brazilian real banknote'},
+  CA:{name:'Canadian Dollar',symbol:'C$',q:'canadian dollar banknote'},
+  AU:{name:'Australian Dollar',symbol:'A$',q:'australian dollar banknote'},
+  IN:{name:'Indian Rupee',symbol:'₹',q:'indian rupee banknote'},
+  MX:{name:'Mexican Peso',symbol:'$',q:'mexican peso banknote'},
+  RU:{name:'Russian Ruble',symbol:'₽',q:'russian ruble banknote'},
+  KR:{name:'South Korean Won',symbol:'₩',q:'south korean won banknote'},
+  TR:{name:'Turkish Lira',symbol:'₺',q:'turkish lira banknote'},
+  EG:{name:'Egyptian Pound',symbol:'E£',q:'egyptian pound banknote'},
+  SA:{name:'Saudi Riyal',symbol:'﷼',q:'saudi riyal banknote'},
+  AE:{name:'UAE Dirham',symbol:'د.إ',q:'uae dirham banknote'},
+  JO:{name:'Jordanian Dinar',symbol:'د.ا',q:'jordanian dinar banknote'},
+  TH:{name:'Thai Baht',symbol:'฿',q:'thai baht banknote'},
+  CH:{name:'Swiss Franc',symbol:'CHF',q:'swiss franc banknote'},
+  SE:{name:'Swedish Krona',symbol:'kr',q:'swedish krona banknote'},
+  NO:{name:'Norwegian Krone',symbol:'kr',q:'norwegian krone banknote'},
+  DK:{name:'Danish Krone',symbol:'kr',q:'danish krone banknote'},
+  PL:{name:'Polish Zloty',symbol:'zł',q:'polish zloty banknote'},
+  CZ:{name:'Czech Koruna',symbol:'Kč',q:'czech koruna banknote'},
+  HU:{name:'Hungarian Forint',symbol:'Ft',q:'hungarian forint banknote'},
+  AR:{name:'Argentine Peso',symbol:'$',q:'argentine peso banknote'},
+  NZ:{name:'New Zealand Dollar',symbol:'NZ$',q:'new zealand dollar banknote'},
+  ZA:{name:'South African Rand',symbol:'R',q:'south african rand banknote'},
+  PK:{name:'Pakistani Rupee',symbol:'₨',q:'pakistani rupee banknote'},
+  MY:{name:'Malaysian Ringgit',symbol:'RM',q:'malaysian ringgit banknote'},
+  SG:{name:'Singapore Dollar',symbol:'S$',q:'singapore dollar banknote'},
+  KW:{name:'Kuwaiti Dinar',symbol:'د.ك',q:'kuwaiti dinar banknote'},
+  QA:{name:'Qatari Riyal',symbol:'﷼',q:'qatari riyal banknote'},
+  NG:{name:'Nigerian Naira',symbol:'₦',q:'nigerian naira banknote'},
+  KE:{name:'Kenyan Shilling',symbol:'KSh',q:'kenyan shilling banknote'},
+  ID:{name:'Indonesian Rupiah',symbol:'Rp',q:'indonesian rupiah banknote'},
+  PH:{name:'Philippine Peso',symbol:'₱',q:'philippine peso banknote'},
+  VN:{name:'Vietnamese Dong',symbol:'₫',q:'vietnamese dong banknote'},
+  BD:{name:'Bangladeshi Taka',symbol:'৳',q:'bangladeshi taka banknote'},
+  PT:{name:'Euro',symbol:'€',q:'euro banknote portugal'},
+  NL:{name:'Euro',symbol:'€',q:'euro banknote netherlands'},
+  IE:{name:'Euro',symbol:'€',q:'euro banknote ireland'},
+  GR:{name:'Euro',symbol:'€',q:'euro banknote greece'},
+  AT:{name:'Euro',symbol:'€',q:'euro banknote austria'},
+  BE:{name:'Euro',symbol:'€',q:'euro banknote belgium'},
+  FI:{name:'Euro',symbol:'€',q:'euro banknote finland'}
+};
+
+async function genFlagCurrencyQ(diff) {
+  const pool = getFlagPool(diff).filter(c => CURRENCIES[c.code]);
+  if (pool.length < 4) return genFlagCountryQ(diff);
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  const cur = CURRENCIES[c.code];
+  const img = await getCachedImage('cur_' + c.code, cur.q, c.flag);
+  const hint = `This currency is called the ${cur.name} (${cur.symbol})`;
+  const wrong = flagWrong(c, pool.filter(x => CURRENCIES[x.code]), 'name', true);
+  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hint: hint, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true };
 }
 
 // Round 5: Guess the Landmark — show landmark PHOTO from Pexels
@@ -446,7 +503,7 @@ const FLAG_GENS = {
   flag_country: () => genFlagCountryQ(currentDifficulty),
   flag_capital: () => genFlagCapitalQ(currentDifficulty),
   flag_continent: () => genFlagContinentQ(currentDifficulty),
-  flag_challenge: () => genFlagChallengeQ(currentDifficulty),
+  flag_currency: () => genFlagCurrencyQ(currentDifficulty),
   flag_landmark: () => genFlagLandmarkQ(currentDifficulty)
 };
 Object.assign(GENS, FLAG_GENS);
@@ -457,16 +514,16 @@ async function genRound(type, n = 10) { const qs = [], used = new Set(); for (le
 const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower: 1.4 }, medium: { timer: 50, startBlur: 42, startRadius: 5, blurDecayPower: 1.7 }, hard: { timer: 60, startBlur: 60, startRadius: 3, blurDecayPower: 2.0 } };
 const LABELS = {
   movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
-  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_challenge: 'Flag Challenge', flag_landmark: 'Guess the Landmark'
+  flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_currency: 'Guess the Currency', flag_landmark: 'Guess the Landmark'
 };
 const ICONS = {
   movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
-  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_challenge: '🗺️', flag_landmark: '🏰'
+  flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_currency: '💰', flag_landmark: '🏰'
 };
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
-  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_challenge', 'flag_landmark'] },
+  flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_currency', 'flag_landmark'] },
   famous_people: { name: 'Famous People', icon: '👤', available: false, rounds: [] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
