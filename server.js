@@ -346,24 +346,46 @@ async function getCachedImage(key, query, fallback) {
   return fallback;
 }
 
-// Wikidata SPARQL query to get banknote image for a currency
-async function getWikidataBanknoteImage(currencyName) {
-  try {
-    const sparql = `SELECT ?image WHERE {
+// Wikidata SPARQL — find banknote/currency images
+async function getWikidataCurrencyImage(currencyName) {
+  // Strategy 1: Search for banknotes of this currency
+  const queries = [
+    // Try banknote items linked to this currency
+    `SELECT ?image WHERE {
+      ?banknote wdt:P31/wdt:P279* wd:Q47433 .
+      ?banknote rdfs:label ?label . FILTER(CONTAINS(LCASE(?label), "${currencyName.toLowerCase().split(' ')[0]}"))
+      ?banknote wdt:P18 ?image .
+    } LIMIT 1`,
+    // Try the currency itself
+    `SELECT ?image WHERE {
       ?item rdfs:label "${currencyName}"@en .
+      ?item wdt:P18 ?image .
+    } LIMIT 1`,
+    // Try with partial match
+    `SELECT ?image WHERE {
+      ?item rdfs:label ?label . FILTER(CONTAINS(LCASE(?label), "${currencyName.toLowerCase()}"))
       ?item wdt:P31/wdt:P279* wd:Q8142 .
       ?item wdt:P18 ?image .
-    } LIMIT 1`;
-    const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'PartyGame/1.0' } });
-    if (!r.ok) return null;
-    const d = await r.json();
-    if (d.results?.bindings?.length > 0) {
-      const imgUrl = d.results.bindings[0].image.value;
-      // Convert commons URL to thumbnail
-      return imgUrl.replace('http://commons.wikimedia.org', 'https://commons.wikimedia.org');
-    }
-  } catch (e) {}
+    } LIMIT 1`
+  ];
+
+  for (const sparql of queries) {
+    try {
+      const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`;
+      const r = await fetch(url, { headers: { 'User-Agent': 'PartyGame/1.0 (party game quiz app)' } });
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.results?.bindings?.length > 0) {
+        let imgUrl = d.results.bindings[0].image.value;
+        imgUrl = imgUrl.replace('http://', 'https://');
+        // Convert to thumbnail for faster loading
+        if (imgUrl.includes('commons.wikimedia.org/wiki/Special:FilePath/')) {
+          imgUrl += '?width=800';
+        }
+        return imgUrl;
+      }
+    } catch (e) { continue; }
+  }
   return null;
 }
 
@@ -372,13 +394,15 @@ async function getCurrencyImage(code, cur, flagUrl) {
   const cacheKey = 'cur_' + code;
   if (imageCache[cacheKey]) return imageCache[cacheKey];
 
-  // Try Wikidata for actual banknote image
-  const wdImg = await getWikidataBanknoteImage(cur.name);
+  // Try Wikidata for actual banknote/currency image
+  const wdImg = await getWikidataCurrencyImage(cur.name);
   if (wdImg) { imageCache[cacheKey] = wdImg; return wdImg; }
 
-  // Fallback to Pexels search
-  const pImg = await searchImage(cur.q);
-  if (pImg) { imageCache[cacheKey] = pImg; return pImg; }
+  // Fallback to Pexels search for banknote
+  if (PEXELS_KEY) {
+    const pImg = await searchImage(cur.q);
+    if (pImg) { imageCache[cacheKey] = pImg; return pImg; }
+  }
 
   return flagUrl;
 }
@@ -556,7 +580,7 @@ async function genFlagCurrencyQ(diff) {
   // Currency hint: symbol only, no country name
   const curHints = [`The symbol for this currency is ${cur.symbol}`,`This currency is subdivided into 100 smaller units`,getHints(c)[0]];
   const wrong = flagWrong(c, pool.filter(x => CURRENCIES[x.code] && !EURO_COUNTRIES.has(x.code)), 'name', true);
-  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hints: curHints, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true, noBlur: true };
+  return { type: 'flag_currency', category: 'Guess the Currency', question: 'Which country uses this currency?', hints: curHints, image: img, revealImage: img, answer: c.name, options: shuffle([c.name, ...wrong]), year: '', info: `${cur.name} (${cur.symbol}) — ${c.name}`, landscape: true };
 }
 
 // Round 5: Guess the Landmark — landmark photo, CLEAR (no blur)
