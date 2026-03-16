@@ -46,16 +46,61 @@ async function getSceneStill(id, type) {
 async function getTVStill(tvId) {
   try { const s = await tmdb(`/tv/${tvId}/season/1`); if (s.episodes) { const eps = s.episodes.filter(e => e.still_path); if (eps.length > 0) return `${TMDB_IMG}w1280${eps[Math.floor(Math.random() * eps.length)].still_path}`; } } catch (e) {} return null;
 }
+// Genres to exclude (talk shows, reality, news, documentaries)
+const EXCLUDED_GENRES = [10767, 10763, 10764, 10766, 99]; // talk, news, reality, soap, documentary
+const EXCLUDED_KEYWORDS = ['himself', 'herself', 'self', 'host', 'narrator', 'voice', 'uncredited', 'guest'];
+
 async function getActorCharacter(person) {
   try {
     const cr = await tmdb(`/person/${person.id}/combined_credits`);
     if (!cr.cast?.length) return null;
-    const roles = cr.cast.filter(r => r.character?.length > 0 && r.character.length < 40 && !r.character.includes('/') && r.original_language === 'en').sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    // Filter: English only, real character names, no talk shows / self appearances
+    const roles = cr.cast.filter(r => {
+      if (!r.character || r.character.length < 2 || r.character.length > 40) return false;
+      if (r.character.includes('/')) return false;
+      if (r.original_language !== 'en') return false;
+      // Exclude "Self", "Himself", "Herself", "Host", etc.
+      const charLow = r.character.toLowerCase();
+      if (EXCLUDED_KEYWORDS.some(kw => charLow.includes(kw))) return false;
+      // Exclude talk show / reality / news genres
+      if (r.genre_ids && r.genre_ids.some(g => EXCLUDED_GENRES.includes(g))) return false;
+      return true;
+    }).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
     if (!roles.length) return null;
-    const role = roles[0]; const title = role.title || role.name; const mt = role.media_type || (role.title ? 'movie' : 'tv');
+    const role = roles[0];
+    const title = role.title || role.name;
+    const mt = role.media_type || (role.title ? 'movie' : 'tv');
+
+    // Verify it's actually a scripted show/movie by checking genres
+    try {
+      const detail = await tmdb(`/${mt}/${role.id}`);
+      if (detail.genres) {
+        const genreIds = detail.genres.map(g => g.id);
+        if (genreIds.some(g => EXCLUDED_GENRES.includes(g))) return null;
+      }
+    } catch (e) {}
+
     let others = [];
-    try { const sc = await tmdb(`/${mt}/${role.id}/credits`); others = (sc.cast || []).filter(c => c.character?.length > 0 && c.character.length < 40 && normalize(c.character) !== normalize(role.character) && !c.character.includes('/') && !c.character.includes('(')).map(c => c.character); } catch (e) {}
-    if (others.length < 3) { for (const r of roles.slice(1, 6)) { if (r.character && normalize(r.character) !== normalize(role.character)) others.push(r.character); if (others.length >= 3) break; } }
+    try {
+      const sc = await tmdb(`/${mt}/${role.id}/credits`);
+      others = (sc.cast || []).filter(c =>
+        c.character?.length > 1 && c.character.length < 40
+        && normalize(c.character) !== normalize(role.character)
+        && !c.character.includes('/')
+        && !c.character.includes('(')
+        && !EXCLUDED_KEYWORDS.some(kw => c.character.toLowerCase().includes(kw))
+      ).map(c => c.character);
+    } catch (e) {}
+
+    if (others.length < 3) {
+      for (const r of roles.slice(1, 8)) {
+        if (r.character && normalize(r.character) !== normalize(role.character) && !EXCLUDED_KEYWORDS.some(kw => r.character.toLowerCase().includes(kw))) {
+          others.push(r.character);
+        }
+        if (others.length >= 3) break;
+      }
+    }
     if (others.length < 3) return null;
     return { actor: person.name, image: `${TMDB_IMG}h632${person.profile_path}`, character: role.character, show: title, wrong: shuffle(others).slice(0, 3) };
   } catch (e) { return null; }
@@ -83,15 +128,42 @@ async function genTVSceneQ() {
   return { type: 'tv_scene', category: 'TV Show Scenes', question: 'What TV show is this scene from?', image: img, revealImage: img, answer: s.name, options: shuffle([s.name, ...shuffle(cache.tv.filter(x => x.id !== s.id).map(x => x.name)).slice(0, 3)]), year: s.first_air_date?.split('-')[0] || '', info: s.name };
 }
 async function genCharacterQ() {
-  const page = Math.floor(Math.random() * 3) + 1;
-  try {
-    const pd = await tmdb(`/person/popular?page=${page}`);
-    for (const p of shuffle((pd.results || []).filter(x => x.profile_path && x.name)).slice(0, 10)) {
-      const r = await getActorCharacter(p);
-      if (r) return { type: 'character', category: 'Guess the Character', question: `What character does this actor play in "${r.show}"?`, image: r.image, revealImage: r.image, answer: r.character, options: shuffle([r.character, ...r.wrong]), year: '', info: `${r.character} (${r.actor}) — ${r.show}` };
-    }
-  } catch (e) {}
-  // fallback
+  // Pick from our cached movies and TV shows (not popular people - those include talk show hosts)
+  const allShows = shuffle([...cache.movies.map(m => ({id: m.id, type: 'movie', title: m.title})), ...cache.tv.map(t => ({id: t.id, type: 'tv', title: t.name}))]);
+
+  for (const show of allShows.slice(0, 15)) {
+    try {
+      const credits = await tmdb(`/${show.type}/${show.id}/credits`);
+      if (!credits.cast?.length) continue;
+
+      // Find actors with real character names (not self/host)
+      const validCast = credits.cast.filter(c =>
+        c.character?.length > 1 && c.character.length < 40
+        && !c.character.includes('/')
+        && !EXCLUDED_KEYWORDS.some(kw => c.character.toLowerCase().includes(kw))
+        && c.profile_path
+      );
+
+      if (validCast.length < 4) continue; // Need at least 4 for question + 3 wrong
+
+      const actor = validCast[0]; // Lead actor
+      const wrongChars = validCast.slice(1).map(c => c.character).filter(ch => normalize(ch) !== normalize(actor.character));
+
+      if (wrongChars.length < 3) continue;
+
+      return {
+        type: 'character', category: 'Guess the Character',
+        question: `What character does this actor play in "${show.title}"?`,
+        image: `${TMDB_IMG}h632${actor.profile_path}`,
+        revealImage: `${TMDB_IMG}h632${actor.profile_path}`,
+        answer: actor.character,
+        options: shuffle([actor.character, ...shuffle(wrongChars).slice(0, 3)]),
+        year: '', info: `${actor.character} (${actor.name}) — ${show.title}`
+      };
+    } catch (e) { continue; }
+  }
+
+  // Fallback: use a movie scene question instead
   const m = cache.movies[Math.floor(Math.random() * cache.movies.length)];
   return { type: 'character', category: 'Guess the Character', question: 'What movie is this from?', image: `${TMDB_IMG}w1280${m.backdrop_path}`, revealImage: `${TMDB_IMG}w1280${m.backdrop_path}`, answer: m.title, options: shuffle([m.title, ...shuffle(cache.movies.filter(x => x.id !== m.id).map(x => x.title)).slice(0, 3)]), year: '', info: m.title };
 }
