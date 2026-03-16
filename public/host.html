@@ -184,26 +184,68 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   const canvas=document.getElementById('poster-canvas'),ctx=canvas.getContext('2d');
   let revActive=false;
 
+  // Fill canvas black initially
+  function fillBlack(){ctx.fillStyle='#111';ctx.fillRect(0,0,canvas.width||100,canvas.height||100)}
+  fillBlack();
+
   function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
-  function drawReveal(img,progress,cp){
-    const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
-    const blur=Math.max(0.5,diff.startBlur*(1-Math.pow(progress,diff.blurDecayPower||1.7)));
-    ctx.filter=`blur(${blur}px)`;ctx.drawImage(img,0,0,w,h);
-    ctx.filter='none';ctx.save();ctx.beginPath();
-    const rad=Math.max(8,(diff.startRadius+((52-diff.startRadius)*progress))*Math.min(w,h)/100);
-    ctx.arc(cp.x*w/100,cp.y*h/100,rad,0,Math.PI*2);ctx.clip();ctx.drawImage(img,0,0,w,h);ctx.restore();
-    ctx.beginPath();ctx.arc(cp.x*w/100,cp.y*h/100,rad,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(255,230,109,${0.25+0.15*Math.sin(Date.now()/400)})`;ctx.lineWidth=2;ctx.stroke();
+  // Create blurred version of image using temp canvas
+  let blurredCanvas=null;
+  function createBlurredVersion(img,w,h,blurAmt){
+    blurredCanvas=document.createElement('canvas');
+    blurredCanvas.width=w;blurredCanvas.height=h;
+    const bctx=blurredCanvas.getContext('2d');
+    // Draw multiple times with offsets to create blur effect (works on all browsers)
+    bctx.filter=`blur(${blurAmt}px)`;
+    // Draw larger to prevent edge artifacts from blur
+    const pad=blurAmt*2;
+    bctx.drawImage(img,-pad,-pad,w+pad*2,h+pad*2);
+    bctx.filter='none';
   }
+
+  function drawReveal(img,progress,cp){
+    const w=canvas.width,h=canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    // Calculate current blur
+    const maxBlur=diff.startBlur||42;
+    const blur=Math.max(0.5,maxBlur*(1-Math.pow(progress,diff.blurDecayPower||1.7)));
+
+    // 1. Draw blurred background (entire image)
+    // Recreate blur at current level
+    ctx.save();
+    ctx.filter=`blur(${blur}px)`;
+    ctx.drawImage(img,-blur,-blur,w+blur*2,h+blur*2);
+    ctx.filter='none';
+    ctx.restore();
+
+    // 2. Draw clear circle on top
+    const radius=Math.max(6,(diff.startRadius+((52-(diff.startRadius||5))*progress))*Math.min(w,h)/100);
+    const cx=cp.x*w/100, cy=cp.y*h/100;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx,cy,radius,0,Math.PI*2);
+    ctx.clip();
+    ctx.drawImage(img,0,0,w,h);
+    ctx.restore();
+
+    // 3. Golden glow ring
+    ctx.beginPath();
+    ctx.arc(cx,cy,radius,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(255,230,109,${0.3+0.2*Math.sin(Date.now()/400)})`;
+    ctx.lineWidth=2.5;
+    ctx.stroke();
+  }
+
   function animRev(){
     if(!revActive||!curImg)return;
     const pr=Math.min((Date.now()-timerStart)/1000/timerDur,1);
     cVel.x+=(Math.random()-0.5)*0.12;cVel.y+=(Math.random()-0.5)*0.12;
     cVel.x=Math.max(-1.2,Math.min(1.2,cVel.x));cVel.y=Math.max(-1.2,Math.min(1.2,cVel.y));
     cPos.x+=cVel.x;cPos.y+=cVel.y;
-    if(cPos.x<12){cPos.x=12;cVel.x*=-0.7}if(cPos.x>88){cPos.x=88;cVel.x*=-0.7}
-    if(cPos.y<12){cPos.y=12;cVel.y*=-0.7}if(cPos.y>88){cPos.y=88;cVel.y*=-0.7}
+    if(cPos.x<15){cPos.x=15;cVel.x*=-0.7}if(cPos.x>85){cPos.x=85;cVel.x*=-0.7}
+    if(cPos.y<15){cPos.y=15;cVel.y*=-0.7}if(cPos.y>85){cPos.y=85;cVel.y*=-0.7}
     drawReveal(curImg,pr,cPos);animFrame=requestAnimationFrame(animRev);
   }
   function startAnim(){revActive=true;cPos={x:25+Math.random()*50,y:25+Math.random()*50};cVel={x:(Math.random()-0.5)*0.8,y:(Math.random()-0.5)*0.8};animRev()}
@@ -263,7 +305,11 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       }
 
       const img=new Image();img.crossOrigin='anonymous';
-      img.onload=function(){curImg=img;canvas.width=isL?960:520;canvas.height=isL?540:780;startAnim()};
+      // Set canvas size and fill black BEFORE image loads
+      canvas.width=isL?960:520;canvas.height=isL?540:780;
+      fillBlack();
+      curImg=null; // Clear current image so animation doesn't show old one
+      img.onload=function(){curImg=img;startAnim()};
       img.onerror=function(){console.error('Img fail')};img.src=d.image;
       renderSB(playerList);startTimer();
     });
