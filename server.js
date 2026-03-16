@@ -24,16 +24,70 @@ async function tmdb(ep) { const url = `https://api.themoviedb.org/3${ep}${ep.inc
 const cache = { movies: null, tv: null, ts: 0 };
 async function loadTMDB() {
   if (cache.movies && Date.now() - cache.ts < 3600000) return;
-  console.log('[TMDB] Loading...');
+  console.log('[TMDB] Loading top rated + popular (English only)...');
   try {
     const movies = [], tv = [];
-    for (const p of [1, 2, 3, 4, 5, 6]) {
-      try { const d = await tmdb(`/movie/popular?page=${p}`); movies.push(...(d.results || []).filter(m => m.poster_path && m.backdrop_path && m.title && m.original_language === 'en')); } catch (e) {}
-      try { const d = await tmdb(`/tv/popular?page=${p}`); tv.push(...(d.results || []).filter(t => t.poster_path && t.backdrop_path && t.name && t.original_language === 'en')); } catch (e) {}
+    const seen_m = new Set(), seen_t = new Set();
+
+    // Fetch BOTH popular AND top_rated for movies (top 200+)
+    for (const endpoint of ['/movie/popular', '/movie/top_rated']) {
+      for (const p of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+        try {
+          const d = await tmdb(`${endpoint}?page=${p}`);
+          for (const m of (d.results || [])) {
+            if (m.poster_path && m.backdrop_path && m.title && m.original_language === 'en' && !seen_m.has(m.id)) {
+              seen_m.add(m.id);
+              movies.push(m); // m includes genre_ids array
+            }
+          }
+        } catch (e) {}
+      }
     }
+
+    // Fetch BOTH popular AND top_rated for TV shows
+    for (const endpoint of ['/tv/popular', '/tv/top_rated']) {
+      for (const p of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+        try {
+          const d = await tmdb(`${endpoint}?page=${p}`);
+          for (const t of (d.results || [])) {
+            if (t.poster_path && t.backdrop_path && t.name && t.original_language === 'en' && !seen_t.has(t.id)) {
+              seen_t.add(t.id);
+              tv.push(t); // t includes genre_ids array
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
     cache.movies = movies; cache.tv = tv; cache.ts = Date.now();
-    console.log(`[TMDB] ${movies.length} movies, ${tv.length} TV`);
+    console.log(`[TMDB] ${movies.length} movies, ${tv.length} TV shows loaded`);
   } catch (e) { console.error('[TMDB]', e.message); if (!cache.movies) { cache.movies = []; cache.tv = []; } }
+}
+
+// ═══ GENRE-MATCHED WRONG OPTIONS ═════════════════════
+function getGenreMatchedWrong(correct, allItems, titleField = 'title', count = 3) {
+  const correctGenres = correct.genre_ids || [];
+  const correctTitle = correct[titleField];
+
+  // Find items that share at least one genre
+  const sameGenre = allItems.filter(x =>
+    x.id !== correct.id &&
+    x[titleField] !== correctTitle &&
+    x.genre_ids && x.genre_ids.some(g => correctGenres.includes(g))
+  );
+
+  // Shuffle and pick from same genre first
+  const picked = shuffle(sameGenre).slice(0, count).map(x => x[titleField]);
+
+  // If not enough same-genre, fill from all items
+  if (picked.length < count) {
+    const remaining = allItems.filter(x =>
+      x.id !== correct.id && !picked.includes(x[titleField])
+    );
+    picked.push(...shuffle(remaining).slice(0, count - picked.length).map(x => x[titleField]));
+  }
+
+  return picked.slice(0, count);
 }
 
 // ═══ IMAGE HELPERS ═══════════════════════════════════
@@ -110,22 +164,26 @@ async function getActorCharacter(person) {
 async function genMoviePosterQ() {
   const m = cache.movies[Math.floor(Math.random() * cache.movies.length)];
   let img = await getTextlessPoster(m.id, 'movie'); if (!img) img = `${TMDB_IMG}w780${m.poster_path}`;
-  return { type: 'movie_poster', category: 'Movie Posters', question: 'What movie is this?', image: img, revealImage: `${TMDB_IMG}w780${m.poster_path}`, answer: m.title, options: shuffle([m.title, ...shuffle(cache.movies.filter(x => x.id !== m.id).map(x => x.title)).slice(0, 3)]), year: m.release_date?.split('-')[0] || '', info: m.title };
+  const wrong = getGenreMatchedWrong(m, cache.movies, 'title');
+  return { type: 'movie_poster', category: 'Movie Posters', question: 'What movie is this?', image: img, revealImage: `${TMDB_IMG}w780${m.poster_path}`, answer: m.title, options: shuffle([m.title, ...wrong]), year: m.release_date?.split('-')[0] || '', info: m.title };
 }
 async function genTVPosterQ() {
   const s = cache.tv[Math.floor(Math.random() * cache.tv.length)];
   let img = await getTextlessPoster(s.id, 'tv'); if (!img) img = `${TMDB_IMG}w780${s.poster_path}`;
-  return { type: 'tv_poster', category: 'TV Show Posters', question: 'What TV show is this?', image: img, revealImage: `${TMDB_IMG}w780${s.poster_path}`, answer: s.name, options: shuffle([s.name, ...shuffle(cache.tv.filter(x => x.id !== s.id).map(x => x.name)).slice(0, 3)]), year: s.first_air_date?.split('-')[0] || '', info: s.name };
+  const wrong = getGenreMatchedWrong(s, cache.tv, 'name');
+  return { type: 'tv_poster', category: 'TV Show Posters', question: 'What TV show is this?', image: img, revealImage: `${TMDB_IMG}w780${s.poster_path}`, answer: s.name, options: shuffle([s.name, ...wrong]), year: s.first_air_date?.split('-')[0] || '', info: s.name };
 }
 async function genMovieSceneQ() {
   const m = cache.movies[Math.floor(Math.random() * cache.movies.length)];
   let img = await getSceneStill(m.id, 'movie'); if (!img) img = `${TMDB_IMG}w1280${m.backdrop_path}`;
-  return { type: 'movie_scene', category: 'Movie Scenes', question: 'What movie is this scene from?', image: img, revealImage: img, answer: m.title, options: shuffle([m.title, ...shuffle(cache.movies.filter(x => x.id !== m.id).map(x => x.title)).slice(0, 3)]), year: m.release_date?.split('-')[0] || '', info: m.title };
+  const wrong = getGenreMatchedWrong(m, cache.movies, 'title');
+  return { type: 'movie_scene', category: 'Movie Scenes', question: 'What movie is this scene from?', image: img, revealImage: img, answer: m.title, options: shuffle([m.title, ...wrong]), year: m.release_date?.split('-')[0] || '', info: m.title };
 }
 async function genTVSceneQ() {
   const s = cache.tv[Math.floor(Math.random() * cache.tv.length)];
   let img = await getTVStill(s.id); if (!img) img = await getSceneStill(s.id, 'tv'); if (!img) img = `${TMDB_IMG}w1280${s.backdrop_path}`;
-  return { type: 'tv_scene', category: 'TV Show Scenes', question: 'What TV show is this scene from?', image: img, revealImage: img, answer: s.name, options: shuffle([s.name, ...shuffle(cache.tv.filter(x => x.id !== s.id).map(x => x.name)).slice(0, 3)]), year: s.first_air_date?.split('-')[0] || '', info: s.name };
+  const wrong = getGenreMatchedWrong(s, cache.tv, 'name');
+  return { type: 'tv_scene', category: 'TV Show Scenes', question: 'What TV show is this scene from?', image: img, revealImage: img, answer: s.name, options: shuffle([s.name, ...wrong]), year: s.first_air_date?.split('-')[0] || '', info: s.name };
 }
 async function genCharacterQ() {
   // Pick from our cached movies and TV shows (not popular people - those include talk show hosts)
