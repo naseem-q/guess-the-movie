@@ -219,9 +219,27 @@ io.on('connection', (socket) => {
 
   socket.on('join-game', ({ code, playerName }, cb) => {
     const r = rooms[code]; if (!r) return cb({ error: 'Room not found' });
-    if (r.state !== 'lobby') return cb({ error: 'Game started' });
+
+    // Check if this player was previously in the game (rejoin)
+    const existingEntry = Object.entries(r.players).find(([, p]) => p.name.toLowerCase() === playerName.toLowerCase());
+    if (existingEntry) {
+      const [oldSid, oldPlayer] = existingEntry;
+      // Remove old socket entry, create new one with preserved score
+      const preservedScore = oldPlayer.score;
+      const wasMaster = oldPlayer.isMaster;
+      delete r.players[oldSid];
+      r.players[socket.id] = { name: playerName, score: preservedScore, connected: true, isMaster: wasMaster };
+      if (wasMaster) r.masterId = socket.id;
+      socket.join(code); socket.roomCode = code;
+      const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster }));
+      io.to(code).emit('player-list-update', pl);
+      console.log(`[${code}] ${playerName} rejoined (score: ${preservedScore})`);
+      return cb({ ok: true, players: pl, categoryName: r.categoryName });
+    }
+
+    // New player joining
+    if (r.state !== 'lobby') return cb({ error: 'Game already started' });
     if (Object.keys(r.players).length >= 8) return cb({ error: 'Room full' });
-    if (Object.values(r.players).some(p => p.name.toLowerCase() === playerName.toLowerCase())) return cb({ error: 'Name taken' });
     r.players[socket.id] = { name: playerName, score: 0, connected: true, isMaster: false };
     socket.join(code); socket.roomCode = code;
     const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster }));
