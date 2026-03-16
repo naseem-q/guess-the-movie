@@ -168,8 +168,8 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
   <div class="hd"><button class="back" onclick="showScreen('s-home')">←</button><span class="htitle">📺 Connect TV</span></div>
   <div class="fb">
     <p style="color:var(--text2);font-size:14px;line-height:1.6">Open this on the TV. Enter the room code from the game master's phone.</p>
-    <div class="fg"><label class="fl">Room Code</label><input type="text" id="host-code" class="fi" placeholder="e.g. XKPW" maxlength="4" style="font-size:28px;text-align:center;letter-spacing:8px;text-transform:uppercase;font-family:'Space Mono',monospace"></div>
-    <button class="btn-p" onclick="window.location.href='/host.html?code='+document.getElementById('host-code').value.trim().toUpperCase()">📺 Connect</button>
+    <div class="fg"><label class="fl">Room Code</label><input type="tel" id="host-code" class="fi" placeholder="e.g. 123456" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="font-size:28px;text-align:center;letter-spacing:8px;font-family:'Space Mono',monospace"></div>
+    <button class="btn-p" onclick="window.location.href='/host.html?code='+document.getElementById('host-code').value.trim()">📺 Connect</button>
   </div>
   <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
@@ -195,7 +195,7 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
 <div id="s-join" class="screen">
   <div class="hd"><button class="back" onclick="showScreen('s-home')">←</button><span class="htitle">🚀 Join Game</span></div>
   <div class="fb" style="justify-content:center">
-    <div class="fg"><label class="fl">Room Code</label><input type="text" id="join-code" class="fi" placeholder="e.g. XKPW" maxlength="4" style="font-size:24px;text-align:center;letter-spacing:6px;text-transform:uppercase;font-family:'Space Mono',monospace"></div>
+    <div class="fg"><label class="fl">Room Code</label><input type="tel" id="join-code" class="fi" placeholder="e.g. 123456" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="font-size:24px;text-align:center;letter-spacing:6px;font-family:'Space Mono',monospace"></div>
     <div class="fg"><label class="fl">Your Name</label><input type="text" id="join-name" class="fi" placeholder="Enter your name" maxlength="15"></div>
     <button class="btn-p" onclick="joinGame()">🎯 Join</button>
   </div>
@@ -209,6 +209,8 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
       <div style="font-size:12px;color:var(--text2);letter-spacing:2px;text-transform:uppercase">Room Code</div>
       <div class="rct" id="lobby-code">----</div>
       <div style="font-size:13px;color:var(--gold);margin-top:4px;font-weight:700" id="lobby-cat"></div>
+      <div id="lobby-qr" style="margin:10px auto 0;width:120px;height:120px;background:white;border-radius:8px;padding:4px"></div>
+      <button onclick="shareRoom()" style="margin-top:10px;padding:10px 20px;border-radius:10px;border:1px solid rgba(96,165,250,0.3);background:rgba(96,165,250,0.08);color:var(--blue);font-size:13px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px">📤 Share Room</button>
     </div>
     <div><label class="fl">Players</label><div class="plg" id="lobby-players"></div><div class="pcnt" id="lobby-count"></div></div>
     <div id="master-start" style="display:none"><button class="btn-p" onclick="startGame()" style="width:100%">▶ Start Game</button></div>
@@ -238,7 +240,29 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
     <div style="font-size:52px;animation:float 2s ease-in-out infinite">🏆</div>
     <div class="rt" id="res-title">Final Results</div>
     <div id="res-lb" style="width:100%;max-width:400px"></div>
-    <div id="res-master" style="display:none;margin-top:20px"><button class="btn-p" onclick="if(socket)socket.emit('play-again');setTimeout(()=>location.reload(),500)">🔄 Play Again</button></div>
+    <div id="res-master" style="display:none;margin-top:20px;display:flex;flex-direction:column;gap:10px;align-items:center;width:100%;max-width:400px">
+      <button class="btn-p" onclick="showScreen('s-new-game')" style="width:100%">🔄 New Game (Same Room)</button>
+      <button class="btn-s" onclick="if(socket)socket.emit('play-again');clearSession();setTimeout(()=>location.reload(),500)" style="width:100%;font-size:13px">🚪 Leave Room</button>
+    </div>
+  </div>
+  <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
+</div>
+
+<!-- New Game Settings (same room) -->
+<div id="s-new-game" class="screen">
+  <div class="hd"><button class="back" onclick="showScreen('s-results')">←</button><span class="htitle">🔄 New Game</span></div>
+  <div class="fb">
+    <p style="color:var(--text2);font-size:14px;margin-bottom:4px">Same room, same players — pick new settings!</p>
+    <div class="sc"><label class="fl">Category</label><div class="cat-grid" id="ng-cat-grid"></div></div>
+    <div class="sc"><label class="fl">Difficulty</label>
+      <div class="or" id="ng-diff-row">
+        <button class="ob" data-val="easy" onclick="selNgDiff('easy')">😊<span>Easy</span></button>
+        <button class="ob active" data-val="medium" onclick="selNgDiff('medium')">🔥<span>Medium</span></button>
+        <button class="ob" data-val="hard" onclick="selNgDiff('hard')">💀<span>Hard</span></button>
+      </div>
+    </div>
+    <button class="btn-p" onclick="startNewGame()">🚀 Start New Game</button>
+    <div id="ng-status" style="display:none;text-align:center;color:var(--gold);font-size:14px;font-weight:700">⏳ Generating questions...</div>
   </div>
   <div class="footer">Powered by Naseem Q. All rights reserved &copy; <span class="yr"></span></div>
 </div>
@@ -247,6 +271,7 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
 <div id="fb-overlay" class="fo" style="display:none"></div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/audio.js"></script>
 <script>
 (function(){
@@ -372,6 +397,7 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
     socket.on('game-paused',()=>{isPaused=true;clearInterval(timerInt);toast('Paused')});
     socket.on('game-resumed',()=>{isPaused=false;toast('Resumed')});
     socket.on('game-reset',()=>{clearSession();});
+    setupNewGameListener();
   }
 
   function startTimer(){
@@ -421,7 +447,7 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
 
   window.joinGame=function(){
     const code=document.getElementById('join-code').value.trim().toUpperCase(),name=document.getElementById('join-name').value.trim();
-    if(!code||code.length!==4)return toast('Enter 4-character code');if(!name)return toast('Enter your name');
+    if(!code||code.length!==6)return toast('Enter 6-digit room code');if(!name)return toast('Enter your name');
     myName=name;isMaster=false;roomCode=code;
     connectSocket(()=>{
       socket.emit('join-game',{code,playerName:name},(res)=>{
@@ -490,6 +516,76 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
     const el=document.getElementById('quote-text');
     if(el){el.style.opacity=0;setTimeout(()=>{el.textContent=quotes[quoteIdx];el.style.opacity=1},400)}
   },5000);
+
+  // ═══ QR CODE & SHARE ═══════════════════════════════
+  function generateQR(){
+    const container=document.getElementById('lobby-qr');
+    if(!container||!roomCode)return;
+    container.innerHTML='';
+    const joinUrl=`${location.origin}/?code=${roomCode}`;
+    try{new QRCode(container,{text:joinUrl,width:112,height:112,colorDark:'#0a0a1a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}catch(e){container.innerHTML='<div style="color:#999;font-size:11px;padding:20px">QR unavailable</div>'}
+  }
+
+  window.shareRoom=function(){
+    const joinUrl=`${location.origin}/?code=${roomCode}`;
+    const text=`Join my party game!\n\nRoom Code: ${roomCode}\nJoin here: ${joinUrl}`;
+    if(navigator.share){
+      navigator.share({title:'Join Party Game',text:text,url:joinUrl}).catch(()=>{});
+    }else{
+      navigator.clipboard.writeText(text).then(()=>toast('Link copied!')).catch(()=>{
+        prompt('Copy this link:',joinUrl);
+      });
+    }
+  };
+
+  // ═══ NEW GAME (SAME ROOM) ══════════════════════════
+  let ngDiff='medium',ngCat='movies_tv';
+
+  function renderNgCats(){
+    const g=document.getElementById('ng-cat-grid');if(!g)return;g.innerHTML='';
+    Object.entries(categories).forEach(([k,c])=>{
+      const e=document.createElement('div');
+      e.className=`cat-card ${k===ngCat?'active':''} ${!c.available?'soon':''}`;
+      e.innerHTML=`<span class="cat-icon">${c.icon}</span><span class="cat-name">${c.name}</span>${!c.available?'<span class="cat-tag">Coming Soon</span>':''}`;
+      if(c.available)e.onclick=()=>{ngCat=k;renderNgCats()};
+      g.appendChild(e);
+    });
+  }
+
+  window.selNgDiff=function(v){ngDiff=v;document.querySelectorAll('#ng-diff-row .ob').forEach(b=>b.classList.toggle('active',b.dataset.val===v))};
+
+  window.startNewGame=function(){
+    document.getElementById('ng-status').style.display='block';
+    socket.emit('new-game',{difficulty:ngDiff,category:ngCat},(res)=>{
+      document.getElementById('ng-status').style.display='none';
+      if(res?.error)return toast(res.error);
+      // Server will emit 'new-game-ready' to everyone
+    });
+  };
+
+  // Listen for new-game-ready on the connectSocket handler is already set up
+  // We need to add it inside connectSocket - let's do it via a global handler
+  function setupNewGameListener(){
+    if(!socket)return;
+    socket.on('new-game-ready',(d)=>{
+      myScore=0;document.getElementById('gscore').textContent='0';
+      document.getElementById('lobby-code').textContent=roomCode;
+      document.getElementById('lobby-cat').textContent=d.categoryName||'';
+      if(isMaster){document.getElementById('master-start').style.display='';document.getElementById('player-wait').style.display='none'}
+      else{document.getElementById('master-start').style.display='none';document.getElementById('player-wait').style.display=''}
+      renderPlayers(d.players);generateQR();
+      showScreen('s-lobby');
+      toast('New game ready!');
+    });
+  }
+
+  // Show new-game screen needs categories
+  const origShowScreen=window.showScreen;
+  window.showScreen=function(id){
+    origShowScreen(id);
+    if(id==='s-new-game')renderNgCats();
+    if(id==='s-lobby')setTimeout(generateQR,200);
+  };
 
   // ═══ PWA INSTALL ═══════════════════════════════════
   // Register service worker
