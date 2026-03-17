@@ -714,12 +714,14 @@ async function loadArabic() {
       } catch (e) {}
     }
 
-    // Batch fetch English titles in parallel batches of 10
+    // Batch fetch English titles + production details for strict filtering
     const fetchEnTitle = async (item, type) => {
       try {
         const d = await tmdb(`/${type}/${item.id}?language=en`);
         item.enTitle = d.title || d.name || '';
         if (d.production_countries?.length) item.country = d.production_countries[0].iso_3166_1;
+        if (d.original_language) item.original_language = d.original_language;
+        if (d.origin_country?.length) item.origin_country = d.origin_country;
       } catch(e) { item.enTitle = ''; }
     };
 
@@ -730,10 +732,30 @@ async function loadArabic() {
       await Promise.all(tv.slice(i, i + 10).map(t => fetchEnTitle(t, 'tv')));
     }
 
-    arabicCache.movies = movies;
-    arabicCache.tv = tv;
+    // STRICT FILTER: Only keep content with Arabic titles from target countries
+    const ALLOWED_COUNTRIES = new Set(['EG','SY','LB','JO']);
+    const hasArabic = (s) => /[\u0600-\u06FF]/.test(s);
+    const hasForeignScript = (s) => /[\u3000-\u9FFF\u4E00-\u9FFF\uAC00-\uD7AF\u0900-\u097F\u0400-\u04FF\u0E00-\u0E7F\u1100-\u11FF]/.test(s);
+    
+    const beforeM = movies.length, beforeT = tv.length;
+    arabicCache.movies = movies.filter(m => {
+      if (!hasArabic(m.title)) { console.log(`  [REJECT] No Arabic: "${m.title}" (${m.enTitle})`); return false; }
+      if (hasForeignScript(m.title)) return false;
+      if (m.original_language && m.original_language !== 'ar') { console.log(`  [REJECT] Lang=${m.original_language}: "${m.title}"`); return false; }
+      if (m.country && !ALLOWED_COUNTRIES.has(m.country)) { console.log(`  [REJECT] Country=${m.country}: "${m.title}"`); return false; }
+      return true;
+    });
+    arabicCache.tv = tv.filter(t => {
+      if (!hasArabic(t.name)) { console.log(`  [REJECT] No Arabic: "${t.name}" (${t.enTitle})`); return false; }
+      if (hasForeignScript(t.name)) return false;
+      if (t.original_language && t.original_language !== 'ar') { console.log(`  [REJECT] Lang=${t.original_language}: "${t.name}"`); return false; }
+      if (t.country && !ALLOWED_COUNTRIES.has(t.country)) { console.log(`  [REJECT] Country=${t.country}: "${t.name}"`); return false; }
+      // Also check origin_country array for TV
+      if (t.origin_country?.length && !t.origin_country.some(c => ALLOWED_COUNTRIES.has(c))) { console.log(`  [REJECT] Origin=${t.origin_country}: "${t.name}"`); return false; }
+      return true;
+    });
     arabicCache.ts = Date.now();
-    console.log(`[ARABIC] ${movies.length} movies, ${tv.length} TV shows loaded`);
+    console.log(`[ARABIC] Movies: ${beforeM} → ${arabicCache.movies.length}, TV: ${beforeT} → ${arabicCache.tv.length} after strict filtering`);
   } catch (e) {
     console.error('[ARABIC]', e.message);
     if (!arabicCache.movies) { arabicCache.movies = []; arabicCache.tv = []; }
@@ -747,18 +769,18 @@ function arTitleFull(arName, enName) { // Arabic + English for reveal info
   return arName;
 }
 
-// Check if a title looks English (Latin characters only)
-function isEnglishTitle(title) { return /^[a-zA-Z0-9\s:,\-.'!?&]+$/.test(title); }
+// Check if title contains Arabic characters
+function hasArabicChars(title) { return /[\u0600-\u06FF]/.test(title); }
 
-// Get Arabic pool — EXCLUDE English-only titles
+// Get Arabic pool — ONLY titles with Arabic characters
 function getArabicMoviePool(diff) {
-  const all = (arabicCache.movies || []).filter(m => !isEnglishTitle(m.title));
+  const all = (arabicCache.movies || []).filter(m => hasArabicChars(m.title));
   if (diff === 'easy') return all.filter(m => (m.popularity || 0) > 15 || (m.vote_count || 0) > 50);
   if (diff === 'hard') return all.filter(m => (m.popularity || 0) < 10);
   return all;
 }
 function getArabicTVPool(diff) {
-  const all = (arabicCache.tv || []).filter(t => !isEnglishTitle(t.name));
+  const all = (arabicCache.tv || []).filter(t => hasArabicChars(t.name));
   if (diff === 'easy') return all.filter(t => (t.popularity || 0) > 15 || (t.vote_count || 0) > 30);
   if (diff === 'hard') return all.filter(t => (t.popularity || 0) < 10);
   return all;
@@ -822,7 +844,7 @@ async function genArabicSharedCastQ(diff) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
-      const withPhotos = credits.cast.filter(c => c.profile_path && c.name && !isEnglishTitle(c.name));
+      const withPhotos = credits.cast.filter(c => c.profile_path && c.name && hasArabicChars(c.name));
       if (withPhotos.length < 3) continue;
       const actors = withPhotos.slice(0, 3);
       const actorImages = actors.map(a => `${TMDB_IMG}h632${a.profile_path}`);
@@ -844,14 +866,14 @@ async function genArabicSharedCastQ(diff) {
 
 // ═══ ROUND 4: Arab Actor — MOST POPULAR, gender-matched ═══
 async function genArabicActorQ(diff) {
-  const allMovies = [...(arabicCache.movies || [])].filter(m => !isEnglishTitle(m.title)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-  const allTV = [...(arabicCache.tv || [])].filter(t => !isEnglishTitle(t.name)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const allMovies = [...(arabicCache.movies || [])].filter(m => hasArabicChars(m.title)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const allTV = [...(arabicCache.tv || [])].filter(t => hasArabicChars(t.name)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
   const topWorks = [...allMovies.slice(0, 20).map(m => ({id:m.id,type:'movie'})), ...allTV.slice(0, 20).map(t => ({id:t.id,type:'tv'}))];
   for (const work of shuffle(topWorks).slice(0, 5)) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
-      const validCast = credits.cast.filter(c => c.profile_path && c.name && !isEnglishTitle(c.name));
+      const validCast = credits.cast.filter(c => c.profile_path && c.name && hasArabicChars(c.name));
       if (validCast.length < 4) continue;
       const actor = validCast[0];
       const gender = actor.gender;
