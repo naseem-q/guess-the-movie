@@ -18,7 +18,7 @@ const rooms = {};
 function genCode() { let code; do { code = String(Math.floor(100000 + Math.random() * 900000)); } while (rooms[code]); return code; }
 function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
 function normalize(s) { return s.toLowerCase().replace(/^(the|a|an)\s+/i, '').replace(/[^a-z0-9]/g, ''); }
-async function tmdb(ep) { const url = `https://api.themoviedb.org/3${ep}${ep.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}&language=en-US`; const r = await fetch(url); if (!r.ok) throw new Error(`TMDB ${r.status}`); return r.json(); }
+async function tmdb(ep) { const hasLang = ep.includes('language='); const url = `https://api.themoviedb.org/3${ep}${ep.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}${hasLang ? '' : '&language=en-US'}`; const r = await fetch(url); if (!r.ok) throw new Error(`TMDB ${r.status}`); return r.json(); }
 
 // ═══ TMDB CACHE ══════════════════════════════════════
 const cache = { movies: null, tv: null, ts: 0 };
@@ -621,8 +621,9 @@ Object.assign(GENS, FLAG_GENS);
 
 
 // ═══ ARABIC MOVIES & TV CATEGORY ═════════════════════
-const arabicCache = { movies: null, tv: null, actors: null, ts: 0 };
-const ARABIC_COUNTRIES = ['EG','SY','JO','SA','LB','KW'];
+const arabicCache = { movies: null, tv: null, ts: 0 };
+const ARABIC_COUNTRIES = 'EG|SY|LB|JO';
+const COUNTRY_NAMES_AR = {EG:'مصر',SY:'سوريا',JO:'الأردن',LB:'لبنان'};
 
 async function loadArabic() {
   if (arabicCache.movies && Date.now() - arabicCache.ts < 3600000) return;
@@ -631,44 +632,53 @@ async function loadArabic() {
     const movies = [], tv = [];
     const seen_m = new Set(), seen_t = new Set();
 
-    // Fetch Arabic movies — popular + top rated, from target countries
-    for (const country of ARABIC_COUNTRIES) {
-      for (const sort of ['popularity.desc', 'vote_count.desc']) {
-        for (const p of [1, 2, 3, 4, 5]) {
-          try {
-            // Fetch in Arabic for Arabic titles
-            const d = await tmdb(`/discover/movie?with_original_language=ar&with_origin_country=${country}&sort_by=${sort}&page=${p}&language=ar`);
-            for (const m of (d.results || [])) {
-              if (m.poster_path && m.title && !seen_m.has(m.id)) {
-                seen_m.add(m.id);
-                // Also fetch English title
-                let enTitle = '';
-                try { const en = await tmdb(`/movie/${m.id}?language=en`); enTitle = en.title || ''; } catch(e) {}
-                movies.push({ ...m, enTitle, country });
-              }
+    // Fetch Arabic movies — all countries at once, just 3 pages per sort
+    for (const sort of ['popularity.desc', 'vote_count.desc']) {
+      for (const p of [1, 2, 3]) {
+        try {
+          const d = await tmdb(`/discover/movie?with_original_language=ar&with_origin_country=${ARABIC_COUNTRIES}&sort_by=${sort}&page=${p}&language=ar`);
+          for (const m of (d.results || [])) {
+            if (m.poster_path && m.title && !seen_m.has(m.id)) {
+              seen_m.add(m.id);
+              movies.push(m);
             }
-          } catch (e) {}
-        }
+          }
+        } catch (e) {}
       }
     }
 
-    // Fetch Arabic TV shows
-    for (const country of ARABIC_COUNTRIES) {
-      for (const sort of ['popularity.desc', 'vote_count.desc']) {
-        for (const p of [1, 2, 3, 4, 5]) {
-          try {
-            const d = await tmdb(`/discover/tv?with_original_language=ar&with_origin_country=${country}&sort_by=${sort}&page=${p}&language=ar`);
-            for (const t of (d.results || [])) {
-              if (t.poster_path && t.name && !seen_t.has(t.id)) {
-                seen_t.add(t.id);
-                let enName = '';
-                try { const en = await tmdb(`/tv/${t.id}?language=en`); enName = en.name || ''; } catch(e) {}
-                tv.push({ ...t, enName, country });
-              }
+    // Fetch Arabic TV shows — same approach
+    for (const sort of ['popularity.desc', 'vote_count.desc']) {
+      for (const p of [1, 2, 3]) {
+        try {
+          const d = await tmdb(`/discover/tv?with_original_language=ar&with_origin_country=${ARABIC_COUNTRIES}&sort_by=${sort}&page=${p}&language=ar`);
+          for (const t of (d.results || [])) {
+            if (t.poster_path && t.name && !seen_t.has(t.id)) {
+              seen_t.add(t.id);
+              tv.push(t);
             }
-          } catch (e) {}
-        }
+          }
+        } catch (e) {}
       }
+    }
+
+    // Batch fetch English titles — only for the items we got (parallel, max 10 at a time)
+    const fetchEnTitle = async (item, type) => {
+      try {
+        const field = type === 'movie' ? 'title' : 'name';
+        const d = await tmdb(`/${type}/${item.id}?language=en`);
+        item.enTitle = d.title || d.name || '';
+        // Also get production country
+        if (d.production_countries?.length) item.country = d.production_countries[0].iso_3166_1;
+      } catch(e) { item.enTitle = ''; }
+    };
+
+    // Fetch English titles in parallel batches of 10
+    for (let i = 0; i < movies.length; i += 10) {
+      await Promise.all(movies.slice(i, i + 10).map(m => fetchEnTitle(m, 'movie')));
+    }
+    for (let i = 0; i < tv.length; i += 10) {
+      await Promise.all(tv.slice(i, i + 10).map(t => fetchEnTitle(t, 'tv')));
     }
 
     arabicCache.movies = movies;
@@ -681,8 +691,9 @@ async function loadArabic() {
   }
 }
 
-// Format title: Arabic + (English) 
-function arTitle(arName, enName) {
+// Format titles
+function arTitle(arName) { return arName; } // Arabic only for options
+function arTitleFull(arName, enName) { // Arabic + English for reveal info
   if (enName && enName !== arName) return `${arName} (${enName})`;
   return arName;
 }
@@ -706,10 +717,10 @@ function arabicWrong(correct, pool, titleField, enField, count = 3) {
   const correctGenres = correct.genre_ids || [];
   const correctTitle = correct[titleField];
   const sameGenre = pool.filter(x => x.id !== correct.id && x[titleField] !== correctTitle && x.genre_ids?.some(g => correctGenres.includes(g)));
-  const picked = shuffle(sameGenre).slice(0, count).map(x => arTitle(x[titleField], x[enField]));
+  const picked = shuffle(sameGenre).slice(0, count).map(x => arTitle(x[titleField]));
   if (picked.length < count) {
-    const remaining = pool.filter(x => x.id !== correct.id && !picked.includes(arTitle(x[titleField], x[enField])));
-    picked.push(...shuffle(remaining).slice(0, count - picked.length).map(x => arTitle(x[titleField], x[enField])));
+    const remaining = pool.filter(x => x.id !== correct.id && !picked.includes(arTitle(x[titleField])));
+    picked.push(...shuffle(remaining).slice(0, count - picked.length).map(x => arTitle(x[titleField])));
   }
   return picked.slice(0, count);
 }
@@ -721,11 +732,11 @@ async function genArabicMoviePosterQ(diff) {
   const m = pool[Math.floor(Math.random() * pool.length)];
   let img = await getTextlessPoster(m.id, 'movie');
   if (!img) img = `${TMDB_IMG}w780${m.poster_path}`;
-  const answer = arTitle(m.title, m.enTitle);
+  const answer = arTitle(m.title);
   const wrong = arabicWrong(m, pool, 'title', 'enTitle');
   return {
     type: 'ar_movie_poster', category: 'أفلام عربية', question: 'ما هو هذا الفيلم العربي؟',
-    hints: ['فيلم عربي من إنتاج ' + (m.country === 'EG' ? 'مصر' : m.country === 'SY' ? 'سوريا' : m.country === 'JO' ? 'الأردن' : m.country === 'SA' ? 'السعودية' : m.country === 'LB' ? 'لبنان' : 'الكويت'),
+    hints: ['فيلم عربي من إنتاج ' + (COUNTRY_NAMES_AR[m.country] || 'العالم العربي'),
             'سنة الإنتاج: ' + (m.release_date?.split('-')[0] || '؟'),
             'تقييم: ' + (m.vote_average?.toFixed(1) || '؟') + ' / 10'],
     image: img, revealImage: `${TMDB_IMG}w780${m.poster_path}`,
@@ -741,11 +752,11 @@ async function genArabicTVPosterQ(diff) {
   const s = pool[Math.floor(Math.random() * pool.length)];
   let img = await getTextlessPoster(s.id, 'tv');
   if (!img) img = `${TMDB_IMG}w780${s.poster_path}`;
-  const answer = arTitle(s.name, s.enName);
-  const wrong = arabicWrong(s, pool, 'name', 'enName');
+  const answer = arTitle(s.name);
+  const wrong = arabicWrong(s, pool, 'name', 'enTitle');
   return {
     type: 'ar_tv_poster', category: 'مسلسلات عربية', question: 'ما هو هذا المسلسل العربي؟',
-    hints: ['مسلسل عربي من إنتاج ' + (s.country === 'EG' ? 'مصر' : s.country === 'SY' ? 'سوريا' : s.country === 'JO' ? 'الأردن' : s.country === 'SA' ? 'السعودية' : s.country === 'LB' ? 'لبنان' : 'الكويت'),
+    hints: ['مسلسل عربي من إنتاج ' + (COUNTRY_NAMES_AR[s.country] || 'العالم العربي'),
             'سنة العرض الأول: ' + (s.first_air_date?.split('-')[0] || '؟'),
             'تقييم: ' + (s.vote_average?.toFixed(1) || '؟') + ' / 10'],
     image: img, revealImage: `${TMDB_IMG}w780${s.poster_path}`,
@@ -757,9 +768,9 @@ async function genArabicTVPosterQ(diff) {
 // ═══ ROUND 3: Shared Cast — 3 actors, guess the movie/show ═══
 async function genArabicSharedCastQ(diff) {
   const allWorks = [...getArabicMoviePool(diff).map(m => ({id:m.id,type:'movie',title:m.title,enTitle:m.enTitle,genre_ids:m.genre_ids,poster:`${TMDB_IMG}w780${m.poster_path}`})),
-                    ...getArabicTVPool(diff).map(t => ({id:t.id,type:'tv',title:t.name,enTitle:t.enName,genre_ids:t.genre_ids,poster:`${TMDB_IMG}w780${t.poster_path}`}))];
+                    ...getArabicTVPool(diff).map(t => ({id:t.id,type:'tv',title:t.name,enTitle:t.enTitle,genre_ids:t.genre_ids,poster:`${TMDB_IMG}w780${t.poster_path}`}))];
   
-  for (const work of shuffle(allWorks).slice(0, 20)) {
+  for (const work of shuffle(allWorks).slice(0, 5)) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
@@ -770,10 +781,10 @@ async function genArabicSharedCastQ(diff) {
       const actorImages = actors.map(a => `${TMDB_IMG}h632${a.profile_path}`);
       const actorNames = actors.map(a => a.name);
       
-      const answer = arTitle(work.title, work.enTitle);
+      const answer = arTitle(work.title);
       // Wrong options from other works
       const wrongWorks = shuffle(allWorks.filter(w => w.id !== work.id)).slice(0, 3);
-      const wrong = wrongWorks.map(w => arTitle(w.title, w.enTitle));
+      const wrong = wrongWorks.map(w => arTitle(w.title));
       
       return {
         type: 'ar_shared_cast', category: 'عمل مشترك',
@@ -793,27 +804,31 @@ async function genArabicSharedCastQ(diff) {
   return genArabicMoviePosterQ(diff);
 }
 
-// ═══ ROUND 4: Arab Actor — guess who ═══
+// ═══ ROUND 4: Arab Actor — guess who — pick from MOST POPULAR works ═══
 async function genArabicActorQ(diff) {
-  const allWorks = [...getArabicMoviePool(diff).map(m => ({id:m.id,type:'movie'})),
-                    ...getArabicTVPool(diff).map(t => ({id:t.id,type:'tv'}))];
+  // Sort by popularity — most popular first so we get famous actors
+  const allMovies = [...(arabicCache.movies || [])].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const allTV = [...(arabicCache.tv || [])].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  // Take top 30 most popular works
+  const topWorks = [...allMovies.slice(0, 15).map(m => ({id:m.id,type:'movie'})),
+                    ...allTV.slice(0, 15).map(t => ({id:t.id,type:'tv'}))];
   
   const actorsSeen = new Set();
-  for (const work of shuffle(allWorks).slice(0, 25)) {
+  for (const work of shuffle(topWorks).slice(0, 5)) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
       
-      for (const actor of credits.cast.filter(c => c.profile_path && c.name && !actorsSeen.has(c.id))) {
+      // Pick lead actors (first 3 in cast list — most famous)
+      for (const actor of credits.cast.filter(c => c.profile_path && c.name && !actorsSeen.has(c.id)).slice(0, 3)) {
         actorsSeen.add(actor.id);
-        // Get other actors from same work for wrong options
         const others = credits.cast.filter(c => c.name && c.id !== actor.id && c.name.length > 2).map(c => c.name);
         if (others.length < 3) continue;
         
         return {
           type: 'ar_actor', category: 'ممثلين عرب',
           question: 'من هو هذا الممثل العربي؟',
-          hints: ['ممثل عربي مشهور', 'ظهر في أكثر من عمل فني', 'من نجوم السينما والدراما العربية'],
+          hints: ['ممثل عربي مشهور', 'من أشهر نجوم الشاشة العربية', 'ظهر في أعمال كثيرة'],
           image: `${TMDB_IMG}h632${actor.profile_path}`,
           revealImage: `${TMDB_IMG}h632${actor.profile_path}`,
           answer: actor.name,
@@ -831,7 +846,7 @@ async function genArabicActorQ(diff) {
 function genArabicYearQ(diff) {
   const allWorks = [
     ...getArabicMoviePool(diff).filter(m => m.release_date).map(m => ({title:m.title,enTitle:m.enTitle,year:parseInt(m.release_date.split('-')[0]),poster:`${TMDB_IMG}w780${m.poster_path}`,genre_ids:m.genre_ids,id:m.id})),
-    ...getArabicTVPool(diff).filter(t => t.first_air_date).map(t => ({title:t.name,enTitle:t.enName,year:parseInt(t.first_air_date.split('-')[0]),poster:`${TMDB_IMG}w780${t.poster_path}`,genre_ids:t.genre_ids,id:t.id}))
+    ...getArabicTVPool(diff).filter(t => t.first_air_date).map(t => ({title:t.name,enTitle:t.enTitle,year:parseInt(t.first_air_date.split('-')[0]),poster:`${TMDB_IMG}w780${t.poster_path}`,genre_ids:t.genre_ids,id:t.id}))
   ].filter(w => w.year > 1980 && w.year <= new Date().getFullYear());
   
   if (allWorks.length < 4) return genArabicMoviePosterQ(diff);
@@ -856,10 +871,10 @@ function genArabicYearQ(diff) {
   return {
     type: 'ar_year', category: 'في أي سنة؟',
     question: 'في أي سنة تم إنتاج هذا العمل؟',
-    hints: [arTitle(work.title, work.enTitle), 'حاول تخمين سنة الإنتاج', 'انظر إلى الملصق بعناية'],
+    hints: [arTitleFull(work.title, work.enTitle), 'حاول تخمين سنة الإنتاج', 'انظر إلى الملصق بعناية'],
     image: work.poster, revealImage: work.poster,
     answer, options: shuffle([answer, ...wrong]),
-    year: answer, info: `${arTitle(work.title, work.enTitle)} — ${answer}`,
+    year: answer, info: `${arTitleFull(work.title, work.enTitle)} — ${answer}`,
     landscape: false, noBlur: true
   };
 }
@@ -891,7 +906,7 @@ const ICONS = {
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
-  arabic_tv: { name: 'أفلام ومسلسلات عربية', icon: '🎭', available: true, rounds: ['ar_movie_poster', 'ar_tv_poster', 'ar_shared_cast', 'ar_actor', 'ar_year'] },
+  arabic_tv: { name: 'Arabic Movies & TV', icon: '🎭', available: true, rounds: ['ar_movie_poster', 'ar_tv_poster', 'ar_shared_cast', 'ar_actor', 'ar_year'] },
   flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_mapshape', 'flag_landmark'] },
   famous_people: { name: 'Famous People', icon: '👤', available: false, rounds: [] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
