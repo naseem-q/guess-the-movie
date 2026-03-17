@@ -205,9 +205,19 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
     // If noBlur, draw image fully clear
     if(curNoBlur){
-      // Light background for silhouettes
-      if(curLightBg){ctx.fillStyle='#e8e8e8';ctx.fillRect(0,0,w,h)}
-      ctx.drawImage(img,0,0,w,h);
+      if(curLightBg){
+        // Map silhouette: white background, then draw image, then colorize
+        ctx.fillStyle='#f0f0f0';ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        // Colorize: overlay gold tint on the black silhouette
+        ctx.globalCompositeOperation='source-atop';
+        ctx.fillStyle='#FFE66D';ctx.fillRect(0,0,w,h);
+        ctx.globalCompositeOperation='destination-over';
+        ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,w,h);
+        ctx.globalCompositeOperation='source-over';
+      } else {
+        ctx.drawImage(img,0,0,w,h);
+      }
       return;
     }
 
@@ -316,7 +326,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
       const box=document.getElementById('poster-box');
       box.className='poster-box '+(isL?'landscape-img':'portrait-img');
-      if(d.lightBg) box.style.background='#e8e8e8';
+      if(d.lightBg) box.style.background='#1a1a2e';
       else box.style.background='#111';
       const area=document.getElementById('poster-area');
       area.className='poster-area '+(isL?'landscape-mode':'portrait');
