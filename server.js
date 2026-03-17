@@ -1116,7 +1116,6 @@ Object.assign(GENS, ARABIC_GENS);
 
 // ═══ FAMOUS PEOPLE CATEGORY ══════════════════════════
 const famousPeopleCache = { people: [], usedInCurrentRound: new Set() };
-const PEXELS_KEY = process.env.PEXELS_KEY || '';
 
 // Hardcoded database of ~200 famous people
 const FAMOUS_PEOPLE_DB = [
