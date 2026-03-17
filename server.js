@@ -1115,360 +1115,360 @@ Object.assign(GENS, ARABIC_GENS);
 
 
 // ═══ FAMOUS PEOPLE CATEGORY ══════════════════════════
-const famousPeopleCache = { actors: [], musicians: [], athletes: [], ts: 0, usedInCurrentRound: new Set() };
+const famousPeopleCache = { people: [], usedInCurrentRound: new Set() };
+const PEXELS_KEY = process.env.PEXELS_KEY || '';
 
-// Curated list of famous actors (TMDB person IDs)
-const FAMOUS_ACTORS = [
-  // Hollywood A-List
-  6193,    // Leonardo DiCaprio
-  2963,    // Nicolas Cage
-  3894,    // Christian Bale
-  6384,    // Keanu Reeves
-  2231,    // Samuel L. Jackson
-  3223,    // Robert Downey Jr.
-  1892,    // Matt Damon
-  287,     // Brad Pitt
-  500,     // Tom Cruise
-  1461,    // George Clooney
-  2888,    // Will Smith
-  3894,    // Christian Bale
-  10980,   // Daniel Radcliffe
-  10297,   // Matthew McConaughey
-  73968,   // Henry Cavill
+// Hardcoded database of ~200 famous people
+const FAMOUS_PEOPLE_DB = [
+  // Scientists
+  { name: 'Albert Einstein', field: 'Scientist', nationality: 'Germany', era: '1900s', achievement: 'Theory of Relativity', pexelsQuery: 'albert einstein', difficulty: 'easy' },
+  { name: 'Marie Curie', field: 'Scientist', nationality: 'Poland', era: '1900s', achievement: 'Radioactivity Research', pexelsQuery: 'marie curie', difficulty: 'medium' },
+  { name: 'Isaac Newton', field: 'Scientist', nationality: 'United Kingdom', era: '1600s', achievement: 'Laws of Motion', pexelsQuery: 'isaac newton', difficulty: 'easy' },
+  { name: 'Nikola Tesla', field: 'Scientist', nationality: 'Serbia', era: '1900s', achievement: 'Alternating Current', pexelsQuery: 'nikola tesla', difficulty: 'medium' },
+  { name: 'Stephen Hawking', field: 'Scientist', nationality: 'United Kingdom', era: '1900s', achievement: 'Black Hole Theory', pexelsQuery: 'stephen hawking', difficulty: 'medium' },
+  { name: 'Ahmed Zewail', field: 'Scientist', nationality: 'Egypt', era: '1900s', achievement: 'Femtochemistry', pexelsQuery: 'ahmed zewail', difficulty: 'hard' },
+  { name: 'Ibn Sina', field: 'Scientist', nationality: 'Persia', era: '1000s', achievement: 'Medicine Canon', pexelsQuery: 'avicenna', difficulty: 'medium' },
+  { name: 'Rosalind Franklin', field: 'Scientist', nationality: 'United Kingdom', era: '1900s', achievement: 'DNA Structure', pexelsQuery: 'rosalind franklin', difficulty: 'hard' },
   
-  // Actresses
-  1245,    // Scarlett Johansson
-  72129,   // Jennifer Lawrence
-  140368,  // Margot Robbie
-  1181313, // Ana de Armas
-  234352,  // Emma Stone
-  1896,    // Natalie Portman
-  524,     // Natalie Portman
-  1204,    // Julia Roberts
-  2227,    // Angelina Jolie
-  4587,    // Halle Berry
-  6161,    // Jennifer Aniston
-  10990,   // Emma Watson
-  56734,   // Megan Fox
-  10978,   // Sandra Bullock
-];
-
-// Curated list of famous musicians (TMDB person IDs)
-const FAMOUS_MUSICIANS = [
-  // Pop/Rock Legends
-  64,      // Gary Oldman (also actor but known for music roles)
-  7467,    // David Bowie
-  11411,   // Jack Black (musician/actor)
-  2157,    // Robin Williams (some music work)
+  // Athletes
+  { name: 'Lionel Messi', field: 'Athlete', nationality: 'Argentina', era: '2000s', achievement: 'Football Champion', pexelsQuery: 'lionel messi', difficulty: 'easy' },
+  { name: 'Cristiano Ronaldo', field: 'Athlete', nationality: 'Portugal', era: '2000s', achievement: 'Football Champion', pexelsQuery: 'cristiano ronaldo', difficulty: 'easy' },
+  { name: 'Mohamed Salah', field: 'Athlete', nationality: 'Egypt', era: '2000s', achievement: 'Football Star', pexelsQuery: 'mohamed salah', difficulty: 'easy' },
+  { name: 'Muhammad Ali', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Boxing Champion', pexelsQuery: 'muhammad ali boxer', difficulty: 'easy' },
+  { name: 'Usain Bolt', field: 'Athlete', nationality: 'Jamaica', era: '2000s', achievement: 'Fastest Runner', pexelsQuery: 'usain bolt', difficulty: 'easy' },
+  { name: 'Serena Williams', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Tennis Champion', pexelsQuery: 'serena williams', difficulty: 'easy' },
+  { name: 'Michael Jordan', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Basketball Legend', pexelsQuery: 'michael jordan', difficulty: 'easy' },
+  { name: 'Diego Maradona', field: 'Athlete', nationality: 'Argentina', era: '1900s', achievement: 'Football Legend', pexelsQuery: 'diego maradona', difficulty: 'medium' },
+  { name: 'Nasser Al-Attiyah', field: 'Athlete', nationality: 'Qatar', era: '2000s', achievement: 'Rally Champion', pexelsQuery: 'nasser al attiyah', difficulty: 'hard' },
   
-  // Note: TMDB has limited pure musicians, we'll supplement with actors known for music
-  // Will fetch from popular people and filter by known_for_department
+  // Musicians/Singers
+  { name: 'Michael Jackson', field: 'Singer', nationality: 'United States', era: '1900s', achievement: 'Pop Music Icon', pexelsQuery: 'michael jackson', difficulty: 'easy' },
+  { name: 'Umm Kulthum', field: 'Singer', nationality: 'Egypt', era: '1900s', achievement: 'Arabic Music Legend', pexelsQuery: 'umm kulthum', difficulty: 'easy' },
+  { name: 'Fairuz', field: 'Singer', nationality: 'Lebanon', era: '1900s', achievement: 'Lebanese Music Icon', pexelsQuery: 'fairuz singer', difficulty: 'medium' },
+  { name: 'Kadim Al Sahir', field: 'Singer', nationality: 'Iraq', era: '1900s', achievement: 'Iraqi Music Star', pexelsQuery: 'kadim al sahir', difficulty: 'medium' },
+  { name: 'Beethoven', field: 'Composer', nationality: 'Germany', era: '1700s', achievement: 'Classical Music', pexelsQuery: 'beethoven composer', difficulty: 'easy' },
+  { name: 'Mozart', field: 'Composer', nationality: 'Austria', era: '1700s', achievement: 'Classical Music', pexelsQuery: 'mozart composer', difficulty: 'easy' },
+  { name: 'Freddie Mercury', field: 'Singer', nationality: 'United Kingdom', era: '1900s', achievement: 'Rock Music', pexelsQuery: 'freddie mercury', difficulty: 'easy' },
+  
+  // World Leaders
+  { name: 'Nelson Mandela', field: 'Leader', nationality: 'South Africa', era: '1900s', achievement: 'Anti-Apartheid', pexelsQuery: 'nelson mandela', difficulty: 'easy' },
+  { name: 'Mahatma Gandhi', field: 'Leader', nationality: 'India', era: '1900s', achievement: 'Indian Independence', pexelsQuery: 'mahatma gandhi', difficulty: 'easy' },
+  { name: 'Winston Churchill', field: 'Leader', nationality: 'United Kingdom', era: '1900s', achievement: 'WWII Leader', pexelsQuery: 'winston churchill', difficulty: 'medium' },
+  { name: 'Queen Elizabeth II', field: 'Leader', nationality: 'United Kingdom', era: '1900s', achievement: 'British Monarch', pexelsQuery: 'queen elizabeth', difficulty: 'easy' },
+  { name: 'Gamal Abdel Nasser', field: 'Leader', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian President', pexelsQuery: 'gamal abdel nasser', difficulty: 'medium' },
+  { name: 'King Hussein', field: 'Leader', nationality: 'Jordan', era: '1900s', achievement: 'Jordanian King', pexelsQuery: 'king hussein jordan', difficulty: 'medium' },
+  
+  // Authors/Writers
+  { name: 'William Shakespeare', field: 'Author', nationality: 'United Kingdom', era: '1500s', achievement: 'Playwright', pexelsQuery: 'william shakespeare', difficulty: 'easy' },
+  { name: 'Naguib Mahfouz', field: 'Author', nationality: 'Egypt', era: '1900s', achievement: 'Nobel Literature', pexelsQuery: 'naguib mahfouz', difficulty: 'medium' },
+  { name: 'Ghassan Kanafani', field: 'Author', nationality: 'Palestine', era: '1900s', achievement: 'Palestinian Writer', pexelsQuery: 'ghassan kanafani', difficulty: 'hard' },
+  { name: 'Khalil Gibran', field: 'Author', nationality: 'Lebanon', era: '1900s', achievement: 'The Prophet', pexelsQuery: 'khalil gibran', difficulty: 'medium' },
+  
+  // Artists
+  { name: 'Pablo Picasso', field: 'Artist', nationality: 'Spain', era: '1900s', achievement: 'Cubism Founder', pexelsQuery: 'pablo picasso', difficulty: 'easy' },
+  { name: 'Leonardo da Vinci', field: 'Artist', nationality: 'Italy', era: '1400s', achievement: 'Mona Lisa', pexelsQuery: 'leonardo da vinci', difficulty: 'easy' },
+  { name: 'Vincent van Gogh', field: 'Artist', nationality: 'Netherlands', era: '1800s', achievement: 'Starry Night', pexelsQuery: 'vincent van gogh', difficulty: 'easy' },
+  
+  // Directors
+  { name: 'Steven Spielberg', field: 'Director', nationality: 'United States', era: '1900s', achievement: 'Film Director', pexelsQuery: 'steven spielberg', difficulty: 'medium' },
+  { name: 'Youssef Chahine', field: 'Director', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian Cinema', pexelsQuery: 'youssef chahine', difficulty: 'hard' },
+  { name: 'Naji Abu Nowar', field: 'Director', nationality: 'Jordan', era: '2000s', achievement: 'Theeb Director', pexelsQuery: 'naji abu nowar', difficulty: 'hard' },
+  
+  // Explorers
+  { name: 'Neil Armstrong', field: 'Explorer', nationality: 'United States', era: '1900s', achievement: 'First Moon Landing', pexelsQuery: 'neil armstrong', difficulty: 'easy' },
+  { name: 'Ibn Battuta', field: 'Explorer', nationality: 'Morocco', era: '1300s', achievement: 'World Traveler', pexelsQuery: 'ibn battuta', difficulty: 'medium' },
+  { name: 'Christopher Columbus', field: 'Explorer', nationality: 'Italy', era: '1400s', achievement: 'Americas Explorer', pexelsQuery: 'christopher columbus', difficulty: 'easy' },
 ];
 
-// Curated list of famous athletes (TMDB person IDs - limited in TMDB)
-const FAMOUS_ATHLETES = [
-  56322,   // Mike Tyson
-  1564343, // Cristiano Ronaldo
-  1318224, // Lionel Messi
-  68990,   // Muhammad Ali
-  76851,   // Pelé
-  2227,    // Michael Jordan (if in TMDB)
-  // Note: Will need to expand this list manually or use fallback
+// Inventions database for Round 4
+const INVENTIONS_DB = [
+  { name: 'Thomas Edison', invention: 'Light Bulb', year: '1879', category: 'Technology', nationality: 'United States', pexelsQuery: 'light bulb', difficulty: 'easy' },
+  { name: 'Alexander Graham Bell', invention: 'Telephone', year: '1876', category: 'Communication', nationality: 'United States', pexelsQuery: 'vintage telephone', difficulty: 'easy' },
+  { name: 'Wright Brothers', invention: 'Airplane', year: '1903', category: 'Transport', nationality: 'United States', pexelsQuery: 'airplane', difficulty: 'easy' },
+  { name: 'Karl Benz', invention: 'Automobile', year: '1886', category: 'Transport', nationality: 'Germany', pexelsQuery: 'vintage car', difficulty: 'medium' },
+  { name: 'Johannes Gutenberg', invention: 'Printing Press', year: '1440', category: 'Technology', nationality: 'Germany', pexelsQuery: 'printing press', difficulty: 'medium' },
+  { name: 'Abbas Ibn Firnas', invention: 'Flying Machine', year: '875', category: 'Transport', nationality: 'Al-Andalus', pexelsQuery: 'glider wings', difficulty: 'hard' },
+  { name: 'Al-Jazari', invention: 'Mechanical Clock', year: '1206', category: 'Technology', nationality: 'Mesopotamia', pexelsQuery: 'mechanical clock', difficulty: 'hard' },
+  { name: 'Tim Berners-Lee', invention: 'World Wide Web', year: '1989', category: 'Technology', nationality: 'United Kingdom', pexelsQuery: 'internet network', difficulty: 'medium' },
+  { name: 'Louis Pasteur', invention: 'Pasteurization', year: '1864', category: 'Medicine', nationality: 'France', pexelsQuery: 'milk bottle', difficulty: 'medium' },
+  { name: 'Marie Curie', invention: 'Radium Discovery', year: '1898', category: 'Science', nationality: 'Poland', pexelsQuery: 'radiation symbol', difficulty: 'medium' },
 ];
 
-// Load famous people cache
-async function loadFamousPeople() {
-  if (famousPeopleCache.actors.length > 0 && Date.now() - famousPeopleCache.ts < 3600000) {
-    return;
+// Pexels search helper with caching
+const pexelsCache = {};
+async function searchPexels(query, count = 1) {
+  if (!PEXELS_KEY) {
+    console.log('[PEXELS] No API key - skipping image search');
+    return null;
   }
   
-  console.log('[FAMOUS] Loading famous people...');
+  if (pexelsCache[query]) return pexelsCache[query];
   
-  // Load actors
-  for (const actorId of FAMOUS_ACTORS) {
-    try {
-      const person = await tmdb(`/person/${actorId}`);
-      if (!person.profile_path || !person.name) continue;
-      
-      const images = await tmdb(`/person/${actorId}/images`);
-      const photos = (images.profiles || [])
-        .filter(p => p.file_path)
-        .map(p => `${TMDB_IMG}h632${p.file_path}`)
-        .slice(0, 10);
-      
-      if (photos.length === 0) photos.push(`${TMDB_IMG}h632${person.profile_path}`);
-      
-      famousPeopleCache.actors.push({
-        id: person.id,
-        name: person.name,
-        gender: person.gender,
-        photos: photos,
-        birthday: person.birthday,
-        place_of_birth: person.place_of_birth,
-        popularity: person.popularity
-      });
-    } catch (e) {}
-  }
-  
-  // Also fetch from popular people endpoint
   try {
-    for (let page = 1; page <= 3; page++) {
-      const popular = await tmdb(`/person/popular?page=${page}`);
-      for (const person of (popular.results || []).slice(0, 10)) {
-        if (!person.profile_path || !person.name) continue;
-        if (famousPeopleCache.actors.find(a => a.id === person.id)) continue;
-        
-        const images = await tmdb(`/person/${person.id}/images`);
-        const photos = (images.profiles || [])
-          .filter(p => p.file_path)
-          .map(p => `${TMDB_IMG}h632${p.file_path}`)
-          .slice(0, 10);
-        
-        if (photos.length === 0) photos.push(`${TMDB_IMG}h632${person.profile_path}`);
-        
-        const fullPerson = await tmdb(`/person/${person.id}`);
-        
-        famousPeopleCache.actors.push({
-          id: person.id,
-          name: person.name,
-          gender: person.gender,
-          photos: photos,
-          birthday: fullPerson.birthday,
-          place_of_birth: fullPerson.place_of_birth,
-          popularity: person.popularity
-        });
-      }
+    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}`, {
+      headers: { 'Authorization': PEXELS_KEY }
+    });
+    
+    if (!response.ok) return null;
+    const data = await response.json();
+    
+    if (data.photos && data.photos.length > 0) {
+      const imageUrl = data.photos[0].src.large;
+      pexelsCache[query] = imageUrl;
+      return imageUrl;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.log(`[PEXELS] Error searching for "${query}":`, e.message);
+  }
   
-  famousPeopleCache.ts = Date.now();
-  console.log(`[FAMOUS] Loaded ${famousPeopleCache.actors.length} famous people`);
+  return null;
 }
 
-// Round 1: Famous Actors
-async function genFamousActorsQ(diff) {
-  await loadFamousPeople();
-  const availableActors = famousPeopleCache.actors.filter(a => !famousPeopleCache.usedInCurrentRound.has(a.id));
-  
-  if (availableActors.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousActorsQ(diff);
-  }
-  
-  const shuffledActors = shuffle(availableActors);
-  
-  for (const actor of shuffledActors) {
-    const gender = actor.gender;
-    const sameGender = famousPeopleCache.actors.filter(a => a.id !== actor.id && a.gender === gender);
-    
-    if (sameGender.length < 3) continue;
-    
-    const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
-    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
-    
-    famousPeopleCache.usedInCurrentRound.add(actor.id);
-    
-    return {
-      type: 'famous_actors',
-      category: 'Famous Actors',
-      question: 'Who is this famous actor/actress?',
-      hints: ['Hollywood star', 'Award-winning performer', 'Known worldwide'],
-      image: selectedPhoto,
-      revealImage: selectedPhoto,
-      answer: actor.name,
-      options: shuffle([actor.name, ...wrongNames]),
-      year: '',
-      info: actor.name,
-      landscape: false
-    };
-  }
-  
-  // Fallback
-  famousPeopleCache.usedInCurrentRound.clear();
-  return genFamousActorsQ(diff);
+// Get difficulty pool
+function getFamousPeoplePool(diff) {
+  if (diff === 'easy') return FAMOUS_PEOPLE_DB.filter(p => p.difficulty === 'easy');
+  if (diff === 'hard') return FAMOUS_PEOPLE_DB.filter(p => p.difficulty === 'hard');
+  return FAMOUS_PEOPLE_DB; // medium = all
 }
 
-// Round 2: Famous Musicians (similar to actors for now, can enhance later)
-async function genFamousMusiciansQ(diff) {
-  await loadFamousPeople();
-  const availableActors = famousPeopleCache.actors.filter(a => !famousPeopleCache.usedInCurrentRound.has(a.id));
-  
-  if (availableActors.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousMusiciansQ(diff);
-  }
-  
-  const shuffledActors = shuffle(availableActors);
-  
-  for (const actor of shuffledActors) {
-    const gender = actor.gender;
-    const sameGender = famousPeopleCache.actors.filter(a => a.id !== actor.id && a.gender === gender);
-    
-    if (sameGender.length < 3) continue;
-    
-    const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
-    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
-    
-    famousPeopleCache.usedInCurrentRound.add(actor.id);
-    
-    return {
-      type: 'famous_musicians',
-      category: 'Famous Musicians',
-      question: 'Who is this famous person?',
-      hints: ['Entertainment icon', 'Known worldwide', 'Cultural figure'],
-      image: selectedPhoto,
-      revealImage: selectedPhoto,
-      answer: actor.name,
-      options: shuffle([actor.name, ...wrongNames]),
-      year: '',
-      info: actor.name,
-      landscape: false
-    };
-  }
-  
-  famousPeopleCache.usedInCurrentRound.clear();
-  return genFamousMusiciansQ(diff);
+function getInventionsPool(diff) {
+  if (diff === 'easy') return INVENTIONS_DB.filter(i => i.difficulty === 'easy');
+  if (diff === 'hard') return INVENTIONS_DB.filter(i => i.difficulty === 'hard');
+  return INVENTIONS_DB;
 }
 
-// Round 3: Famous Athletes (use same pool for now)
-async function genFamousAthletesQ(diff) {
-  await loadFamousPeople();
-  const availableActors = famousPeopleCache.actors.filter(a => !famousPeopleCache.usedInCurrentRound.has(a.id));
+// Round 1: Guess the Famous Person
+async function genFamousPersonQ(diff) {
+  const pool = getFamousPeoplePool(diff);
+  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
   
-  if (availableActors.length < 4) {
+  if (available.length < 4) {
     famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousAthletesQ(diff);
+    return genFamousPersonQ(diff);
   }
   
-  const shuffledActors = shuffle(availableActors);
+  const person = available[Math.floor(Math.random() * available.length)];
+  const image = await searchPexels(person.pexelsQuery);
   
-  for (const actor of shuffledActors) {
-    const gender = actor.gender;
-    const sameGender = famousPeopleCache.actors.filter(a => a.id !== actor.id && a.gender === gender);
-    
-    if (sameGender.length < 3) continue;
-    
-    const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
-    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
-    
-    famousPeopleCache.usedInCurrentRound.add(actor.id);
-    
-    return {
-      type: 'famous_athletes',
-      category: 'Famous People',
-      question: 'Who is this famous person?',
-      hints: ['World-renowned figure', 'Household name', 'International celebrity'],
-      image: selectedPhoto,
-      revealImage: selectedPhoto,
-      answer: actor.name,
-      options: shuffle([actor.name, ...wrongNames]),
-      year: '',
-      info: actor.name,
-      landscape: false
-    };
+  // Get wrong options from same field
+  const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
+  const wrongOptions = shuffle(sameField).slice(0, 3).map(p => p.name);
+  
+  // Fallback if not enough same-field options
+  while (wrongOptions.length < 3) {
+    const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.name));
+    if (others.length === 0) break;
+    wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
   }
   
-  famousPeopleCache.usedInCurrentRound.clear();
-  return genFamousAthletesQ(diff);
-}
-
-// Round 4: Guess Their Age
-async function genGuessAgeQ(diff) {
-  await loadFamousPeople();
-  const availableActors = famousPeopleCache.actors.filter(a => 
-    !famousPeopleCache.usedInCurrentRound.has(a.id) && a.birthday
-  );
-  
-  if (availableActors.length < 1) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genGuessAgeQ(diff);
-  }
-  
-  const person = availableActors[Math.floor(Math.random() * availableActors.length)];
-  const selectedPhoto = person.photos[Math.floor(Math.random() * person.photos.length)];
-  
-  // Calculate age
-  const birthYear = parseInt(person.birthday.split('-')[0]);
-  const currentYear = new Date().getFullYear();
-  const age = currentYear - birthYear;
-  
-  // Generate wrong ages (±3, ±7, ±10 years)
-  const wrongAges = new Set();
-  const offsets = shuffle([-10, -7, -3, 3, 7, 10, -5, 5, -12, 12]);
-  for (const offset of offsets) {
-    const wrongAge = age + offset;
-    if (wrongAge > 0 && wrongAge < 120 && wrongAge !== age) {
-      wrongAges.add(wrongAge);
-      if (wrongAges.size >= 3) break;
-    }
-  }
-  
-  famousPeopleCache.usedInCurrentRound.add(person.id);
+  famousPeopleCache.usedInCurrentRound.add(person.name);
   
   return {
-    type: 'guess_age',
-    category: 'Guess Their Age',
-    question: `How old is ${person.name}?`,
-    hints: [person.name, 'Born in ' + birthYear, 'Calculate their current age'],
-    image: selectedPhoto,
-    revealImage: selectedPhoto,
-    answer: String(age),
-    options: shuffle([String(age), ...[...wrongAges].map(String)]),
+    type: 'famous_person',
+    category: 'Guess the Famous Person',
+    question: 'Who is this famous person?',
+    hints: [person.field, person.era, person.achievement],
+    image: image || 'fallback',
+    revealImage: image || 'fallback',
+    answer: person.name,
+    options: shuffle([person.name, ...wrongOptions]),
     year: '',
-    info: `${person.name} is ${age} years old (born ${person.birthday})`,
-    landscape: false,
-    noBlur: true
+    info: `${person.name} — ${person.achievement}`,
+    landscape: false
   };
 }
 
-// Round 5: Guess Their Country
-async function genGuessCountryQ(diff) {
-  await loadFamousPeople();
-  const availableActors = famousPeopleCache.actors.filter(a => 
-    !famousPeopleCache.usedInCurrentRound.has(a.id) && a.place_of_birth
-  );
+// Round 2: Guess Their Nationality
+async function genFamousNationalityQ(diff) {
+  const pool = getFamousPeoplePool(diff);
+  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
   
-  if (availableActors.length < 1) {
+  if (available.length < 4) {
     famousPeopleCache.usedInCurrentRound.clear();
-    return genGuessCountryQ(diff);
+    return genFamousNationalityQ(diff);
   }
   
-  const person = availableActors[Math.floor(Math.random() * availableActors.length)];
-  const selectedPhoto = person.photos[Math.floor(Math.random() * person.photos.length)];
+  const person = available[Math.floor(Math.random() * available.length)];
+  const image = await searchPexels(person.pexelsQuery);
   
-  // Extract country from place_of_birth (usually "City, Country" or "City, State, Country")
-  const birthParts = person.place_of_birth.split(',').map(s => s.trim());
-  const country = birthParts[birthParts.length - 1];
+  // Get wrong nationalities from same region
+  const regions = {
+    'Middle East': ['Egypt', 'Syria', 'Lebanon', 'Jordan', 'Palestine', 'Iraq', 'Saudi Arabia', 'Qatar'],
+    'Europe': ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'Austria', 'Netherlands', 'Poland', 'Serbia'],
+    'Americas': ['United States', 'Argentina', 'Jamaica', 'Brazil', 'Mexico'],
+    'Africa': ['Egypt', 'South Africa', 'Morocco'],
+    'Asia': ['India', 'Japan', 'China']
+  };
   
-  // Generate wrong countries
-  const commonCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'France', 'Germany', 'Spain', 'Italy', 'Japan', 'South Korea', 'India', 'Brazil', 'Mexico', 'China'];
-  const wrongCountries = shuffle(commonCountries.filter(c => c !== country)).slice(0, 3);
+  let region = 'Other';
+  for (const [r, countries] of Object.entries(regions)) {
+    if (countries.includes(person.nationality)) {
+      region = r;
+      break;
+    }
+  }
   
-  famousPeopleCache.usedInCurrentRound.add(person.id);
+  const sameRegion = regions[region] || [];
+  const wrongOptions = shuffle(sameRegion.filter(c => c !== person.nationality && c !== 'Israel')).slice(0, 3);
+  
+  // Fallback
+  const fallbackCountries = ['United States', 'United Kingdom', 'France', 'Germany', 'Egypt', 'Spain'];
+  while (wrongOptions.length < 3) {
+    const country = fallbackCountries[Math.floor(Math.random() * fallbackCountries.length)];
+    if (country !== person.nationality && !wrongOptions.includes(country)) {
+      wrongOptions.push(country);
+    }
+  }
+  
+  famousPeopleCache.usedInCurrentRound.add(person.name);
   
   return {
-    type: 'guess_country',
-    category: 'Guess Their Country',
-    question: `Where is ${person.name} from?`,
-    hints: [person.name, 'Think about their background', 'Which country?'],
-    image: selectedPhoto,
-    revealImage: selectedPhoto,
-    answer: country,
-    options: shuffle([country, ...wrongCountries]),
+    type: 'famous_nationality',
+    category: 'Guess Their Nationality',
+    question: 'What nationality is this person?',
+    hints: [person.field, person.era, person.achievement],
+    image: image || 'fallback',
+    revealImage: image || 'fallback',
+    answer: person.nationality,
+    options: shuffle([person.nationality, ...wrongOptions]),
     year: '',
-    info: `${person.name} is from ${person.place_of_birth}`,
-    landscape: false,
-    noBlur: true
+    info: `${person.name} is from ${person.nationality}`,
+    landscape: false
+  };
+}
+
+// Round 3: Guess Why They're Famous
+async function genFamousForQ(diff) {
+  const pool = getFamousPeoplePool(diff);
+  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
+  
+  if (available.length < 4) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genFamousForQ(diff);
+  }
+  
+  const person = available[Math.floor(Math.random() * available.length)];
+  const image = await searchPexels(person.pexelsQuery);
+  
+  // Get wrong achievements from same field
+  const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
+  const wrongOptions = shuffle(sameField).slice(0, 3).map(p => p.achievement);
+  
+  // Fallback
+  while (wrongOptions.length < 3) {
+    const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.achievement));
+    if (others.length === 0) break;
+    wrongOptions.push(others[Math.floor(Math.random() * others.length)].achievement);
+  }
+  
+  famousPeopleCache.usedInCurrentRound.add(person.name);
+  
+  return {
+    type: 'famous_for',
+    category: 'Guess Why They\'re Famous',
+    question: `What is ${person.name} famous for?`,
+    hints: [person.nationality, person.era, person.field],
+    image: image || 'fallback',
+    revealImage: image || 'fallback',
+    answer: person.achievement,
+    options: shuffle([person.achievement, ...wrongOptions]),
+    year: '',
+    info: `${person.name} — ${person.achievement}`,
+    landscape: false
+  };
+}
+
+// Round 4: Guess the Inventor
+async function genFamousInventorQ(diff) {
+  const pool = getInventionsPool(diff);
+  const available = pool.filter(i => !famousPeopleCache.usedInCurrentRound.has(i.name));
+  
+  if (available.length < 4) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genFamousInventorQ(diff);
+  }
+  
+  const inventor = available[Math.floor(Math.random() * available.length)];
+  const image = await searchPexels(inventor.pexelsQuery);
+  
+  // Get wrong inventors from same era or category
+  const sameCategory = pool.filter(i => i.name !== inventor.name && i.category === inventor.category);
+  const wrongOptions = shuffle(sameCategory).slice(0, 3).map(i => i.name);
+  
+  // Fallback
+  while (wrongOptions.length < 3) {
+    const others = pool.filter(i => i.name !== inventor.name && !wrongOptions.includes(i.name));
+    if (others.length === 0) break;
+    wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
+  }
+  
+  famousPeopleCache.usedInCurrentRound.add(inventor.name);
+  
+  return {
+    type: 'famous_inventor',
+    category: 'Guess the Inventor',
+    question: 'Who invented this?',
+    hints: [`Invented in ${inventor.year}`, inventor.category, inventor.nationality],
+    image: image || 'fallback',
+    revealImage: image || 'fallback',
+    answer: inventor.name,
+    options: shuffle([inventor.name, ...wrongOptions]),
+    year: inventor.year,
+    info: `${inventor.name} invented the ${inventor.invention} in ${inventor.year}`,
+    landscape: false
+  };
+}
+
+// Round 5: Guess the Childhood Photo
+async function genFamousChildhoodQ(diff) {
+  const pool = getFamousPeoplePool(diff);
+  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
+  
+  if (available.length < 4) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genFamousChildhoodQ(diff);
+  }
+  
+  const person = available[Math.floor(Math.random() * available.length)];
+  // For childhood photos, use the regular photo (Pexels doesn't have childhood photos)
+  // In production, you'd have hardcoded Wikipedia URLs for specific people
+  const image = await searchPexels(person.pexelsQuery + ' young');
+  
+  // Get wrong options from same profession and era
+  const sameProfession = pool.filter(p => p.name !== person.name && p.field === person.field && p.era === person.era);
+  const wrongOptions = shuffle(sameProfession).slice(0, 3).map(p => p.name);
+  
+  // Fallback
+  while (wrongOptions.length < 3) {
+    const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.name));
+    if (others.length === 0) break;
+    wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
+  }
+  
+  famousPeopleCache.usedInCurrentRound.add(person.name);
+  
+  return {
+    type: 'famous_childhood',
+    category: 'Guess the Childhood Photo',
+    question: 'Who is this person?',
+    hints: [person.field, person.nationality, `Became famous in the ${person.era}`],
+    image: image || await searchPexels(person.pexelsQuery), // Fallback to regular photo
+    revealImage: image || await searchPexels(person.pexelsQuery),
+    answer: person.name,
+    options: shuffle([person.name, ...wrongOptions]),
+    year: '',
+    info: `${person.name} — ${person.achievement}`,
+    landscape: false
   };
 }
 
 // Famous People generators
 const FAMOUS_GENS = {
-  famous_actors: () => genFamousActorsQ(currentDifficulty),
-  famous_musicians: () => genFamousMusiciansQ(currentDifficulty),
-  famous_athletes: () => genFamousAthletesQ(currentDifficulty),
-  guess_age: () => genGuessAgeQ(currentDifficulty),
-  guess_country: () => genGuessCountryQ(currentDifficulty)
+  famous_person: () => genFamousPersonQ(currentDifficulty),
+  famous_nationality: () => genFamousNationalityQ(currentDifficulty),
+  famous_for: () => genFamousForQ(currentDifficulty),
+  famous_inventor: () => genFamousInventorQ(currentDifficulty),
+  famous_childhood: () => genFamousChildhoodQ(currentDifficulty)
 };
 Object.assign(GENS, FAMOUS_GENS);
 
@@ -1481,7 +1481,7 @@ async function genRound(type, n = 10) {
   }
   
   // Reset famous people tracking when starting any famous people round
-  if (type.startsWith('famous_') || type === 'guess_age' || type === 'guess_country') {
+  if (type.startsWith('famous_')) {
     famousPeopleCache.usedInCurrentRound.clear();
     console.log('[FAMOUS] Starting new round - reset tracking');
   }
@@ -1506,20 +1506,20 @@ const LABELS = {
   movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
   flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_mapshape: 'Guess the Map Shape', flag_landmark: 'Guess the Landmark',
   ar_movie_poster: 'أفلام عربية', ar_tv_poster: 'مسلسلات عربية', ar_shared_cast: 'عمل مشترك', ar_actor: 'ممثلين عرب', ar_year: 'في أي سنة؟',
-  famous_actors: 'Famous Actors', famous_musicians: 'Famous Musicians', famous_athletes: 'Famous People', guess_age: 'Guess Their Age', guess_country: 'Guess Their Country'
+  famous_person: 'Guess the Famous Person', famous_nationality: 'Guess Their Nationality', famous_for: 'Guess Why They\'re Famous', famous_inventor: 'Guess the Inventor', famous_childhood: 'Guess the Childhood Photo'
 };
 const ICONS = {
   movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
   flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_mapshape: '🗺️', flag_landmark: '🏰',
   ar_movie_poster: '🎬', ar_tv_poster: '📺', ar_shared_cast: '👥', ar_actor: '👤', ar_year: '📅',
-  famous_actors: '🎬', famous_musicians: '🎤', famous_athletes: '👤', guess_age: '📅', guess_country: '🌍'
+  famous_person: '👤', famous_nationality: '🌍', famous_for: '⭐', famous_inventor: '💡', famous_childhood: '👶'
 };
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
   arabic_tv: { name: 'Arabic Movies & TV', icon: '🎭', available: true, rounds: ['ar_movie_poster', 'ar_tv_poster', 'ar_shared_cast', 'ar_actor', 'ar_year'] },
   flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_mapshape', 'flag_landmark'] },
-  famous_people: { name: 'Famous People', icon: '👤', available: true, rounds: ['famous_actors', 'famous_musicians', 'famous_athletes', 'guess_age', 'guess_country'] },
+  famous_people: { name: 'Famous People', icon: '👤', available: true, rounds: ['famous_person', 'famous_nationality', 'famous_for', 'famous_inventor', 'famous_childhood'] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
 };
@@ -1548,8 +1548,8 @@ io.on('connection', (socket) => {
       await loadArabic();
       if (!arabicCache.movies?.length && !arabicCache.tv?.length) return cb({ error: 'Cannot load Arabic content.' });
     } else if (category === 'famous_people') {
-      await loadFamousPeople();
-      if (!famousPeopleCache.actors?.length) return cb({ error: 'Cannot load famous people data.' });
+      console.log('[FAMOUS] Using hardcoded famous people database');
+      if (!PEXELS_KEY) console.log('[FAMOUS] Warning: No Pexels API key - images may be limited');
     }
 
     // Set difficulty for generators that need it
@@ -1631,7 +1631,6 @@ io.on('connection', (socket) => {
     if (category === 'movies_tv') { await loadTMDB(); }
     else if (category === 'flags') { await loadFlags(); }
     else if (category === 'arabic_tv') { await loadArabic(); }
-    else if (category === 'famous_people') { await loadFamousPeople(); }
     currentDifficulty = difficulty || 'medium';
 
     const diff = DIFF[difficulty] || DIFF.medium;
