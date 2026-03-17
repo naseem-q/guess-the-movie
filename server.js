@@ -866,9 +866,9 @@ async function genArabicSharedCastQ(diff) {
 
 // ═══ ROUND 4: Arab Actor — Enhanced with Syrian, Jordanian, Lebanese actors ═══
 // Cache for diverse actor pool with multiple photos
-const actorPhotoCache = { actors: [], ts: 0 };
+const actorPhotoCache = { actors: [], ts: 0, usedInCurrentRound: new Set() };
 
-// Curated list of popular Arab actors from Syria, Jordan, Lebanon, Egypt
+// Expanded list of popular Arab actors from Syria, Jordan, Lebanon, Egypt
 const POPULAR_ARAB_ACTORS = [
   // Syrian Actors
   1091449, // تيم حسن (Tim Hassan)
@@ -880,12 +880,21 @@ const POPULAR_ARAB_ACTORS = [
   1484270, // قصي خولي (Qusai Khouli)
   2362022, // نادين تحسين بيك (Nadine Tahseen Bek)
   1091450, // سلوم حداد (Salloum Haddad)
+  1091454, // معتصم النهار (Moatasem Al-Nahar)
+  1518822, // كاريس بشار (Karis Bashar)
+  1091456, // مكسيم خليل (Maxim Khalil)
+  2232037, // رشا رزق (Rasha Rizk)
+  1335495, // سامر المصري (Samer Al-Masri)
+  2232039, // جيانا عيد (Jiana Eid)
   
   // Jordanian Actors
   1090820, // إياد نصار (Eyad Nassar)
   84493,   // علي سليمان (Ali Suliman)
   1479956, // صبا مبارك (Saba Mubarak)
   2293405, // منذر رياحنة (Munther Rayahneh)
+  2503678, // ماجد المصري (Maged El Masry)
+  1515677, // راكين سعد (Rakeen Saad)
+  2555604, // سوسن أرشيد (Sawsan Arsheed)
   
   // Lebanese Actors
   95747,   // نادين لبكي (Nadine Labaki)
@@ -893,8 +902,15 @@ const POPULAR_ARAB_ACTORS = [
   1518824, // سيرين عبد النور (Cyrine Abdelnour)
   1091458, // راغدة (Raghda)
   73425,   // جوليا قصار (Julia Kassar)
+  1535506, // يارا صبري (Yara Sabri)
+  2232041, // وفاء الكيلاني (Wafa Al-Kilani)
+  1335497, // قصي الخولي (Qusai Al-Khouli)
+  2232043, // تقلا شمعون (Takla Chamoun)
+  1091460, // كارمن لبس (Carmen Lebbos)
+  1464915, // قمر خلف (Qamar Khalaf)
+  2259142, // دانييلا رحمة (Daniella Rahme)
   
-  // Egyptian Actors (most popular)
+  // Egyptian Actors - Expanded
   77530,   // عادل إمام (Adel Imam)
   1091403, // محمد هنيدي (Mohamed Henedy)
   77525,   // أحمد حلمي (Ahmed Helmy)
@@ -905,6 +921,31 @@ const POPULAR_ARAB_ACTORS = [
   1091412, // نيللي كريم (Nelly Karim)
   77531,   // هند صبري (Hend Sabry)
   1091418, // خالد أبو النجا (Khaled Abol Naga)
+  77529,   // محمود حميدة (Mahmoud Hemida)
+  1091415, // ماجد الكدواني (Maged El Kedwany)
+  77527,   // ليلى علوي (Laila Eloui)
+  129813,  // نور الشريف (Nour El-Sherif)
+  1335493, // يحيى الفخراني (Yahya El Fakharani)
+  1091398, // محمود عبد العزيز (Mahmoud Abdel Aziz)
+  1514996, // نبيلة عبيد (Nabila Ebeid)
+  1091400, // سعاد حسني (Souad Hosny)
+  1091428, // شريف منير (Sherif Mounir)
+  1091430, // غادة عادل (Ghada Adel)
+  2232033, // درة (Dorra)
+  1091432, // ياسمين عبد العزيز (Yasmine Abdel Aziz)
+  1091434, // أحمد رزق (Ahmed Rizk)
+  1091436, // محمد سعد (Mohamed Saad)
+  1091438, // إدوارد (Edward)
+  1091440, // بشرى (Bushra)
+  1091442, // كريم عبد العزيز (Karim Abdel Aziz)
+  2232035, // منة فضالي (Menna Fadali)
+  1091422, // أحمد عز (Ahmed Ezz)
+  2259144, // آسر ياسين (Asser Yassin)
+  1091424, // منة شلبي (Menna Shalaby)
+  1091426, // أحمد داود (Ahmed Dawood)
+  2259143, // أحمد مكي (Ahmed Mekky)
+  1091420, // محمد رمضان (Mohamed Ramadan)
+  77528,   // يسرا اللوزي (Yousra El Lozy)
 ];
 
 // Load actor pool with multiple photos
@@ -954,23 +995,39 @@ async function genArabicActorQ(diff) {
   // Load enhanced actor pool
   const enhancedActors = await loadActorPhotos();
   
+  // Filter out actors already used in this round
+  const availableActors = enhancedActors.filter(a => !actorPhotoCache.usedInCurrentRound.has(a.id));
+  
   // Also get actors from top movies/TV (original behavior)
   const allMovies = [...(arabicCache.movies || [])].filter(m => hasArabicChars(m.title)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
   const allTV = [...(arabicCache.tv || [])].filter(t => hasArabicChars(t.name)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
   const topWorks = [...allMovies.slice(0, 20).map(m => ({id:m.id,type:'movie'})), ...allTV.slice(0, 20).map(t => ({id:t.id,type:'tv'}))];
   
-  // First try to use an actor from the enhanced pool
-  if (enhancedActors.length >= 4) {
-    const actor = enhancedActors[Math.floor(Math.random() * enhancedActors.length)];
-    const gender = actor.gender;
+  // First try to use an actor from the enhanced pool (not yet used)
+  if (availableActors.length >= 4) {
+    // Shuffle to ensure variety
+    const shuffledActors = shuffle(availableActors);
     
-    // Get gender-matched wrong answers from enhanced pool first
-    const sameGender = enhancedActors.filter(a => a.id !== actor.id && a.gender === gender);
-    
-    if (sameGender.length >= 3) {
+    for (const actor of shuffledActors) {
+      const gender = actor.gender;
+      
+      // CRITICAL: Get ONLY same-gender actors for the options (cannot mix male/female)
+      const sameGenderAll = enhancedActors.filter(a => a.id !== actor.id && a.gender === gender);
+      
+      // STRICT: Must have at least 3 same-gender options, otherwise skip this actor
+      if (sameGenderAll.length < 3) {
+        console.log(`[ACTORS] Skipping ${actor.name} - not enough same-gender options (${sameGenderAll.length})`);
+        continue;
+      }
+      
       // Pick a random photo from this actor's collection
       const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
-      const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
+      const wrongNames = shuffle(sameGenderAll).slice(0, 3).map(a => a.name);
+      
+      // Mark this actor as used in current round
+      actorPhotoCache.usedInCurrentRound.add(actor.id);
+      
+      console.log(`[ACTORS] Selected ${actor.name} (${gender === 1 ? 'Female' : 'Male'}) - Options: ${wrongNames.join(', ')}`);
       
       return {
         type: 'ar_actor', category: 'ممثلين عرب',
@@ -990,12 +1047,27 @@ async function genArabicActorQ(diff) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
-      const validCast = credits.cast.filter(c => c.profile_path && c.name && hasArabicChars(c.name));
+      const validCast = credits.cast.filter(c => c.profile_path && c.name && hasArabicChars(c.name) && !actorPhotoCache.usedInCurrentRound.has(c.id));
       if (validCast.length < 4) continue;
       const actor = validCast[0];
       const gender = actor.gender;
+      
+      // CRITICAL: Get ONLY same-gender actors for the options (cannot mix male/female)
       const sameGender = validCast.filter(c => c.id !== actor.id && c.gender === gender);
-      let wrongNames = sameGender.length >= 3 ? shuffle(sameGender).slice(0, 3).map(c => c.name) : shuffle(validCast.filter(c => c.id !== actor.id)).slice(0, 3).map(c => c.name);
+      
+      // STRICT: Must have at least 3 same-gender options, otherwise skip this actor
+      if (sameGender.length < 3) {
+        console.log(`[ACTORS] Fallback: Skipping ${actor.name} - not enough same-gender options`);
+        continue;
+      }
+      
+      let wrongNames = shuffle(sameGender).slice(0, 3).map(c => c.name);
+      
+      // Mark this actor as used
+      actorPhotoCache.usedInCurrentRound.add(actor.id);
+      
+      console.log(`[ACTORS] Fallback selected ${actor.name} (${gender === 1 ? 'Female' : 'Male'})`);
+      
       return {
         type: 'ar_actor', category: 'ممثلين عرب',
         question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
@@ -1041,7 +1113,26 @@ const ARABIC_GENS = {
 };
 Object.assign(GENS, ARABIC_GENS);
 
-async function genRound(type, n = 10) { const qs = [], used = new Set(); for (let i = 0; i < n; i++) { let q, a = 0; do { a++; q = await GENS[type](); } while (used.has(normalize(q.answer)) && a < 30); used.add(normalize(q.answer)); qs.push(q); console.log(`  [Q${i + 1}] ${q.answer}`); } return qs; }
+async function genRound(type, n = 10) { 
+  // Reset actor tracking when starting actor round
+  if (type === 'ar_actor') {
+    actorPhotoCache.usedInCurrentRound.clear();
+    console.log('[ACTORS] Starting new round - reset tracking');
+  }
+  
+  const qs = [], used = new Set(); 
+  for (let i = 0; i < n; i++) { 
+    let q, a = 0; 
+    do { 
+      a++; 
+      q = await GENS[type](); 
+    } while (used.has(normalize(q.answer)) && a < 30); 
+    used.add(normalize(q.answer)); 
+    qs.push(q); 
+    console.log(`  [Q${i + 1}] ${q.answer}`); 
+  } 
+  return qs; 
+}
 
 // ═══ CONFIG ══════════════════════════════════════════
 const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower: 1.4 }, medium: { timer: 50, startBlur: 42, startRadius: 5, blurDecayPower: 1.7 }, hard: { timer: 60, startBlur: 60, startRadius: 3, blurDecayPower: 2.0 } };
