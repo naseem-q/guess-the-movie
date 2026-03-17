@@ -135,7 +135,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   <div class="q-text" id="g-q"></div>
   <div class="poster-area" id="poster-area">
     <div class="tv-opts side-opts" id="tv-opts-left" style="display:none"></div>
-    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas><img id="map-shape-img" style="display:none;width:100%;height:100%;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(10deg) brightness(1.1);padding:40px" crossorigin="anonymous"></div>
+    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas><img id="map-shape-img" style="display:none;width:100%;height:100%;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(10deg) brightness(1.1);padding:40px" crossorigin="anonymous"><div id="actors-display" style="display:none;width:100%;height:100%;flex-direction:row;align-items:center;justify-content:center;gap:20px;padding:20px;background:#1a1a2e"></div></div>
     <div class="sidebar" id="sidebar"></div>
   </div>
   <div class="tv-opts" id="tv-opts-bottom" style="display:none"></div>
@@ -283,7 +283,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
     socket.on('connect_error',()=>{document.getElementById('connect-status').textContent='Failed...'});
     socket.on('player-list-update',(p)=>{playerList=p;renderLobby(p);renderSB(p)});
 
-    socket.on('round-intro',(d)=>{show('s-ri');document.getElementById('ri-icon').textContent=d.roundIcon;document.getElementById('ri-label').textContent=`ROUND ${d.roundNumber} OF ${d.totalRounds}`;document.getElementById('ri-name').textContent=d.roundLabel;document.getElementById('ri-count').textContent=`${d.questionsCount} Questions`;GameAudio.roundStart();GameAudio.startMusic(d.musicTrack||0)});
+    socket.on('round-intro',(d)=>{show('s-ri');document.getElementById('ri-icon').textContent=d.roundIcon;const isAr=d.roundType?.startsWith('ar_');document.getElementById('ri-label').textContent=isAr?`الجولة ${d.roundNumber} من ${d.totalRounds}`:`ROUND ${d.roundNumber} OF ${d.totalRounds}`;document.getElementById('ri-name').textContent=d.roundLabel;document.getElementById('ri-name').style.direction=isAr?'rtl':'ltr';document.getElementById('ri-count').textContent=isAr?`${d.questionsCount} أسئلة`:`${d.questionsCount} Questions`;GameAudio.roundStart();GameAudio.startMusic(d.musicTrack||0)});
 
     socket.on('question-start',(d)=>{
       show('s-game');document.getElementById('rev-overlay').style.display='none';
@@ -291,10 +291,13 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       document.getElementById('g-cat').textContent=d.category;
       document.getElementById('g-room-code').textContent='JOIN: '+roomCode;
 
-      // Question text — larger + rotating hints
+      // Question text — larger + rotating hints + RTL for Arabic
       const qEl=document.getElementById('g-q');
       const hints=d.hints||[];
-      qEl.innerHTML=`<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">${d.question||''}</div>${hints.length?'<div id="g-hint" style="font-size:14px;color:var(--gold);font-style:italic;opacity:0.6;transition:opacity 0.4s;min-height:20px">'+hints[0]+'</div>':''}`;
+      const isArabic=d.type?.startsWith('ar_');
+      const dir=isArabic?'rtl':'ltr';
+      qEl.style.direction=dir;
+      qEl.innerHTML=`<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px;direction:${dir}">${d.question||''}</div>${hints.length?'<div id="g-hint" style="font-size:14px;color:var(--gold);font-style:italic;opacity:0.6;transition:opacity 0.4s;min-height:20px;direction:${dir}">'+hints[0]+'</div>':''}`;
 
       // Rotate hints every 3 seconds
       if(window._hintTimer) clearInterval(window._hintTimer);
@@ -337,7 +340,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
       // Build option elements
       const optEls=[];
-      ['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-opt';e.innerHTML=`<span class="lt">${l}</span><span>${d.options[i]}</span>`;optEls.push(e)}});
+      ['A','B','C','D'].forEach((l,i)=>{if(d.options[i]){const e=document.createElement('div');e.className='tv-opt';e.style.direction=isArabic?'rtl':'ltr';e.innerHTML=`<span class="lt">${l}</span><span>${d.options[i]}</span>`;optEls.push(e)}});
 
       if(isL){
         // Landscape: options below poster
@@ -352,19 +355,37 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       }
 
       const mapImg=document.getElementById('map-shape-img');
+      const actorsDiv=document.getElementById('actors-display');
 
-      // Map shape: use <img> with CSS filter (no canvas CORS issues)
-      if(d.lightBg){
+      // Shared cast: show 3 actor photos side by side
+      if(d.actorImages && d.actorImages.length >= 3){
+        canvas.style.display='none';
+        mapImg.style.display='none';
+        actorsDiv.style.display='flex';
+        actorsDiv.innerHTML='';
+        d.actorImages.forEach((src,i)=>{
+          const card=document.createElement('div');
+          card.style.cssText='text-align:center;flex:1;max-width:200px';
+          card.innerHTML=`<img src="${src}" style="width:100%;max-height:280px;object-fit:cover;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.5)" crossorigin="anonymous"><div style="margin-top:8px;font-size:15px;font-weight:700;color:var(--gold)">${d.actorNames?.[i]||''}</div>`;
+          actorsDiv.appendChild(card);
+        });
+        box.style.background='#1a1a2e';
+        curImg=null;curNoBlur=true;curLightBg=false;
+        revActive=true;animFrame=requestAnimationFrame(function tick(){if(!revActive)return;animFrame=requestAnimationFrame(tick)});
+      }
+      // Map shape: use <img> with CSS filter
+      else if(d.lightBg){
         canvas.style.display='none';
         mapImg.style.display='block';
+        actorsDiv.style.display='none';
         mapImg.src=d.image;
         box.style.background='#1a1a2e';
-        // Still need to start "animation" for timer to work
         curImg=null;curNoBlur=true;
         revActive=true;animFrame=requestAnimationFrame(function tick(){if(!revActive)return;animFrame=requestAnimationFrame(tick)});
       } else {
         canvas.style.display='block';
         mapImg.style.display='none';
+        actorsDiv.style.display='none';
         box.style.background='#111';
         const img=new Image();img.crossOrigin='anonymous';
         canvas.width=isL?960:520;canvas.height=isL?540:780;
