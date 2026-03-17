@@ -487,7 +487,7 @@ const HINTS = {
 
 function getHints(c) {
   if (HINTS[c.code]) return HINTS[c.code];
-  return [`Located in ${c.subregion}`,`Part of the ${c.region} region`,`Country code: ${c.code}`];
+  return [`Located in ${c.subregion}`,`Part of the ${c.region} region`,`Its capital has ${c.capital?.length || '?'} letters`];
 }
 
 async function loadFlags() {
@@ -496,7 +496,9 @@ async function loadFlags() {
   try {
     const r = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,capital,region,subregion');
     const data = await r.json();
-    flagCache.countries = data.filter(c => c.cca2 && c.name?.common && c.cca2 !== 'IL').map(c => {
+    // Exclude non-sovereign territories, dependencies, and obscure places
+    const EXCLUDED = new Set(['IL','SJ','BV','HM','TF','UM','AQ','GS','IO','PN','SH','FK','GI','AX','BL','MF','SX','CW','BQ','PM','WF','TK','NU','NR','TV','CC','CX','NF','MS','AI','VG','TC','KY','BM','GP','MQ','RE','YT','GF','NC','PF','AS','GU','MP','VI','PR','CK']);
+    flagCache.countries = data.filter(c => c.cca2 && c.name?.common && !EXCLUDED.has(c.cca2)).map(c => {
       let capital = (c.capital && c.capital[0]) || 'N/A';
       if (c.cca2 === 'PS') capital = 'Jerusalem';
       return { code: c.cca2, name: c.name.common, capital, region: c.region || 'Unknown', subregion: c.subregion || c.region || 'Unknown', flag: `https://flagcdn.com/w640/${c.cca2.toLowerCase()}.png` };
