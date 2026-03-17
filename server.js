@@ -622,8 +622,8 @@ Object.assign(GENS, FLAG_GENS);
 
 // ═══ ARABIC MOVIES & TV CATEGORY ═════════════════════
 const arabicCache = { movies: null, tv: null, ts: 0 };
-const ARABIC_COUNTRIES = 'EG|SY|LB';
-const COUNTRY_NAMES_AR = {EG:'مصر',SY:'سوريا',LB:'لبنان'};
+const ARABIC_COUNTRIES = 'EG|SY|LB|JO';
+const COUNTRY_NAMES_AR = {EG:'مصر',SY:'سوريا',JO:'الأردن',LB:'لبنان'};
 
 async function loadArabic() {
   if (arabicCache.movies && Date.now() - arabicCache.ts < 3600000) return;
@@ -732,8 +732,8 @@ async function loadArabic() {
       await Promise.all(tv.slice(i, i + 10).map(t => fetchEnTitle(t, 'tv')));
     }
 
-    // STRICT FILTER: Only keep content with Arabic titles from target countries (NO JORDAN)
-    const ALLOWED_COUNTRIES = new Set(['EG','SY','LB']);
+    // STRICT FILTER: Only keep content with Arabic titles from target countries
+    const ALLOWED_COUNTRIES = new Set(['EG','SY','LB','JO']);
     const hasArabic = (s) => /[\u0600-\u06FF]/.test(s);
     const hasForeignScript = (s) => /[\u3000-\u9FFF\u4E00-\u9FFF\uAC00-\uD7AF\u0900-\u097F\u0400-\u04FF\u0E00-\u0E7F\u1100-\u11FF]/.test(s);
     
@@ -756,9 +756,6 @@ async function loadArabic() {
     });
     arabicCache.ts = Date.now();
     console.log(`[ARABIC] Movies: ${beforeM} → ${arabicCache.movies.length}, TV: ${beforeT} → ${arabicCache.tv.length} after strict filtering`);
-    
-    // Preload actor pool in background
-    loadActorPool().catch(e => console.error('[ACTORS] Preload failed:', e.message));
   } catch (e) {
     console.error('[ARABIC]', e.message);
     if (!arabicCache.movies) { arabicCache.movies = []; arabicCache.tv = []; }
@@ -867,183 +864,148 @@ async function genArabicSharedCastQ(diff) {
   return genArabicMoviePosterQ(diff);
 }
 
-// ═══ ROUND 4: Arab Actor — VERIFIED Arab actors from Syria, Lebanon, Egypt ONLY ═══
-const actorCache = { actors: null, ts: 0, usedInRound: new Set() };
+// ═══ ROUND 4: Arab Actor — Enhanced with Syrian, Jordanian, Lebanese actors ═══
+// Cache for diverse actor pool with multiple photos
+const actorPhotoCache = { actors: [], ts: 0 };
 
-// VERIFIED Arab actors from Egypt, Syria, Lebanon (NO Jordan)
-const KNOWN_ARAB_ACTORS = {
-  // Egyptian Actors - Most Popular
-  EG: [
-    77530,   // عادل إمام (Adel Imam)
-    1091403, // محمد هنيدي (Mohamed Henedy)
-    77525,   // أحمد حلمي (Ahmed Helmy)
-    1091407, // أحمد السقا (Ahmed El Sakka)
-    77524,   // منى زكي (Mona Zaki)
-    1091410, // خالد الصاوي (Khaled El Sawy)
-    77526,   // يسرا (Yousra)
-    1091412, // نيللي كريم (Nelly Karim)
-    77529,   // محمود حميدة (Mahmoud Hemida)
-    1091415, // ماجد الكدواني (Maged El Kedwany)
-    77527,   // ليلى علوي (Laila Eloui)
-    1091418, // خالد أبو النجا (Khaled Abol Naga)
-    77531,   // هند صبري (Hend Sabry)
-    1091426, // أحمد داود (Ahmed Dawood)
-    129813,  // نور الشريف (Nour El-Sherif)
-    1335493, // يحيى الفخراني (Yahya El Fakharani)
-    1091398, // محمود عبد العزيز (Mahmoud Abdel Aziz)
-    1514996, // نبيلة عبيد (Nabila Ebeid)
-    1091400, // سعاد حسني (Souad Hosny)
-    1091428, // شريف منير (Sherif Mounir)
-    1091430, // غادة عادل (Ghada Adel)
-    2232033, // درة (Dorra)
-    1091432, // ياسمين عبد العزيز (Yasmine Abdel Aziz)
-    1091434, // أحمد رزق (Ahmed Rizk)
-    1091436, // محمد سعد (Mohamed Saad)
-    1091438, // إدوارد (Edward)
-    1091440, // بشرى (Bushra)
-    1091442, // كريم عبد العزيز (Karim Abdel Aziz)
-    2232035, // منة فضالي (Menna Fadali)
-  ],
+// Curated list of popular Arab actors from Syria, Jordan, Lebanon, Egypt
+const POPULAR_ARAB_ACTORS = [
   // Syrian Actors
-  SY: [
-    1091449, // تيم حسن (Tim Hassan)
-    1221881, // باسم ياخور (Basem Yakhour)
-    1283726, // سلاف فواخرجي (Sulaf Fawakherji)
-    1091452, // جمال سليمان (Jamal Suliman)
-    2231986, // كندة علوش (Kinda Alloush)
-    1370715, // عابد فهد (Abed Fahed)
-    1091450, // سلوم حداد (Salloum Haddad)
-    1484270, // قصي خولي (Qusai Khouli)
-    2362022, // نادين تحسين بيك (Nadine Tahseen Bek)
-    1091454, // معتصم النهار (Moatasem Al-Nahar)
-    1518822, // كاريس بشار (Karis Bashar)
-    1091456, // مكسيم خليل (Maxim Khalil)
-    2232037, // رشا رزق (Rasha Rizk)
-    1335495, // سامر المصري (Samer Al-Masri)
-    2232039, // جيانا عيد (Jiana Eid)
-  ],
+  1091449, // تيم حسن (Tim Hassan)
+  1221881, // باسم ياخور (Basem Yakhour)
+  1283726, // سلاف فواخرجي (Sulaf Fawakherji)
+  1091452, // جمال سليمان (Jamal Suliman)
+  2231986, // كندة علوش (Kinda Alloush)
+  1370715, // عابد فهد (Abed Fahed)
+  1484270, // قصي خولي (Qusai Khouli)
+  2362022, // نادين تحسين بيك (Nadine Tahseen Bek)
+  1091450, // سلوم حداد (Salloum Haddad)
+  
+  // Jordanian Actors
+  1090820, // إياد نصار (Eyad Nassar)
+  84493,   // علي سليمان (Ali Suliman)
+  1479956, // صبا مبارك (Saba Mubarak)
+  2293405, // منذر رياحنة (Munther Rayahneh)
+  
   // Lebanese Actors
-  LB: [
-    95747,   // نادين لبكي (Nadine Labaki)
-    1479977, // نيكول سابا (Nicole Saba)
-    1518824, // سيرين عبد النور (Cyrine Abdelnour)
-    1091458, // راغدة (Raghda)
-    73425,   // جوليا قصار (Julia Kassar)
-    1535506, // يارا صبري (Yara Sabri)
-    2232041, // وفاء الكيلاني (Wafa Al-Kilani)
-    1335497, // قصي الخولي (Qusai Al-Khouli)
-    2232043, // تقلا شمعون (Takla Chamoun)
-    1091460, // كارمن لبس (Carmen Lebbos)
-  ]
-};
+  95747,   // نادين لبكي (Nadine Labaki)
+  1479977, // نيكول سابا (Nicole Saba)
+  1518824, // سيرين عبد النور (Cyrine Abdelnour)
+  1091458, // راغدة (Raghda)
+  73425,   // جوليا قصار (Julia Kassar)
+  
+  // Egyptian Actors (most popular)
+  77530,   // عادل إمام (Adel Imam)
+  1091403, // محمد هنيدي (Mohamed Henedy)
+  77525,   // أحمد حلمي (Ahmed Helmy)
+  1091407, // أحمد السقا (Ahmed El Sakka)
+  77524,   // منى زكي (Mona Zaki)
+  1091410, // خالد الصاوي (Khaled El Sawy)
+  77526,   // يسرا (Yousra)
+  1091412, // نيللي كريم (Nelly Karim)
+  77531,   // هند صبري (Hend Sabry)
+  1091418, // خالد أبو النجا (Khaled Abol Naga)
+];
 
-async function loadActorPool() {
-  if (actorCache.actors && Date.now() - actorCache.ts < 3600000) return actorCache.actors;
-  console.log('[ACTORS] Loading VERIFIED Arab actor pool (EG, SY, LB only)...');
+// Load actor pool with multiple photos
+async function loadActorPhotos() {
+  if (actorPhotoCache.actors.length > 0 && Date.now() - actorPhotoCache.ts < 3600000) {
+    return actorPhotoCache.actors;
+  }
+  
+  console.log('[ACTORS] Loading diverse Arab actors with multiple photos...');
   const actors = [];
   
-  for (const [country, ids] of Object.entries(KNOWN_ARAB_ACTORS)) {
-    for (const id of ids) {
-      try {
-        const person = await tmdb(`/person/${id}?language=ar`);
-        if (!person.profile_path || !person.name) {
-          console.log(`  [SKIP] Actor ${id}: No photo or name`);
-          continue;
-        }
-        
-        // STRICT: Must have Arabic characters in name
-        if (!hasArabicChars(person.name)) {
-          console.log(`  [REJECT] Actor ${id} "${person.name}": No Arabic in name`);
-          continue;
-        }
-        
-        // Fetch up to 8 different photos for variety
-        const images = await tmdb(`/person/${id}/images`);
-        const profiles = (images.profiles || [])
-          .filter(p => p.file_path)
-          .slice(0, 8)
-          .map(p => `${TMDB_IMG}h632${p.file_path}`);
-        
-        actors.push({
-          id: person.id,
-          name: person.name,
-          gender: person.gender,
-          country,
-          profiles: profiles.length > 0 ? profiles : [`${TMDB_IMG}h632${person.profile_path}`],
-          mainPhoto: `${TMDB_IMG}h632${person.profile_path}`
-        });
-        
-        console.log(`  [ADDED] ${person.name} (${country}) - ${profiles.length} photos`);
-      } catch (e) {
-        console.log(`  [ERROR] Actor ID ${id}: ${e.message}`);
+  for (const actorId of POPULAR_ARAB_ACTORS) {
+    try {
+      const person = await tmdb(`/person/${actorId}?language=ar`);
+      if (!person.profile_path || !person.name || !hasArabicChars(person.name)) continue;
+      
+      // Fetch all available photos for this actor
+      const images = await tmdb(`/person/${actorId}/images`);
+      const photos = (images.profiles || [])
+        .filter(p => p.file_path)
+        .map(p => `${TMDB_IMG}h632${p.file_path}`)
+        .slice(0, 10); // Get up to 10 different photos
+      
+      // Add default photo if no additional photos found
+      if (photos.length === 0) {
+        photos.push(`${TMDB_IMG}h632${person.profile_path}`);
       }
+      
+      actors.push({
+        id: person.id,
+        name: person.name,
+        gender: person.gender,
+        photos: photos
+      });
+    } catch (e) {
+      // Skip actors that fail to load
     }
   }
   
-  actorCache.actors = actors;
-  actorCache.ts = Date.now();
-  console.log(`[ACTORS] ✅ Loaded ${actors.length} VERIFIED actors - SY: ${actors.filter(a => a.country === 'SY').length}, LB: ${actors.filter(a => a.country === 'LB').length}, EG: ${actors.filter(a => a.country === 'EG').length}`);
+  actorPhotoCache.actors = actors;
+  actorPhotoCache.ts = Date.now();
+  console.log(`[ACTORS] Loaded ${actors.length} actors with multiple photos`);
   return actors;
 }
 
 async function genArabicActorQ(diff) {
-  const actorPool = await loadActorPool();
-  if (actorPool.length < 4) {
-    console.log('[ACTORS] Not enough actors in pool, falling back');
-    return genArabicMoviePosterQ(diff);
-  }
+  // Load enhanced actor pool
+  const enhancedActors = await loadActorPhotos();
   
-  // Prioritize Syrian and Lebanese actors, then Egyptian
-  const priorityPool = [
-    ...shuffle(actorPool.filter(a => a.country === 'SY')),
-    ...shuffle(actorPool.filter(a => a.country === 'LB')),
-    ...shuffle(actorPool.filter(a => a.country === 'EG'))
-  ];
+  // Also get actors from top movies/TV (original behavior)
+  const allMovies = [...(arabicCache.movies || [])].filter(m => hasArabicChars(m.title)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const allTV = [...(arabicCache.tv || [])].filter(t => hasArabicChars(t.name)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const topWorks = [...allMovies.slice(0, 20).map(m => ({id:m.id,type:'movie'})), ...allTV.slice(0, 20).map(t => ({id:t.id,type:'tv'}))];
   
-  // Try to find an actor we haven't used yet in this round
-  const unusedActors = priorityPool.filter(a => !actorCache.usedInRound.has(a.id));
-  const candidatePool = unusedActors.length >= 4 ? unusedActors : priorityPool;
-  
-  for (const actor of candidatePool.slice(0, 15)) {
+  // First try to use an actor from the enhanced pool
+  if (enhancedActors.length >= 4) {
+    const actor = enhancedActors[Math.floor(Math.random() * enhancedActors.length)];
     const gender = actor.gender;
-    const sameGender = actorPool.filter(a => a.id !== actor.id && a.gender === gender);
     
-    if (sameGender.length < 3) continue;
+    // Get gender-matched wrong answers from enhanced pool first
+    const sameGender = enhancedActors.filter(a => a.id !== actor.id && a.gender === gender);
     
-    // Pick a RANDOM photo from their collection
-    const selectedPhoto = actor.profiles[Math.floor(Math.random() * actor.profiles.length)];
-    
-    // Get 3 different wrong answers (gender-matched)
-    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
-    
-    // Mark this actor as used
-    actorCache.usedInRound.add(actor.id);
-    
-    const countryHint = actor.country === 'SY' ? 'من سوريا' : 
-                        actor.country === 'LB' ? 'من لبنان' : 'من مصر';
-    
-    console.log(`[ACTORS] Selected: ${actor.name} (${actor.country}) - Photo ${actor.profiles.indexOf(selectedPhoto) + 1}/${actor.profiles.length}`);
-    
-    return {
-      type: 'ar_actor', 
-      category: 'ممثلين عرب',
-      question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
-      hints: [
-        gender === 1 ? 'ممثلة عربية مشهورة' : 'ممثل عربي مشهور',
-        countryHint,
-        'من أشهر نجوم الشاشة العربية'
-      ],
-      image: selectedPhoto,
-      revealImage: selectedPhoto,
-      answer: actor.name,
-      options: shuffle([actor.name, ...wrongNames]),
-      year: '',
-      info: `${actor.name} • ${countryHint}`,
-      landscape: false
-    };
+    if (sameGender.length >= 3) {
+      // Pick a random photo from this actor's collection
+      const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
+      const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
+      
+      return {
+        type: 'ar_actor', category: 'ممثلين عرب',
+        question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
+        hints: [gender === 1 ? 'ممثلة عربية مشهورة' : 'ممثل عربي مشهور', 'من أشهر نجوم الشاشة العربية', 'ظهر في أعمال كثيرة'],
+        image: selectedPhoto,
+        revealImage: selectedPhoto,
+        answer: actor.name,
+        options: shuffle([actor.name, ...wrongNames]),
+        year: '', info: actor.name, landscape: false
+      };
+    }
   }
   
-  console.log('[ACTORS] Could not generate actor question, falling back');
+  // Fallback to original logic (from movie/TV credits)
+  for (const work of shuffle(topWorks).slice(0, 5)) {
+    try {
+      const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
+      if (!credits.cast?.length) continue;
+      const validCast = credits.cast.filter(c => c.profile_path && c.name && hasArabicChars(c.name));
+      if (validCast.length < 4) continue;
+      const actor = validCast[0];
+      const gender = actor.gender;
+      const sameGender = validCast.filter(c => c.id !== actor.id && c.gender === gender);
+      let wrongNames = sameGender.length >= 3 ? shuffle(sameGender).slice(0, 3).map(c => c.name) : shuffle(validCast.filter(c => c.id !== actor.id)).slice(0, 3).map(c => c.name);
+      return {
+        type: 'ar_actor', category: 'ممثلين عرب',
+        question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
+        hints: [gender === 1 ? 'ممثلة عربية مشهورة' : 'ممثل عربي مشهور', 'من أشهر نجوم الشاشة العربية', 'ظهر في أعمال كثيرة'],
+        image: `${TMDB_IMG}h632${actor.profile_path}`, revealImage: `${TMDB_IMG}h632${actor.profile_path}`,
+        answer: actor.name, options: shuffle([actor.name, ...wrongNames]),
+        year: '', info: actor.name, landscape: false
+      };
+    } catch (e) { continue; }
+  }
   return genArabicMoviePosterQ(diff);
 }
 
@@ -1079,26 +1041,7 @@ const ARABIC_GENS = {
 };
 Object.assign(GENS, ARABIC_GENS);
 
-async function genRound(type, n = 10) { 
-  // Reset actor usage tracking when starting actor round
-  if (type === 'ar_actor') {
-    actorCache.usedInRound.clear();
-    console.log('[ACTORS] Reset usage tracking for new round');
-  }
-  
-  const qs = [], used = new Set(); 
-  for (let i = 0; i < n; i++) { 
-    let q, a = 0; 
-    do { 
-      a++; 
-      q = await GENS[type](); 
-    } while (used.has(normalize(q.answer)) && a < 30); 
-    used.add(normalize(q.answer)); 
-    qs.push(q); 
-    console.log(`  [Q${i + 1}] ${q.answer}`); 
-  } 
-  return qs; 
-}
+async function genRound(type, n = 10) { const qs = [], used = new Set(); for (let i = 0; i < n; i++) { let q, a = 0; do { a++; q = await GENS[type](); } while (used.has(normalize(q.answer)) && a < 30); used.add(normalize(q.answer)); qs.push(q); console.log(`  [Q${i + 1}] ${q.answer}`); } return qs; }
 
 // ═══ CONFIG ══════════════════════════════════════════
 const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower: 1.4 }, medium: { timer: 50, startBlur: 42, startRadius: 5, blurDecayPower: 1.7 }, hard: { timer: 60, startBlur: 60, startRadius: 3, blurDecayPower: 2.0 } };
