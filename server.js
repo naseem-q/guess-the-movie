@@ -1113,11 +1113,377 @@ const ARABIC_GENS = {
 };
 Object.assign(GENS, ARABIC_GENS);
 
+
+// ═══ FAMOUS PEOPLE CATEGORY ══════════════════════════
+const famousPeopleCache = { actors: [], musicians: [], athletes: [], ts: 0, usedInCurrentRound: new Set() };
+
+// Curated list of famous actors (TMDB person IDs)
+const FAMOUS_ACTORS = [
+  // Hollywood A-List
+  6193,    // Leonardo DiCaprio
+  2963,    // Nicolas Cage
+  3894,    // Christian Bale
+  6384,    // Keanu Reeves
+  2231,    // Samuel L. Jackson
+  3223,    // Robert Downey Jr.
+  1892,    // Matt Damon
+  287,     // Brad Pitt
+  500,     // Tom Cruise
+  1461,    // George Clooney
+  2888,    // Will Smith
+  3894,    // Christian Bale
+  10980,   // Daniel Radcliffe
+  10297,   // Matthew McConaughey
+  73968,   // Henry Cavill
+  
+  // Actresses
+  1245,    // Scarlett Johansson
+  72129,   // Jennifer Lawrence
+  140368,  // Margot Robbie
+  1181313, // Ana de Armas
+  234352,  // Emma Stone
+  1896,    // Natalie Portman
+  524,     // Natalie Portman
+  1204,    // Julia Roberts
+  2227,    // Angelina Jolie
+  4587,    // Halle Berry
+  6161,    // Jennifer Aniston
+  10990,   // Emma Watson
+  56734,   // Megan Fox
+  10978,   // Sandra Bullock
+];
+
+// Curated list of famous musicians (TMDB person IDs)
+const FAMOUS_MUSICIANS = [
+  // Pop/Rock Legends
+  64,      // Gary Oldman (also actor but known for music roles)
+  7467,    // David Bowie
+  11411,   // Jack Black (musician/actor)
+  2157,    // Robin Williams (some music work)
+  
+  // Note: TMDB has limited pure musicians, we'll supplement with actors known for music
+  // Will fetch from popular people and filter by known_for_department
+];
+
+// Curated list of famous athletes (TMDB person IDs - limited in TMDB)
+const FAMOUS_ATHLETES = [
+  56322,   // Mike Tyson
+  1564343, // Cristiano Ronaldo
+  1318224, // Lionel Messi
+  68990,   // Muhammad Ali
+  76851,   // Pelé
+  2227,    // Michael Jordan (if in TMDB)
+  // Note: Will need to expand this list manually or use fallback
+];
+
+// Load famous people cache
+async function loadFamousPeople() {
+  if (famousPeopleCache.actors.length > 0 && Date.now() - famousPeopleCache.ts < 3600000) {
+    return;
+  }
+  
+  console.log('[FAMOUS] Loading famous people...');
+  
+  // Load actors
+  for (const actorId of FAMOUS_ACTORS) {
+    try {
+      const person = await tmdb(`/person/${actorId}`);
+      if (!person.profile_path || !person.name) continue;
+      
+      const images = await tmdb(`/person/${actorId}/images`);
+      const photos = (images.profiles || [])
+        .filter(p => p.file_path)
+        .map(p => `${TMDB_IMG}h632${p.file_path}`)
+        .slice(0, 10);
+      
+      if (photos.length === 0) photos.push(`${TMDB_IMG}h632${person.profile_path}`);
+      
+      famousPeopleCache.actors.push({
+        id: person.id,
+        name: person.name,
+        gender: person.gender,
+        photos: photos,
+        birthday: person.birthday,
+        place_of_birth: person.place_of_birth,
+        popularity: person.popularity
+      });
+    } catch (e) {}
+  }
+  
+  // Also fetch from popular people endpoint
+  try {
+    for (let page = 1; page <= 3; page++) {
+      const popular = await tmdb(`/person/popular?page=${page}`);
+      for (const person of (popular.results || []).slice(0, 10)) {
+        if (!person.profile_path || !person.name) continue;
+        if (famousPeopleCache.actors.find(a => a.id === person.id)) continue;
+        
+        const images = await tmdb(`/person/${person.id}/images`);
+        const photos = (images.profiles || [])
+          .filter(p => p.file_path)
+          .map(p => `${TMDB_IMG}h632${p.file_path}`)
+          .slice(0, 10);
+        
+        if (photos.length === 0) photos.push(`${TMDB_IMG}h632${person.profile_path}`);
+        
+        const fullPerson = await tmdb(`/person/${person.id}`);
+        
+        famousPeopleCache.actors.push({
+          id: person.id,
+          name: person.name,
+          gender: person.gender,
+          photos: photos,
+          birthday: fullPerson.birthday,
+          place_of_birth: fullPerson.place_of_birth,
+          popularity: person.popularity
+        });
+      }
+    }
+  } catch (e) {}
+  
+  famousPeopleCache.ts = Date.now();
+  console.log(`[FAMOUS] Loaded ${famousPeopleCache.actors.length} famous people`);
+}
+
+// Round 1: Famous Actors
+async function genFamousActorsQ(diff) {
+  await loadFamousPeople();
+  const availableActors = famousPeopleCache.actors.filter(a => !famousPeopleCache.usedInCurrentRound.has(a.id));
+  
+  if (availableActors.length < 4) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genFamousActorsQ(diff);
+  }
+  
+  const shuffledActors = shuffle(availableActors);
+  
+  for (const actor of shuffledActors) {
+    const gender = actor.gender;
+    const sameGender = famousPeopleCache.actors.filter(a => a.id !== actor.id && a.gender === gender);
+    
+    if (sameGender.length < 3) continue;
+    
+    const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
+    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
+    
+    famousPeopleCache.usedInCurrentRound.add(actor.id);
+    
+    return {
+      type: 'famous_actors',
+      category: 'Famous Actors',
+      question: 'Who is this famous actor/actress?',
+      hints: ['Hollywood star', 'Award-winning performer', 'Known worldwide'],
+      image: selectedPhoto,
+      revealImage: selectedPhoto,
+      answer: actor.name,
+      options: shuffle([actor.name, ...wrongNames]),
+      year: '',
+      info: actor.name,
+      landscape: false
+    };
+  }
+  
+  // Fallback
+  famousPeopleCache.usedInCurrentRound.clear();
+  return genFamousActorsQ(diff);
+}
+
+// Round 2: Famous Musicians (similar to actors for now, can enhance later)
+async function genFamousMusiciansQ(diff) {
+  await loadFamousPeople();
+  const availableActors = famousPeopleCache.actors.filter(a => !famousPeopleCache.usedInCurrentRound.has(a.id));
+  
+  if (availableActors.length < 4) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genFamousMusiciansQ(diff);
+  }
+  
+  const shuffledActors = shuffle(availableActors);
+  
+  for (const actor of shuffledActors) {
+    const gender = actor.gender;
+    const sameGender = famousPeopleCache.actors.filter(a => a.id !== actor.id && a.gender === gender);
+    
+    if (sameGender.length < 3) continue;
+    
+    const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
+    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
+    
+    famousPeopleCache.usedInCurrentRound.add(actor.id);
+    
+    return {
+      type: 'famous_musicians',
+      category: 'Famous Musicians',
+      question: 'Who is this famous person?',
+      hints: ['Entertainment icon', 'Known worldwide', 'Cultural figure'],
+      image: selectedPhoto,
+      revealImage: selectedPhoto,
+      answer: actor.name,
+      options: shuffle([actor.name, ...wrongNames]),
+      year: '',
+      info: actor.name,
+      landscape: false
+    };
+  }
+  
+  famousPeopleCache.usedInCurrentRound.clear();
+  return genFamousMusiciansQ(diff);
+}
+
+// Round 3: Famous Athletes (use same pool for now)
+async function genFamousAthletesQ(diff) {
+  await loadFamousPeople();
+  const availableActors = famousPeopleCache.actors.filter(a => !famousPeopleCache.usedInCurrentRound.has(a.id));
+  
+  if (availableActors.length < 4) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genFamousAthletesQ(diff);
+  }
+  
+  const shuffledActors = shuffle(availableActors);
+  
+  for (const actor of shuffledActors) {
+    const gender = actor.gender;
+    const sameGender = famousPeopleCache.actors.filter(a => a.id !== actor.id && a.gender === gender);
+    
+    if (sameGender.length < 3) continue;
+    
+    const selectedPhoto = actor.photos[Math.floor(Math.random() * actor.photos.length)];
+    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
+    
+    famousPeopleCache.usedInCurrentRound.add(actor.id);
+    
+    return {
+      type: 'famous_athletes',
+      category: 'Famous People',
+      question: 'Who is this famous person?',
+      hints: ['World-renowned figure', 'Household name', 'International celebrity'],
+      image: selectedPhoto,
+      revealImage: selectedPhoto,
+      answer: actor.name,
+      options: shuffle([actor.name, ...wrongNames]),
+      year: '',
+      info: actor.name,
+      landscape: false
+    };
+  }
+  
+  famousPeopleCache.usedInCurrentRound.clear();
+  return genFamousAthletesQ(diff);
+}
+
+// Round 4: Guess Their Age
+async function genGuessAgeQ(diff) {
+  await loadFamousPeople();
+  const availableActors = famousPeopleCache.actors.filter(a => 
+    !famousPeopleCache.usedInCurrentRound.has(a.id) && a.birthday
+  );
+  
+  if (availableActors.length < 1) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genGuessAgeQ(diff);
+  }
+  
+  const person = availableActors[Math.floor(Math.random() * availableActors.length)];
+  const selectedPhoto = person.photos[Math.floor(Math.random() * person.photos.length)];
+  
+  // Calculate age
+  const birthYear = parseInt(person.birthday.split('-')[0]);
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - birthYear;
+  
+  // Generate wrong ages (±3, ±7, ±10 years)
+  const wrongAges = new Set();
+  const offsets = shuffle([-10, -7, -3, 3, 7, 10, -5, 5, -12, 12]);
+  for (const offset of offsets) {
+    const wrongAge = age + offset;
+    if (wrongAge > 0 && wrongAge < 120 && wrongAge !== age) {
+      wrongAges.add(wrongAge);
+      if (wrongAges.size >= 3) break;
+    }
+  }
+  
+  famousPeopleCache.usedInCurrentRound.add(person.id);
+  
+  return {
+    type: 'guess_age',
+    category: 'Guess Their Age',
+    question: `How old is ${person.name}?`,
+    hints: [person.name, 'Born in ' + birthYear, 'Calculate their current age'],
+    image: selectedPhoto,
+    revealImage: selectedPhoto,
+    answer: String(age),
+    options: shuffle([String(age), ...[...wrongAges].map(String)]),
+    year: '',
+    info: `${person.name} is ${age} years old (born ${person.birthday})`,
+    landscape: false,
+    noBlur: true
+  };
+}
+
+// Round 5: Guess Their Country
+async function genGuessCountryQ(diff) {
+  await loadFamousPeople();
+  const availableActors = famousPeopleCache.actors.filter(a => 
+    !famousPeopleCache.usedInCurrentRound.has(a.id) && a.place_of_birth
+  );
+  
+  if (availableActors.length < 1) {
+    famousPeopleCache.usedInCurrentRound.clear();
+    return genGuessCountryQ(diff);
+  }
+  
+  const person = availableActors[Math.floor(Math.random() * availableActors.length)];
+  const selectedPhoto = person.photos[Math.floor(Math.random() * person.photos.length)];
+  
+  // Extract country from place_of_birth (usually "City, Country" or "City, State, Country")
+  const birthParts = person.place_of_birth.split(',').map(s => s.trim());
+  const country = birthParts[birthParts.length - 1];
+  
+  // Generate wrong countries
+  const commonCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'France', 'Germany', 'Spain', 'Italy', 'Japan', 'South Korea', 'India', 'Brazil', 'Mexico', 'China'];
+  const wrongCountries = shuffle(commonCountries.filter(c => c !== country)).slice(0, 3);
+  
+  famousPeopleCache.usedInCurrentRound.add(person.id);
+  
+  return {
+    type: 'guess_country',
+    category: 'Guess Their Country',
+    question: `Where is ${person.name} from?`,
+    hints: [person.name, 'Think about their background', 'Which country?'],
+    image: selectedPhoto,
+    revealImage: selectedPhoto,
+    answer: country,
+    options: shuffle([country, ...wrongCountries]),
+    year: '',
+    info: `${person.name} is from ${person.place_of_birth}`,
+    landscape: false,
+    noBlur: true
+  };
+}
+
+// Famous People generators
+const FAMOUS_GENS = {
+  famous_actors: () => genFamousActorsQ(currentDifficulty),
+  famous_musicians: () => genFamousMusiciansQ(currentDifficulty),
+  famous_athletes: () => genFamousAthletesQ(currentDifficulty),
+  guess_age: () => genGuessAgeQ(currentDifficulty),
+  guess_country: () => genGuessCountryQ(currentDifficulty)
+};
+Object.assign(GENS, FAMOUS_GENS);
+
+
 async function genRound(type, n = 10) { 
   // Reset actor tracking when starting actor round
   if (type === 'ar_actor') {
     actorPhotoCache.usedInCurrentRound.clear();
     console.log('[ACTORS] Starting new round - reset tracking');
+  }
+  
+  // Reset famous people tracking when starting any famous people round
+  if (type.startsWith('famous_') || type === 'guess_age' || type === 'guess_country') {
+    famousPeopleCache.usedInCurrentRound.clear();
+    console.log('[FAMOUS] Starting new round - reset tracking');
   }
   
   const qs = [], used = new Set(); 
@@ -1139,19 +1505,21 @@ const DIFF = { easy: { timer: 45, startBlur: 28, startRadius: 7, blurDecayPower:
 const LABELS = {
   movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
   flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_mapshape: 'Guess the Map Shape', flag_landmark: 'Guess the Landmark',
-  ar_movie_poster: 'أفلام عربية', ar_tv_poster: 'مسلسلات عربية', ar_shared_cast: 'عمل مشترك', ar_actor: 'ممثلين عرب', ar_year: 'في أي سنة؟'
+  ar_movie_poster: 'أفلام عربية', ar_tv_poster: 'مسلسلات عربية', ar_shared_cast: 'عمل مشترك', ar_actor: 'ممثلين عرب', ar_year: 'في أي سنة؟',
+  famous_actors: 'Famous Actors', famous_musicians: 'Famous Musicians', famous_athletes: 'Famous People', guess_age: 'Guess Their Age', guess_country: 'Guess Their Country'
 };
 const ICONS = {
   movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
   flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_mapshape: '🗺️', flag_landmark: '🏰',
-  ar_movie_poster: '🎬', ar_tv_poster: '📺', ar_shared_cast: '👥', ar_actor: '👤', ar_year: '📅'
+  ar_movie_poster: '🎬', ar_tv_poster: '📺', ar_shared_cast: '👥', ar_actor: '👤', ar_year: '📅',
+  famous_actors: '🎬', famous_musicians: '🎤', famous_athletes: '👤', guess_age: '📅', guess_country: '🌍'
 };
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
   arabic_tv: { name: 'Arabic Movies & TV', icon: '🎭', available: true, rounds: ['ar_movie_poster', 'ar_tv_poster', 'ar_shared_cast', 'ar_actor', 'ar_year'] },
   flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_mapshape', 'flag_landmark'] },
-  famous_people: { name: 'Famous People', icon: '👤', available: false, rounds: [] },
+  famous_people: { name: 'Famous People', icon: '👤', available: true, rounds: ['famous_actors', 'famous_musicians', 'famous_athletes', 'guess_age', 'guess_country'] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
 };
@@ -1179,6 +1547,9 @@ io.on('connection', (socket) => {
     } else if (category === 'arabic_tv') {
       await loadArabic();
       if (!arabicCache.movies?.length && !arabicCache.tv?.length) return cb({ error: 'Cannot load Arabic content.' });
+    } else if (category === 'famous_people') {
+      await loadFamousPeople();
+      if (!famousPeopleCache.actors?.length) return cb({ error: 'Cannot load famous people data.' });
     }
 
     // Set difficulty for generators that need it
@@ -1260,6 +1631,7 @@ io.on('connection', (socket) => {
     if (category === 'movies_tv') { await loadTMDB(); }
     else if (category === 'flags') { await loadFlags(); }
     else if (category === 'arabic_tv') { await loadArabic(); }
+    else if (category === 'famous_people') { await loadFamousPeople(); }
     currentDifficulty = difficulty || 'medium';
 
     const diff = DIFF[difficulty] || DIFF.medium;
