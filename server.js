@@ -17,7 +17,7 @@ const rooms = {};
 
 function genCode() { let code; do { code = String(Math.floor(100000 + Math.random() * 900000)); } while (rooms[code]); return code; }
 function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
-function normalize(s) { return s.toLowerCase().replace(/^(the|a|an)\s+/i, '').replace(/[^a-z0-9]/g, ''); }
+function normalize(s) { return s.toLowerCase().replace(/^(the|a|an)\s+/i, '').replace(/[^a-z0-9\u0600-\u06FF\u0750-\u077F]/g, '').trim(); }
 async function tmdb(ep) { const hasLang = ep.includes('language='); const url = `https://api.themoviedb.org/3${ep}${ep.includes('?') ? '&' : '?'}api_key=${TMDB_KEY}${hasLang ? '' : '&language=en-US'}`; const r = await fetch(url); if (!r.ok) throw new Error(`TMDB ${r.status}`); return r.json(); }
 
 // ═══ TMDB CACHE ══════════════════════════════════════
@@ -632,13 +632,13 @@ async function loadArabic() {
     const movies = [], tv = [];
     const seen_m = new Set(), seen_t = new Set();
 
-    // Fetch Arabic movies — all countries at once, just 3 pages per sort
+    // Fetch Arabic movies — well-known only (vote_count >= 5 filters out indie/unknown)
     for (const sort of ['popularity.desc', 'vote_count.desc']) {
-      for (const p of [1, 2, 3]) {
+      for (const p of [1, 2, 3, 4, 5]) {
         try {
-          const d = await tmdb(`/discover/movie?with_original_language=ar&with_origin_country=${ARABIC_COUNTRIES}&sort_by=${sort}&page=${p}&language=ar`);
+          const d = await tmdb(`/discover/movie?with_original_language=ar&with_origin_country=${ARABIC_COUNTRIES}&sort_by=${sort}&page=${p}&vote_count.gte=5&language=ar`);
           for (const m of (d.results || [])) {
-            if (m.poster_path && m.title && !seen_m.has(m.id)) {
+            if (m.poster_path && m.title && !seen_m.has(m.id) && (m.vote_count || 0) >= 5) {
               seen_m.add(m.id);
               movies.push(m);
             }
@@ -647,13 +647,13 @@ async function loadArabic() {
       }
     }
 
-    // Fetch Arabic TV shows — same approach
+    // Fetch Arabic TV shows — well-known only
     for (const sort of ['popularity.desc', 'vote_count.desc']) {
-      for (const p of [1, 2, 3]) {
+      for (const p of [1, 2, 3, 4, 5]) {
         try {
-          const d = await tmdb(`/discover/tv?with_original_language=ar&with_origin_country=${ARABIC_COUNTRIES}&sort_by=${sort}&page=${p}&language=ar`);
+          const d = await tmdb(`/discover/tv?with_original_language=ar&with_origin_country=${ARABIC_COUNTRIES}&sort_by=${sort}&page=${p}&vote_count.gte=3&language=ar`);
           for (const t of (d.results || [])) {
-            if (t.poster_path && t.name && !seen_t.has(t.id)) {
+            if (t.poster_path && t.name && !seen_t.has(t.id) && (t.vote_count || 0) >= 3) {
               seen_t.add(t.id);
               tv.push(t);
             }
@@ -662,18 +662,67 @@ async function loadArabic() {
       }
     }
 
-    // Batch fetch English titles — only for the items we got (parallel, max 10 at a time)
+    // Also add well-known Arabic TV shows by TMDB ID (variety shows, talent shows, talk shows)
+    const KNOWN_TV_IDS = [
+      60554,  // Arabs Got Talent
+      62714,  // باب الحارة (Bab Al-Hara)
+      76479,  // البرنامج (Al Bernameg)
+      61740,  // Arab Idol
+      87498,  // الهيبة (Al Hayba)
+      93678,  // لعبة نيوتن (Newton's Cradle)
+      95396,  // بالطو (Balto)
+      67684,  // نسر الصعيد (Nesr El-Saeed)
+      79531,  // أيوب (Ayoub)
+      94949,  // الاختيار (The Choice)
+      71138,  // Grand Hotel
+      136218, // منزل 12 (House 12)
+    ];
+    for (const id of KNOWN_TV_IDS) {
+      if (seen_t.has(id)) continue;
+      try {
+        const t = await tmdb(`/tv/${id}?language=ar`);
+        if (t.poster_path && t.name) { seen_t.add(id); tv.push({ ...t, id }); }
+      } catch (e) {}
+    }
+
+    // Also add well-known Arabic movies by TMDB ID
+    const KNOWN_MOVIE_IDS = [
+      313106, // عسل أسود (Black Honey)
+      39513,  // الكيت كات (El Kit Kat)
+      55424,  // عمارة يعقوبيان (The Yacoubian Building)
+      263542, // الفيل الأزرق (The Blue Elephant)
+      445651, // الفيل الأزرق 2
+      42357,  // الجزيرة (The Island)
+      330770, // الجزيرة 2
+      310133, // ولاد العم (Cousin Friends)
+      47574,  // إبراهيم الأبيض (Ibrahim El Abyad)
+      362161, // كازابلانكا (Casablanca)
+      34716,  // إسماعيلية رايح جاي
+      27936,  // حين ميسرة
+      189765, // لا مؤاخذة
+      505948, // الممر (The Passage)
+      458947, // تراب الماس (Diamond Dust)
+      549053, // كيرة والجن (Cairo Conspiracy)
+      615942, // واحد تاني (Someone Else)
+      803820, // بيت الروبي (Beit El Ruby)
+    ];
+    for (const id of KNOWN_MOVIE_IDS) {
+      if (seen_m.has(id)) continue;
+      try {
+        const m = await tmdb(`/movie/${id}?language=ar`);
+        if (m.poster_path && m.title) { seen_m.add(id); movies.push({ ...m, id }); }
+      } catch (e) {}
+    }
+
+    // Batch fetch English titles in parallel batches of 10
     const fetchEnTitle = async (item, type) => {
       try {
-        const field = type === 'movie' ? 'title' : 'name';
         const d = await tmdb(`/${type}/${item.id}?language=en`);
         item.enTitle = d.title || d.name || '';
-        // Also get production country
         if (d.production_countries?.length) item.country = d.production_countries[0].iso_3166_1;
       } catch(e) { item.enTitle = ''; }
     };
 
-    // Fetch English titles in parallel batches of 10
     for (let i = 0; i < movies.length; i += 10) {
       await Promise.all(movies.slice(i, i + 10).map(m => fetchEnTitle(m, 'movie')));
     }
@@ -698,22 +747,25 @@ function arTitleFull(arName, enName) { // Arabic + English for reveal info
   return arName;
 }
 
-// Get Arabic pool based on difficulty
+// Check if a title looks English (Latin characters only)
+function isEnglishTitle(title) { return /^[a-zA-Z0-9\s:,\-.'!?&]+$/.test(title); }
+
+// Get Arabic pool — EXCLUDE English-only titles
 function getArabicMoviePool(diff) {
-  const all = arabicCache.movies || [];
+  const all = (arabicCache.movies || []).filter(m => !isEnglishTitle(m.title));
   if (diff === 'easy') return all.filter(m => (m.popularity || 0) > 15 || (m.vote_count || 0) > 50);
   if (diff === 'hard') return all.filter(m => (m.popularity || 0) < 10);
   return all;
 }
 function getArabicTVPool(diff) {
-  const all = arabicCache.tv || [];
+  const all = (arabicCache.tv || []).filter(t => !isEnglishTitle(t.name));
   if (diff === 'easy') return all.filter(t => (t.popularity || 0) > 15 || (t.vote_count || 0) > 30);
   if (diff === 'hard') return all.filter(t => (t.popularity || 0) < 10);
   return all;
 }
 
-// Genre-matched wrong options for Arabic content
-function arabicWrong(correct, pool, titleField, enField, count = 3) {
+// Genre-matched wrong options — SAME TYPE only
+function arabicWrong(correct, pool, titleField, count = 3) {
   const correctGenres = correct.genre_ids || [];
   const correctTitle = correct[titleField];
   const sameGenre = pool.filter(x => x.id !== correct.id && x[titleField] !== correctTitle && x.genre_ids?.some(g => correctGenres.includes(g)));
@@ -733,15 +785,13 @@ async function genArabicMoviePosterQ(diff) {
   let img = await getTextlessPoster(m.id, 'movie');
   if (!img) img = `${TMDB_IMG}w780${m.poster_path}`;
   const answer = arTitle(m.title);
-  const wrong = arabicWrong(m, pool, 'title', 'enTitle');
+  const wrong = arabicWrong(m, pool, 'title');
   return {
     type: 'ar_movie_poster', category: 'أفلام عربية', question: 'ما هو هذا الفيلم العربي؟',
-    hints: ['فيلم عربي من إنتاج ' + (COUNTRY_NAMES_AR[m.country] || 'العالم العربي'),
-            'سنة الإنتاج: ' + (m.release_date?.split('-')[0] || '؟'),
-            'تقييم: ' + (m.vote_average?.toFixed(1) || '؟') + ' / 10'],
+    hints: ['فيلم عربي من إنتاج ' + (COUNTRY_NAMES_AR[m.country] || 'العالم العربي'), 'سنة الإنتاج: ' + (m.release_date?.split('-')[0] || '؟'), 'تقييم: ' + (m.vote_average?.toFixed(1) || '؟') + ' / 10'],
     image: img, revealImage: `${TMDB_IMG}w780${m.poster_path}`,
     answer, options: shuffle([answer, ...wrong]),
-    year: m.release_date?.split('-')[0] || '', info: answer, landscape: false
+    year: m.release_date?.split('-')[0] || '', info: arTitleFull(m.title, m.enTitle), landscape: false
   };
 }
 
@@ -753,129 +803,92 @@ async function genArabicTVPosterQ(diff) {
   let img = await getTextlessPoster(s.id, 'tv');
   if (!img) img = `${TMDB_IMG}w780${s.poster_path}`;
   const answer = arTitle(s.name);
-  const wrong = arabicWrong(s, pool, 'name', 'enTitle');
+  const wrong = arabicWrong(s, pool, 'name');
   return {
     type: 'ar_tv_poster', category: 'مسلسلات عربية', question: 'ما هو هذا المسلسل العربي؟',
-    hints: ['مسلسل عربي من إنتاج ' + (COUNTRY_NAMES_AR[s.country] || 'العالم العربي'),
-            'سنة العرض الأول: ' + (s.first_air_date?.split('-')[0] || '؟'),
-            'تقييم: ' + (s.vote_average?.toFixed(1) || '؟') + ' / 10'],
+    hints: ['مسلسل عربي من إنتاج ' + (COUNTRY_NAMES_AR[s.country] || 'العالم العربي'), 'سنة العرض الأول: ' + (s.first_air_date?.split('-')[0] || '؟'), 'تقييم: ' + (s.vote_average?.toFixed(1) || '؟') + ' / 10'],
     image: img, revealImage: `${TMDB_IMG}w780${s.poster_path}`,
     answer, options: shuffle([answer, ...wrong]),
-    year: s.first_air_date?.split('-')[0] || '', info: answer, landscape: false
+    year: s.first_air_date?.split('-')[0] || '', info: arTitleFull(s.name, s.enTitle), landscape: false
   };
 }
 
-// ═══ ROUND 3: Shared Cast — 3 actors, guess the movie/show ═══
+// ═══ ROUND 3: Shared Cast ═══
 async function genArabicSharedCastQ(diff) {
-  const allWorks = [...getArabicMoviePool(diff).map(m => ({id:m.id,type:'movie',title:m.title,enTitle:m.enTitle,genre_ids:m.genre_ids,poster:`${TMDB_IMG}w780${m.poster_path}`})),
-                    ...getArabicTVPool(diff).map(t => ({id:t.id,type:'tv',title:t.name,enTitle:t.enTitle,genre_ids:t.genre_ids,poster:`${TMDB_IMG}w780${t.poster_path}`}))];
-  
+  const moviePool = getArabicMoviePool(diff).map(m => ({id:m.id,type:'movie',title:m.title,enTitle:m.enTitle,genre_ids:m.genre_ids,poster:`${TMDB_IMG}w780${m.poster_path}`,isMovie:true}));
+  const tvPool = getArabicTVPool(diff).map(t => ({id:t.id,type:'tv',title:t.name,enTitle:t.enTitle,genre_ids:t.genre_ids,poster:`${TMDB_IMG}w780${t.poster_path}`,isMovie:false}));
+  const allWorks = [...moviePool, ...tvPool];
   for (const work of shuffle(allWorks).slice(0, 5)) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
-      const withPhotos = credits.cast.filter(c => c.profile_path && c.name);
+      const withPhotos = credits.cast.filter(c => c.profile_path && c.name && !isEnglishTitle(c.name));
       if (withPhotos.length < 3) continue;
-      
       const actors = withPhotos.slice(0, 3);
       const actorImages = actors.map(a => `${TMDB_IMG}h632${a.profile_path}`);
       const actorNames = actors.map(a => a.name);
-      
       const answer = arTitle(work.title);
-      // Wrong options from other works
-      const wrongWorks = shuffle(allWorks.filter(w => w.id !== work.id)).slice(0, 3);
-      const wrong = wrongWorks.map(w => arTitle(w.title));
-      
+      const sameType = (work.isMovie ? moviePool : tvPool).filter(w => w.id !== work.id);
+      const wrong = shuffle(sameType).slice(0, 3).map(w => arTitle(w.title));
       return {
-        type: 'ar_shared_cast', category: 'عمل مشترك',
-        question: 'ما هو العمل المشترك بين هؤلاء الممثلين؟',
+        type: 'ar_shared_cast', category: 'عمل مشترك', question: 'ما هو العمل المشترك بين هؤلاء الممثلين؟',
         hints: [actorNames[0], actorNames[1], actorNames[2]],
-        image: actorImages[0], // Primary image
-        actorImages: actorImages, // All 3 images — host will display specially
-        actorNames: actorNames,
-        revealImage: work.poster,
+        image: actorImages[0], actorImages, actorNames, revealImage: work.poster,
         answer, options: shuffle([answer, ...wrong]),
-        year: '', info: answer, landscape: true, noBlur: true
+        year: '', info: arTitleFull(work.title, work.enTitle), landscape: true, noBlur: true
       };
     } catch (e) { continue; }
   }
-  
-  // Fallback to movie poster question
   return genArabicMoviePosterQ(diff);
 }
 
-// ═══ ROUND 4: Arab Actor — guess who — pick from MOST POPULAR works ═══
+// ═══ ROUND 4: Arab Actor — MOST POPULAR, gender-matched ═══
 async function genArabicActorQ(diff) {
-  // Sort by popularity — most popular first so we get famous actors
-  const allMovies = [...(arabicCache.movies || [])].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-  const allTV = [...(arabicCache.tv || [])].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-  // Take top 30 most popular works
-  const topWorks = [...allMovies.slice(0, 15).map(m => ({id:m.id,type:'movie'})),
-                    ...allTV.slice(0, 15).map(t => ({id:t.id,type:'tv'}))];
-  
-  const actorsSeen = new Set();
+  const allMovies = [...(arabicCache.movies || [])].filter(m => !isEnglishTitle(m.title)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const allTV = [...(arabicCache.tv || [])].filter(t => !isEnglishTitle(t.name)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const topWorks = [...allMovies.slice(0, 20).map(m => ({id:m.id,type:'movie'})), ...allTV.slice(0, 20).map(t => ({id:t.id,type:'tv'}))];
   for (const work of shuffle(topWorks).slice(0, 5)) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
-      
-      // Pick lead actors (first 3 in cast list — most famous)
-      for (const actor of credits.cast.filter(c => c.profile_path && c.name && !actorsSeen.has(c.id)).slice(0, 3)) {
-        actorsSeen.add(actor.id);
-        const others = credits.cast.filter(c => c.name && c.id !== actor.id && c.name.length > 2).map(c => c.name);
-        if (others.length < 3) continue;
-        
-        return {
-          type: 'ar_actor', category: 'ممثلين عرب',
-          question: 'من هو هذا الممثل العربي؟',
-          hints: ['ممثل عربي مشهور', 'من أشهر نجوم الشاشة العربية', 'ظهر في أعمال كثيرة'],
-          image: `${TMDB_IMG}h632${actor.profile_path}`,
-          revealImage: `${TMDB_IMG}h632${actor.profile_path}`,
-          answer: actor.name,
-          options: shuffle([actor.name, ...shuffle(others).slice(0, 3)]),
-          year: '', info: actor.name, landscape: false
-        };
-      }
+      const validCast = credits.cast.filter(c => c.profile_path && c.name && !isEnglishTitle(c.name));
+      if (validCast.length < 4) continue;
+      const actor = validCast[0];
+      const gender = actor.gender;
+      const sameGender = validCast.filter(c => c.id !== actor.id && c.gender === gender);
+      let wrongNames = sameGender.length >= 3 ? shuffle(sameGender).slice(0, 3).map(c => c.name) : shuffle(validCast.filter(c => c.id !== actor.id)).slice(0, 3).map(c => c.name);
+      return {
+        type: 'ar_actor', category: 'ممثلين عرب',
+        question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
+        hints: [gender === 1 ? 'ممثلة عربية مشهورة' : 'ممثل عربي مشهور', 'من أشهر نجوم الشاشة العربية', 'ظهر في أعمال كثيرة'],
+        image: `${TMDB_IMG}h632${actor.profile_path}`, revealImage: `${TMDB_IMG}h632${actor.profile_path}`,
+        answer: actor.name, options: shuffle([actor.name, ...wrongNames]),
+        year: '', info: actor.name, landscape: false
+      };
     } catch (e) { continue; }
   }
-  
   return genArabicMoviePosterQ(diff);
 }
 
 // ═══ ROUND 5: Guess the Year ═══
 function genArabicYearQ(diff) {
   const allWorks = [
-    ...getArabicMoviePool(diff).filter(m => m.release_date).map(m => ({title:m.title,enTitle:m.enTitle,year:parseInt(m.release_date.split('-')[0]),poster:`${TMDB_IMG}w780${m.poster_path}`,genre_ids:m.genre_ids,id:m.id})),
-    ...getArabicTVPool(diff).filter(t => t.first_air_date).map(t => ({title:t.name,enTitle:t.enTitle,year:parseInt(t.first_air_date.split('-')[0]),poster:`${TMDB_IMG}w780${t.poster_path}`,genre_ids:t.genre_ids,id:t.id}))
+    ...getArabicMoviePool(diff).filter(m => m.release_date).map(m => ({title:m.title,enTitle:m.enTitle,year:parseInt(m.release_date.split('-')[0]),poster:`${TMDB_IMG}w780${m.poster_path}`,id:m.id})),
+    ...getArabicTVPool(diff).filter(t => t.first_air_date).map(t => ({title:t.name,enTitle:t.enTitle,year:parseInt(t.first_air_date.split('-')[0]),poster:`${TMDB_IMG}w780${t.poster_path}`,id:t.id}))
   ].filter(w => w.year > 1980 && w.year <= new Date().getFullYear());
-  
   if (allWorks.length < 4) return genArabicMoviePosterQ(diff);
-  
   const work = allWorks[Math.floor(Math.random() * allWorks.length)];
   const correctYear = work.year;
-  
-  // Generate 3 wrong years within ±1-5 years range
   const wrongYears = new Set();
-  const offsets = shuffle([-4, -3, -2, -1, 1, 2, 3, 4, 5]);
-  for (const off of offsets) {
-    const wy = correctYear + off;
-    if (wy > 1980 && wy <= new Date().getFullYear() && wy !== correctYear) wrongYears.add(wy);
-    if (wrongYears.size >= 3) break;
-  }
-  // Fill if needed
+  for (const off of shuffle([-4,-3,-2,-1,1,2,3,4,5])) { const wy = correctYear + off; if (wy > 1980 && wy <= new Date().getFullYear()) wrongYears.add(wy); if (wrongYears.size >= 3) break; }
   while (wrongYears.size < 3) { wrongYears.add(correctYear + wrongYears.size + 5); }
-  
   const answer = String(correctYear);
-  const wrong = [...wrongYears].map(String);
-  
   return {
-    type: 'ar_year', category: 'في أي سنة؟',
-    question: 'في أي سنة تم إنتاج هذا العمل؟',
+    type: 'ar_year', category: 'في أي سنة؟', question: 'في أي سنة تم إنتاج هذا العمل؟',
     hints: [arTitleFull(work.title, work.enTitle), 'حاول تخمين سنة الإنتاج', 'انظر إلى الملصق بعناية'],
     image: work.poster, revealImage: work.poster,
-    answer, options: shuffle([answer, ...wrong]),
-    year: answer, info: `${arTitleFull(work.title, work.enTitle)} — ${answer}`,
-    landscape: false, noBlur: true
+    answer, options: shuffle([answer, ...[...wrongYears].map(String)]),
+    year: answer, info: `${arTitleFull(work.title, work.enTitle)} — ${answer}`, landscape: false, noBlur: true
   };
 }
 
@@ -1043,9 +1056,9 @@ io.on('connection', (socket) => {
 // ═══ GAME FLOW ═══════════════════════════════════════
 function startRound(r) { r.state = 'round_intro'; const rt = r.activeRounds[r.rIdx]; io.to(r.code).emit('round-intro', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundType: rt, roundLabel: LABELS[rt], roundIcon: ICONS[rt], questionsCount: 10, musicTrack: r.rIdx % 4 }); setTimeout(() => { r.qIdx = 0; sendQ(r); }, 4000); }
 function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hints: q.hints || (q.hint ? [q.hint] : []), timer: r.diff.timer, options: q.options, landscape: q.landscape || false, noBlur: q.noBlur || false, lightBg: q.lightBg || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff, actorImages: q.actorImages || null, actorNames: q.actorNames || null }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
-function reveal(r) { r.state = 'question_reveal'; clearTimeout(r.qTimer); const q = r.allQ[r.activeRounds[r.rIdx]][r.qIdx]; const results = {}; Object.entries(r.answers).forEach(([sid, a]) => { const p = r.players[sid]; if (p) results[p.name] = a; }); Object.entries(r.players).forEach(([, p]) => { if (!results[p.name]) results[p.name] = { correct: false, points: 0, time: null, choice: null }; }); const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('question-reveal', { answer: q.answer, info: q.info, year: q.year, image: q.revealImage || q.image, results, leaderboard: pl, questionNumber: r.qIdx + 1, totalQuestions: 10 }); }
-function nextQ(r) { r.qIdx++; r.qIdx >= 10 ? roundResults(r) : sendQ(r); }
-function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); }
+function reveal(r) { r.state = 'question_reveal'; clearTimeout(r.qTimer); const q = r.allQ[r.activeRounds[r.rIdx]][r.qIdx]; const results = {}; Object.entries(r.answers).forEach(([sid, a]) => { const p = r.players[sid]; if (p) results[p.name] = a; }); Object.entries(r.players).forEach(([, p]) => { if (!results[p.name]) results[p.name] = { correct: false, points: 0, time: null, choice: null }; }); const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('question-reveal', { answer: q.answer, info: q.info, year: q.year, image: q.revealImage || q.image, results, leaderboard: pl, questionNumber: r.qIdx + 1, totalQuestions: 10 }); r.autoNext = setTimeout(() => { if (r.state === 'question_reveal') nextQ(r); }, 5000); }
+function nextQ(r) { clearTimeout(r.autoNext); r.qIdx++; r.qIdx >= 10 ? roundResults(r) : sendQ(r); }
+function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); r.autoNext = setTimeout(() => { if (r.state === 'round_results') { r.rIdx++; r.qIdx = 0; r.rIdx >= r.activeRounds.length ? finalResults(r) : startRound(r); } }, 5000); }
 function finalResults(r) { r.state = 'final_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('final-results', { leaderboard: pl }); }
 
 setInterval(() => { Object.entries(rooms).forEach(([c, r]) => { if (Date.now() - r.created > 5400000) { clearTimeout(r.qTimer); delete rooms[c]; } }); }, 60000);
