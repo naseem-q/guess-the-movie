@@ -135,7 +135,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   <div class="q-text" id="g-q"></div>
   <div class="poster-area" id="poster-area">
     <div class="tv-opts side-opts" id="tv-opts-left" style="display:none"></div>
-    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas></div>
+    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas><img id="map-shape-img" style="display:none;width:100%;height:100%;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(10deg) brightness(1.1);padding:40px" crossorigin="anonymous"></div>
     <div class="sidebar" id="sidebar"></div>
   </div>
   <div class="tv-opts" id="tv-opts-bottom" style="display:none"></div>
@@ -351,13 +351,28 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
         optEls.forEach(e=>optsLeft.appendChild(e));
       }
 
-      const img=new Image();img.crossOrigin='anonymous';
-      // Set canvas size and fill black BEFORE image loads
-      canvas.width=isL?960:520;canvas.height=isL?540:780;
-      fillBlack();
-      curImg=null; // Clear current image so animation doesn't show old one
-      img.onload=function(){curImg=img;startAnim()};
-      img.onerror=function(){console.error('Img fail')};img.src=d.image;
+      const mapImg=document.getElementById('map-shape-img');
+
+      // Map shape: use <img> with CSS filter (no canvas CORS issues)
+      if(d.lightBg){
+        canvas.style.display='none';
+        mapImg.style.display='block';
+        mapImg.src=d.image;
+        box.style.background='#1a1a2e';
+        // Still need to start "animation" for timer to work
+        curImg=null;curNoBlur=true;
+        revActive=true;animFrame=requestAnimationFrame(function tick(){if(!revActive)return;animFrame=requestAnimationFrame(tick)});
+      } else {
+        canvas.style.display='block';
+        mapImg.style.display='none';
+        box.style.background='#111';
+        const img=new Image();img.crossOrigin='anonymous';
+        canvas.width=isL?960:520;canvas.height=isL?540:780;
+        fillBlack();
+        curImg=null;
+        img.onload=function(){curImg=img;startAnim()};
+        img.onerror=function(){console.error('Img fail')};img.src=d.image;
+      }
       renderSB(playerList);startTimer();
     });
 
