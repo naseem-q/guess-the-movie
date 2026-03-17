@@ -756,6 +756,9 @@ async function loadArabic() {
     });
     arabicCache.ts = Date.now();
     console.log(`[ARABIC] Movies: ${beforeM} → ${arabicCache.movies.length}, TV: ${beforeT} → ${arabicCache.tv.length} after strict filtering`);
+    
+    // Preload actor pool in background
+    loadActorPool().catch(e => console.error('[ACTORS] Preload failed:', e.message));
   } catch (e) {
     console.error('[ARABIC]', e.message);
     if (!arabicCache.movies) { arabicCache.movies = []; arabicCache.tv = []; }
@@ -864,31 +867,199 @@ async function genArabicSharedCastQ(diff) {
   return genArabicMoviePosterQ(diff);
 }
 
-// ═══ ROUND 4: Arab Actor — MOST POPULAR, gender-matched ═══
-async function genArabicActorQ(diff) {
-  const allMovies = [...(arabicCache.movies || [])].filter(m => hasArabicChars(m.title)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-  const allTV = [...(arabicCache.tv || [])].filter(t => hasArabicChars(t.name)).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-  const topWorks = [...allMovies.slice(0, 20).map(m => ({id:m.id,type:'movie'})), ...allTV.slice(0, 20).map(t => ({id:t.id,type:'tv'}))];
-  for (const work of shuffle(topWorks).slice(0, 5)) {
+// ═══ ROUND 4: Arab Actor — DIVERSE POOL with Syrian, Jordanian, Lebanese actors ═══
+// Cache for actor data to avoid repeated API calls
+const actorCache = { actors: null, ts: 0 };
+
+// Well-known Syrian, Jordanian, Lebanese, and Egyptian actors (TMDB person IDs)
+const KNOWN_ARAB_ACTORS = {
+  // Syrian Actors
+  SY: [
+    1221881, // باسم ياخور (Basem Yakhour)
+    1091449, // تيم حسن (Tim Hassan)
+    1283726, // سلاف فواخرجي (Sulaf Fawakherji)
+    1518822, // كاريس بشار (Karis Bashar)
+    1091452, // جمال سليمان (Jamal Suliman)
+    2231986, // كندة علوش (Kinda Alloush)
+    1370715, // عابد فهد (Abed Fahed)
+    1091450, // سلوم حداد (Salloum Haddad)
+    1484270, // قصي خولي (Qusai Khouli)
+    2362022, // نادين تحسين بيك (Nadine Tahseen Bek)
+  ],
+  // Jordanian Actors
+  JO: [
+    1090820, // إياد نصار (Eyad Nassar)
+    2293405, // منذر رياحنة (Munther Rayahneh)
+    84493,   // علي سليمان (Ali Suliman)
+    1479956, // صبا مبارك (Saba Mubarak)
+    2503678, // ماجد المصري (Maged El Masry)
+    1515677, // راكين سعد (Rakeen Saad)
+    2555604, // سوسن أرشيد (Sawsan Arsheed)
+  ],
+  // Lebanese Actors
+  LB: [
+    95747,   // نادين لبكي (Nadine Labaki)
+    73425,   // جوليا قصار (Julia Kassar)
+    1464915, // قمر خلف (Qamar Khalaf)
+    1535506, // يارا صبري (Yara Sabri)
+    2259142, // دانييلا رحمة (Daniella Rahme)
+    1479977, // نيكول سابا (Nicole Saba)
+    1518824, // سيرين عبد النور (Cyrine Abdelnour)
+    1091458, // راغدة (Raghda)
+    1574890, // نانسي عجرم (Nancy Ajram)
+    2362024, // إليسا (Elissa)
+  ],
+  // Egyptian Actors (expand the pool)
+  EG: [
+    77530,   // عادل إمام (Adel Imam)
+    1091403, // محمد هنيدي (Mohamed Henedy)
+    77525,   // أحمد حلمي (Ahmed Helmy)
+    1091407, // أحمد السقا (Ahmed El Sakka)
+    77524,   // منى زكي (Mona Zaki)
+    1091410, // خالد الصاوي (Khaled El Sawy)
+    77526,   // يسرا (Yousra)
+    1091412, // نيللي كريم (Nelly Karim)
+    77529,   // محمود حميدة (Mahmoud Hemida)
+    1091415, // ماجد الكدواني (Maged El Kedwany)
+    2259143, // أحمد مكي (Ahmed Mekky)
+    77527,   // ليلى علوي (Laila Eloui)
+    1091418, // خالد أبو النجا (Khaled Abol Naga)
+    77528,   // يسرا اللوزي (Yousra El Lozy)
+    1091420, // محمد رمضان (Mohamed Ramadan)
+    1091422, // أحمد عز (Ahmed Ezz)
+    2259144, // آسر ياسين (Asser Yassin)
+    1091424, // منة شلبي (Menna Shalaby)
+    77531,   // هند صبري (Hend Sabry)
+    1091426, // أحمد داود (Ahmed Dawood)
+  ]
+};
+
+async function loadActorPool() {
+  if (actorCache.actors && Date.now() - actorCache.ts < 3600000) return actorCache.actors;
+  console.log('[ACTORS] Loading diverse Arab actor pool...');
+  const actors = [];
+  
+  // Load known actors from all countries
+  for (const [country, ids] of Object.entries(KNOWN_ARAB_ACTORS)) {
+    for (const id of ids) {
+      try {
+        const person = await tmdb(`/person/${id}?language=ar`);
+        if (!person.profile_path || !person.name) continue;
+        
+        // Fetch their images for variety
+        const images = await tmdb(`/person/${id}/images`);
+        const profiles = (images.profiles || []).filter(p => p.file_path).slice(0, 5); // Get up to 5 different photos
+        
+        actors.push({
+          id: person.id,
+          name: person.name,
+          gender: person.gender,
+          country,
+          profiles: profiles.map(p => `${TMDB_IMG}h632${p.file_path}`),
+          mainPhoto: `${TMDB_IMG}h632${person.profile_path}`
+        });
+      } catch (e) {
+        console.log(`  [SKIP] Actor ID ${id} failed: ${e.message}`);
+      }
+    }
+  }
+  
+  // Also collect actors from cached Arabic content
+  const allMovies = [...(arabicCache.movies || [])].filter(m => hasArabicChars(m.title));
+  const allTV = [...(arabicCache.tv || [])].filter(t => hasArabicChars(t.name));
+  const allWorks = [
+    ...allMovies.slice(0, 30).map(m => ({id:m.id,type:'movie',country:m.country})),
+    ...allTV.slice(0, 30).map(t => ({id:t.id,type:'tv',country:t.country}))
+  ];
+  
+  const seenActorIds = new Set(actors.map(a => a.id));
+  
+  for (const work of shuffle(allWorks).slice(0, 20)) {
     try {
       const credits = await tmdb(`/${work.type}/${work.id}/credits?language=ar`);
       if (!credits.cast?.length) continue;
-      const validCast = credits.cast.filter(c => c.profile_path && c.name && hasArabicChars(c.name));
-      if (validCast.length < 4) continue;
-      const actor = validCast[0];
-      const gender = actor.gender;
-      const sameGender = validCast.filter(c => c.id !== actor.id && c.gender === gender);
-      let wrongNames = sameGender.length >= 3 ? shuffle(sameGender).slice(0, 3).map(c => c.name) : shuffle(validCast.filter(c => c.id !== actor.id)).slice(0, 3).map(c => c.name);
-      return {
-        type: 'ar_actor', category: 'ممثلين عرب',
-        question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
-        hints: [gender === 1 ? 'ممثلة عربية مشهورة' : 'ممثل عربي مشهور', 'من أشهر نجوم الشاشة العربية', 'ظهر في أعمال كثيرة'],
-        image: `${TMDB_IMG}h632${actor.profile_path}`, revealImage: `${TMDB_IMG}h632${actor.profile_path}`,
-        answer: actor.name, options: shuffle([actor.name, ...wrongNames]),
-        year: '', info: actor.name, landscape: false
-      };
-    } catch (e) { continue; }
+      
+      const validCast = credits.cast.filter(c => 
+        c.profile_path && 
+        c.name && 
+        hasArabicChars(c.name) && 
+        !seenActorIds.has(c.id)
+      ).slice(0, 3);
+      
+      for (const actor of validCast) {
+        try {
+          const images = await tmdb(`/person/${actor.id}/images`);
+          const profiles = (images.profiles || []).filter(p => p.file_path).slice(0, 5);
+          
+          actors.push({
+            id: actor.id,
+            name: actor.name,
+            gender: actor.gender,
+            country: work.country || 'EG',
+            profiles: profiles.map(p => `${TMDB_IMG}h632${p.file_path}`),
+            mainPhoto: `${TMDB_IMG}h632${actor.profile_path}`
+          });
+          
+          seenActorIds.add(actor.id);
+        } catch (e) {}
+      }
+    } catch (e) {}
   }
+  
+  actorCache.actors = actors;
+  actorCache.ts = Date.now();
+  console.log(`[ACTORS] Loaded ${actors.length} actors (SY: ${actors.filter(a => a.country === 'SY').length}, JO: ${actors.filter(a => a.country === 'JO').length}, LB: ${actors.filter(a => a.country === 'LB').length}, EG: ${actors.filter(a => a.country === 'EG').length})`);
+  return actors;
+}
+
+async function genArabicActorQ(diff) {
+  const actorPool = await loadActorPool();
+  if (actorPool.length < 4) return genArabicMoviePosterQ(diff);
+  
+  // Prioritize Syrian, Jordanian, Lebanese actors, then Egyptian
+  const priorityPool = [
+    ...shuffle(actorPool.filter(a => a.country === 'SY')),
+    ...shuffle(actorPool.filter(a => a.country === 'JO')),
+    ...shuffle(actorPool.filter(a => a.country === 'LB')),
+    ...shuffle(actorPool.filter(a => a.country === 'EG'))
+  ];
+  
+  for (const actor of priorityPool.slice(0, 10)) {
+    const gender = actor.gender;
+    const sameGender = actorPool.filter(a => a.id !== actor.id && a.gender === gender);
+    
+    if (sameGender.length < 3) continue;
+    
+    // Pick a random photo from their available photos (if they have multiple)
+    const photoPool = actor.profiles.length > 0 ? actor.profiles : [actor.mainPhoto];
+    const selectedPhoto = photoPool[Math.floor(Math.random() * photoPool.length)];
+    
+    const wrongNames = shuffle(sameGender).slice(0, 3).map(a => a.name);
+    
+    // Add country hint
+    const countryHint = actor.country === 'SY' ? 'من سوريا' : 
+                        actor.country === 'JO' ? 'من الأردن' :
+                        actor.country === 'LB' ? 'من لبنان' : 'من مصر';
+    
+    return {
+      type: 'ar_actor', category: 'ممثلين عرب',
+      question: gender === 1 ? 'من هي هذه الممثلة العربية؟' : 'من هو هذا الممثل العربي؟',
+      hints: [
+        gender === 1 ? 'ممثلة عربية مشهورة' : 'ممثل عربي مشهور',
+        countryHint,
+        'من أشهر نجوم الشاشة العربية'
+      ],
+      image: selectedPhoto,
+      revealImage: selectedPhoto,
+      answer: actor.name,
+      options: shuffle([actor.name, ...wrongNames]),
+      year: '',
+      info: `${actor.name} • ${countryHint}`,
+      landscape: false
+    };
+  }
+  
+  // Fallback if no suitable actor found
   return genArabicMoviePosterQ(diff);
 }
 
