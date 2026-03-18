@@ -1415,87 +1415,130 @@ async function genFamousForQ(diff) {
   };
 }
 
-// Round 4: Guess the Inventor
-async function genFamousInventorQ(diff) {
-  const pool = getInventionsPool(diff);
-  const available = pool.filter(i => !famousPeopleCache.usedInCurrentRound.has(i.name));
-  
-  if (available.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousInventorQ(diff);
+// ═══ Round 4: Guess Who Said It — Famous Quotes ═══
+const QUOTES_DB = [
+  // Scientists
+  { quote: 'Imagination is more important than knowledge.', person: 'Albert Einstein', field: 'Scientist', gender: 'male', difficulty: 'easy' },
+  { quote: "I have not failed. I've just found 10,000 ways that won't work.", person: 'Thomas Edison', field: 'Scientist', gender: 'male', difficulty: 'easy' },
+  { quote: 'If I have seen further, it is by standing on the shoulders of giants.', person: 'Isaac Newton', field: 'Scientist', gender: 'male', difficulty: 'medium' },
+  { quote: 'Nothing in life is to be feared, it is only to be understood.', person: 'Marie Curie', field: 'Scientist', gender: 'female', difficulty: 'medium' },
+  { quote: 'However difficult life may seem, there is always something you can do and succeed at.', person: 'Stephen Hawking', field: 'Scientist', gender: 'male', difficulty: 'medium' },
+  { quote: 'The important thing is to never stop questioning.', person: 'Albert Einstein', field: 'Scientist', gender: 'male', difficulty: 'medium' },
+  // Leaders
+  { quote: 'Be the change you wish to see in the world.', person: 'Mahatma Gandhi', field: 'Leader', gender: 'male', difficulty: 'easy' },
+  { quote: 'I have a dream.', person: 'Martin Luther King Jr.', field: 'Leader', gender: 'male', difficulty: 'easy' },
+  { quote: 'Education is the most powerful weapon which you can use to change the world.', person: 'Nelson Mandela', field: 'Leader', gender: 'male', difficulty: 'easy' },
+  { quote: 'We shall fight on the beaches, we shall never surrender.', person: 'Winston Churchill', field: 'Leader', gender: 'male', difficulty: 'medium' },
+  { quote: "In the end, it's not the years in your life that count. It's the life in your years.", person: 'Abraham Lincoln', field: 'Leader', gender: 'male', difficulty: 'medium' },
+  { quote: 'Ask not what your country can do for you, ask what you can do for your country.', person: 'John F. Kennedy', field: 'Leader', gender: 'male', difficulty: 'medium' },
+  { quote: 'Impossible is a word to be found only in the dictionary of fools.', person: 'Napoleon Bonaparte', field: 'Leader', gender: 'male', difficulty: 'medium' },
+  // Athletes
+  { quote: 'Float like a butterfly, sting like a bee.', person: 'Muhammad Ali', field: 'Athlete', gender: 'male', difficulty: 'easy' },
+  { quote: "I've failed over and over and over again in my life. And that is why I succeed.", person: 'Michael Jordan', field: 'Athlete', gender: 'male', difficulty: 'medium' },
+  { quote: 'You have to fight to reach your dream.', person: 'Lionel Messi', field: 'Athlete', gender: 'male', difficulty: 'easy' },
+  { quote: 'I am the greatest, I said that even before I knew I was.', person: 'Muhammad Ali', field: 'Athlete', gender: 'male', difficulty: 'medium' },
+  // Singers
+  { quote: 'One good thing about music, when it hits you, you feel no pain.', person: 'Bob Marley', field: 'Singer', gender: 'male', difficulty: 'easy' },
+  // Authors
+  { quote: 'All that glitters is not gold.', person: 'William Shakespeare', field: 'Author', gender: 'male', difficulty: 'easy' },
+  { quote: 'To be, or not to be, that is the question.', person: 'William Shakespeare', field: 'Author', gender: 'male', difficulty: 'easy' },
+  // Artists
+  { quote: 'Every child is an artist. The problem is how to remain an artist once he grows up.', person: 'Pablo Picasso', field: 'Artist', gender: 'male', difficulty: 'medium' },
+  { quote: 'I dream of painting and then I paint my dream.', person: 'Vincent van Gogh', field: 'Artist', gender: 'male', difficulty: 'medium' },
+  // Arabic Figures
+  { quote: '\u0627\u0644\u0623\u0645\u0645 \u0644\u0627 \u062a\u0645\u0648\u062a \u0628\u0627\u0644\u0647\u0632\u0627\u0626\u0645 \u0648\u0644\u0643\u0646\u0647\u0627 \u062a\u0645\u0648\u062a \u062d\u064a\u0646 \u062a\u0642\u0628\u0644 \u0627\u0644\u0647\u0632\u064a\u0645\u0629', person: 'Gamal Abdel Nasser', field: 'Leader', gender: 'male', difficulty: 'medium' },
+  { quote: '\u0644\u0627 \u064a\u0648\u062c\u062f \u0625\u0646\u0633\u0627\u0646 \u0636\u0639\u064a\u0641 \u0628\u0644 \u064a\u0648\u062c\u062f \u0625\u0646\u0633\u0627\u0646 \u064a\u062c\u0647\u0644 \u0645\u0648\u0627\u0637\u0646 \u0642\u0648\u062a\u0647', person: 'Naguib Mahfouz', field: 'Author', gender: 'male', difficulty: 'medium' },
+  { quote: '\u0627\u0644\u062d\u0631\u064a\u0629 \u0644\u0627 \u062a\u064f\u0639\u0637\u0649 \u0628\u0644 \u062a\u064f\u0624\u062e\u0630', person: 'Ghassan Kanafani', field: 'Author', gender: 'male', difficulty: 'hard' },
+  { quote: '\u0623\u0639\u0637\u0646\u064a \u0645\u0633\u0631\u062d\u0627\u064b \u0623\u0639\u0637\u064a\u0643 \u0634\u0639\u0628\u0627\u064b \u0639\u0638\u064a\u0645\u0627\u064b', person: 'Khalil Gibran', field: 'Author', gender: 'male', difficulty: 'medium' },
+  { quote: '\u0625\u0646 \u0627\u0644\u0639\u062f\u0627\u0644\u0629 \u0628\u062f\u0648\u0646 \u0642\u0648\u0629 \u062d\u0644\u0645\u060c \u0648\u0627\u0644\u0642\u0648\u0629 \u0628\u062f\u0648\u0646 \u0639\u062f\u0627\u0644\u0629 \u0637\u063a\u064a\u0627\u0646', person: 'Saladin', field: 'Leader', gender: 'male', difficulty: 'hard' },
+  { quote: '\u0627\u0644\u0639\u0644\u0645 \u0641\u064a \u0627\u0644\u0635\u063a\u0631 \u0643\u0627\u0644\u0646\u0642\u0634 \u0639\u0644\u0649 \u0627\u0644\u062d\u062c\u0631', person: 'Ibn Sina', field: 'Scientist', gender: 'male', difficulty: 'hard' },
+  { quote: '\u0644\u0648 \u0643\u0627\u0646 \u0627\u0644\u0641\u0642\u0631 \u0631\u062c\u0644\u0627\u064b \u0644\u0642\u062a\u0644\u062a\u0647', person: 'Umm Kulthum', field: 'Singer', gender: 'female', difficulty: 'medium' },
+  // Explorers
+  { quote: "That's one small step for man, one giant leap for mankind.", person: 'Neil Armstrong', field: 'Explorer', gender: 'male', difficulty: 'easy' },
+];
+
+async function genFamousQuoteQ(diff) {
+  const pool = diff === 'easy' ? QUOTES_DB.filter(q => q.difficulty === 'easy') : diff === 'hard' ? QUOTES_DB.filter(q => q.difficulty === 'hard') : QUOTES_DB;
+  const available = pool.filter(q => !famousPeopleCache.usedInCurrentRound.has(q.quote));
+  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousQuoteQ(diff); }
+  const q = available[Math.floor(Math.random() * available.length)];
+  const sameFieldGender = pool.filter(x => x.person !== q.person && x.field === q.field && x.gender === q.gender);
+  const allOthers = pool.filter(x => x.person !== q.person);
+  let wrongNames = [...new Set(shuffle(sameFieldGender.length >= 3 ? sameFieldGender : allOthers).map(x => x.person))].filter(n => n !== q.person).slice(0, 3);
+  while (wrongNames.length < 3) {
+    const fb = FAMOUS_PEOPLE_DB.filter(p => p.name !== q.person && p.field === q.field && !wrongNames.includes(p.name));
+    if (fb.length === 0) break;
+    wrongNames.push(fb[Math.floor(Math.random() * fb.length)].name);
   }
-  
-  const inventor = available[Math.floor(Math.random() * available.length)];
-  const image = await getInventionImage(inventor.searchQuery);
-  
-  // Get wrong inventors from same era or category
-  const sameCategory = pool.filter(i => i.name !== inventor.name && i.category === inventor.category);
-  const wrongOptions = shuffle(sameCategory).slice(0, 3).map(i => i.name);
-  
-  // Fallback
-  while (wrongOptions.length < 3) {
-    const others = pool.filter(i => i.name !== inventor.name && !wrongOptions.includes(i.name));
-    if (others.length === 0) break;
-    wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
-  }
-  
-  famousPeopleCache.usedInCurrentRound.add(inventor.name);
-  
+  famousPeopleCache.usedInCurrentRound.add(q.quote);
+  const isArabicQuote = /[\u0600-\u06FF]/.test(q.quote);
   return {
-    type: 'famous_inventor',
-    category: 'Guess the Inventor',
-    question: 'Who invented this?',
-    hints: [`Invented in ${inventor.year}`, inventor.category, inventor.nationality],
-    image: image || 'fallback',
-    revealImage: image || 'fallback',
-    answer: inventor.name,
-    options: shuffle([inventor.name, ...wrongOptions]),
-    year: inventor.year,
-    info: `${inventor.name} invented the ${inventor.invention} in ${inventor.year}`,
-    landscape: false
+    type: 'famous_quote', category: 'Guess Who Said It', question: 'Who said this famous quote?',
+    hints: [q.field, isArabicQuote ? 'Famous Arabic quote' : 'A famous quote', q.difficulty === 'easy' ? 'Very well known' : 'Think carefully'],
+    image: null, revealImage: null, quoteText: q.quote, isArabicQuote,
+    answer: q.person, options: shuffle([q.person, ...wrongNames]),
+    year: '', info: q.person, landscape: true, noBlur: true, noImage: true
   };
 }
 
-// Round 5: Guess the Childhood Photo
-async function genFamousChildhoodQ(diff) {
-  const pool = getFamousPeoplePool(diff);
-  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  
-  if (available.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousChildhoodQ(diff);
+// ═══ Round 5: Guess the Connection — 4 clue photos ═══
+const CLUES_DB = [
+  { person: 'Albert Einstein', field: 'Scientist', gender: 'male', difficulty: 'easy', clues: ['physics equation blackboard','space time universe','german flag','nobel prize medal'], clueHints: ['A genius equation','Space and time','Born in this country','Won this prize'] },
+  { person: 'Lionel Messi', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['football soccer ball','argentina flag','barcelona stadium','world cup trophy'], clueHints: ['His sport','His country','His first club','He won this'] },
+  { person: 'Cristiano Ronaldo', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['football soccer goal','portugal flag','real madrid stadium','number seven'], clueHints: ['His sport','His country','His famous club','His number'] },
+  { person: 'Mohamed Salah', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['football soccer ball','egypt pyramids','liverpool stadium','golden boot'], clueHints: ['His sport','His country','His club','His award'] },
+  { person: 'Michael Jackson', field: 'Singer', gender: 'male', difficulty: 'easy', clues: ['microphone stage concert','moonwalk dance','grammy music award','glitter glove'], clueHints: ['His tool','His move','His awards','His accessory'] },
+  { person: 'Nelson Mandela', field: 'Leader', gender: 'male', difficulty: 'easy', clues: ['prison bars cell','south africa flag','peace dove symbol','fist raised'], clueHints: ['27 years here','His country','His mission','His symbol'] },
+  { person: 'Umm Kulthum', field: 'Singer', gender: 'female', difficulty: 'medium', clues: ['vintage microphone','egypt pyramids','dark sunglasses','arabic calligraphy'], clueHints: ['She sang into this','Her country','Her look','Her language'] },
+  { person: 'Mahatma Gandhi', field: 'Leader', gender: 'male', difficulty: 'easy', clues: ['india flag','peace protest march','spinning wheel cotton','salt pile'], clueHints: ['His country','His method','His symbol','His famous march'] },
+  { person: 'Leonardo da Vinci', field: 'Artist', gender: 'male', difficulty: 'easy', clues: ['mona lisa painting','italy flag','flying machine sketch','paint brush palette'], clueHints: ['His masterpiece','His country','His invention','His craft'] },
+  { person: 'William Shakespeare', field: 'Author', gender: 'male', difficulty: 'easy', clues: ['theater stage curtain','quill pen ink','skull bones','england flag'], clueHints: ['His stage','His pen','His famous play','His country'] },
+  { person: 'Cleopatra', field: 'Leader', gender: 'female', difficulty: 'easy', clues: ['egypt pyramids sphinx','snake cobra','golden crown jewels','nile river boat'], clueHints: ['Her kingdom','Her fate','Her power','Her river'] },
+  { person: 'Neil Armstrong', field: 'Explorer', gender: 'male', difficulty: 'easy', clues: ['moon surface craters','rocket space launch','astronaut helmet','american flag usa'], clueHints: ['He walked here','His ride','His gear','His country'] },
+  { person: 'Pablo Picasso', field: 'Artist', gender: 'male', difficulty: 'medium', clues: ['cubism abstract art','spain flag','paint palette colors','bull artwork'], clueHints: ['His style','His country','His tools','His subject'] },
+  { person: 'Muhammad Ali', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['boxing ring gloves','butterfly nature wings','olympic rings medal','american flag'], clueHints: ['His ring','Float like a...','His first win','His country'] },
+  { person: 'Bob Marley', field: 'Singer', gender: 'male', difficulty: 'easy', clues: ['reggae guitar acoustic','jamaica flag green','dreadlocks hair','peace sign hand'], clueHints: ['His music','His island','His hair','His message'] },
+  { person: 'Gamal Abdel Nasser', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['egypt flag','suez canal ship','microphone speech podium','military officer uniform'], clueHints: ['His country','He nationalized this','He gave many','His rank'] },
+  { person: 'Marie Curie', field: 'Scientist', gender: 'female', difficulty: 'medium', clues: ['radiation symbol warning','science laboratory','poland flag','nobel prize medal'], clueHints: ['Her discovery','Her workplace','Her birthplace','She won two'] },
+  { person: 'Fairuz', field: 'Singer', gender: 'female', difficulty: 'medium', clues: ['lebanon flag cedar','microphone vintage stage','sunrise morning sky','arabic music notes'], clueHints: ['Her country','Her voice','People hear her every...','Her genre'] },
+  { person: 'Saladin', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['jerusalem old city','sword medieval weapon','eagle bird','crusade castle'], clueHints: ['He freed this city','His weapon','His symbol','He fought for these'] },
+  { person: 'Khalil Gibran', field: 'Author', gender: 'male', difficulty: 'medium', clues: ['book open pages','lebanon cedar flag','painting canvas art','pen writing poetry'], clueHints: ['His medium','His homeland','He also did this','His poetry'] },
+  { person: 'Naguib Mahfouz', field: 'Author', gender: 'male', difficulty: 'medium', clues: ['old cairo street alley','stack books novel','nobel prize gold','coffee cup arabic'], clueHints: ['His city','His craft','His honor','His writing spot'] },
+  { person: 'Usain Bolt', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['running track sprint','jamaica flag green yellow','lightning bolt electricity','olympic gold medal'], clueHints: ['His track','His island','His pose','His prize'] },
+  { person: 'Serena Williams', field: 'Athlete', gender: 'female', difficulty: 'easy', clues: ['tennis racket ball','american flag usa','wimbledon trophy green','tennis court net'], clueHints: ['Her sport','Her country','Her title','Her court'] },
+  { person: 'Stephen Hawking', field: 'Scientist', gender: 'male', difficulty: 'medium', clues: ['black hole space galaxy','wheelchair disability','stars universe cosmos','book physics science'], clueHints: ['His theory','His chair','What he studied','His bestseller'] },
+  { person: 'King Hussein', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['jordan flag','peace handshake diplomacy','royal crown gold','desert wadi rum jordan'], clueHints: ['His kingdom','His mission','His title','His land'] },
+  { person: 'Queen Rania', field: 'Leader', gender: 'female', difficulty: 'medium', clues: ['jordan flag','school children education','crown tiara jewels','children charity humanitarian'], clueHints: ['Her country','Her passion','Her symbol','Her work'] },
+];
+
+async function genFamousConnectionQ(diff) {
+  const pool = diff === 'easy' ? CLUES_DB.filter(c => c.difficulty === 'easy') : diff === 'hard' ? CLUES_DB.filter(c => c.difficulty === 'hard') : CLUES_DB;
+  const available = pool.filter(c => !famousPeopleCache.usedInCurrentRound.has(c.person));
+  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousConnectionQ(diff); }
+  const clue = available[Math.floor(Math.random() * available.length)];
+  // Fetch 4 clue images from Pexels
+  const clueImages = [];
+  for (const q of clue.clues) {
+    const img = await searchImage(q);
+    clueImages.push(img || null);
   }
-  
-  const person = available[Math.floor(Math.random() * available.length)];
-  // For childhood photos, use the regular photo (Pexels doesn't have childhood photos)
-  // In production, you'd have hardcoded Wikipedia URLs for specific people
-  const image = await getWikiImage(person.wiki);
-  
-  // Get wrong options from same profession and era
-  const sameProfession = pool.filter(p => p.name !== person.name && p.field === person.field && p.era === person.era);
-  const wrongOptions = shuffle(sameProfession).slice(0, 3).map(p => p.name);
-  
-  // Fallback
-  while (wrongOptions.length < 3) {
-    const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.name));
+  // Wrong options: same field + same gender
+  const sameFieldGender = FAMOUS_PEOPLE_DB.filter(p => p.name !== clue.person && p.field === clue.field && p.gender === clue.gender);
+  let wrongNames = shuffle(sameFieldGender).slice(0, 3).map(p => p.name);
+  while (wrongNames.length < 3) {
+    const others = FAMOUS_PEOPLE_DB.filter(p => p.name !== clue.person && !wrongNames.includes(p.name));
     if (others.length === 0) break;
-    wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
+    wrongNames.push(others[Math.floor(Math.random() * others.length)].name);
   }
-  
-  famousPeopleCache.usedInCurrentRound.add(person.name);
-  
+  famousPeopleCache.usedInCurrentRound.add(clue.person);
+  const wikiTitle = FAMOUS_PEOPLE_DB.find(p => p.name === clue.person)?.wiki || clue.person.replace(/ /g, '_');
   return {
-    type: 'famous_childhood',
-    category: 'Guess the Childhood Photo',
-    question: 'Who is this person?',
-    hints: [person.field, person.nationality, `Became famous in the ${person.era}`],
-    image: image || 'fallback', // Fallback to regular photo
-    revealImage: image || 'fallback',
-    answer: person.name,
-    options: shuffle([person.name, ...wrongOptions]),
-    year: '',
-    info: `${person.name} — ${person.achievement}`,
-    landscape: false
+    type: 'famous_connection', category: 'Guess the Connection', question: 'Who do these clues point to?',
+    hints: [clue.field, clue.clueHints[0], clue.clueHints[1]],
+    image: clueImages[0], revealImage: await getWikiImage(wikiTitle),
+    clueImages: clueImages, clueHints: clue.clueHints,
+    answer: clue.person, options: shuffle([clue.person, ...wrongNames]),
+    year: '', info: clue.person, landscape: true, noBlur: true
   };
 }
 
@@ -1504,8 +1547,8 @@ const FAMOUS_GENS = {
   famous_person: () => genFamousPersonQ(currentDifficulty),
   famous_nationality: () => genFamousNationalityQ(currentDifficulty),
   famous_for: () => genFamousForQ(currentDifficulty),
-  famous_inventor: () => genFamousInventorQ(currentDifficulty),
-  famous_childhood: () => genFamousChildhoodQ(currentDifficulty)
+  famous_quote: () => genFamousQuoteQ(currentDifficulty),
+  famous_connection: () => genFamousConnectionQ(currentDifficulty)
 };
 Object.assign(GENS, FAMOUS_GENS);
 
@@ -1543,20 +1586,20 @@ const LABELS = {
   movie_posters: 'Movie Posters', tv_posters: 'TV Show Posters', movie_scenes: 'Movie Scenes', tv_scenes: 'TV Show Scenes', characters: 'Guess the Character',
   flag_country: 'Guess the Flag', flag_capital: 'Guess the Capital', flag_continent: 'Guess the Continent', flag_mapshape: 'Guess the Map Shape', flag_landmark: 'Guess the Landmark',
   ar_movie_poster: 'أفلام عربية', ar_tv_poster: 'مسلسلات عربية', ar_shared_cast: 'عمل مشترك', ar_actor: 'ممثلين عرب', ar_year: 'في أي سنة؟',
-  famous_person: 'Guess the Famous Person', famous_nationality: 'Guess Their Nationality', famous_for: 'Guess Why They\'re Famous', famous_inventor: 'Guess the Inventor', famous_childhood: 'Guess the Childhood Photo'
+  famous_person: 'Guess the Famous Person', famous_nationality: 'Guess Their Nationality', famous_for: 'Guess Why They\'re Famous', famous_quote: 'Guess Who Said It', famous_connection: 'Guess the Connection'
 };
 const ICONS = {
   movie_posters: '🎬', tv_posters: '📺', movie_scenes: '🎞️', tv_scenes: '📡', characters: '🌟',
   flag_country: '🏳️', flag_capital: '🏛️', flag_continent: '🌍', flag_mapshape: '🗺️', flag_landmark: '🏰',
   ar_movie_poster: '🎬', ar_tv_poster: '📺', ar_shared_cast: '👥', ar_actor: '👤', ar_year: '📅',
-  famous_person: '👤', famous_nationality: '🌍', famous_for: '⭐', famous_inventor: '💡', famous_childhood: '👶'
+  famous_person: '👤', famous_nationality: '🌍', famous_for: '⭐', famous_quote: '🗣️', famous_connection: '🔗'
 };
 
 const CATEGORIES = {
   movies_tv: { name: 'Movies & TV Shows', icon: '🎬', available: true, rounds: ['movie_posters', 'tv_posters', 'movie_scenes', 'tv_scenes', 'characters'] },
   arabic_tv: { name: 'Arabic Movies & TV', icon: '🎭', available: true, rounds: ['ar_movie_poster', 'ar_tv_poster', 'ar_shared_cast', 'ar_actor', 'ar_year'] },
   flags: { name: 'Flags & Countries', icon: '🚩', available: true, rounds: ['flag_country', 'flag_capital', 'flag_continent', 'flag_mapshape', 'flag_landmark'] },
-  famous_people: { name: 'Famous People', icon: '👤', available: true, rounds: ['famous_person', 'famous_nationality', 'famous_for', 'famous_inventor', 'famous_childhood'] },
+  famous_people: { name: 'Famous People', icon: '👤', available: true, rounds: ['famous_person', 'famous_nationality', 'famous_for', 'famous_quote', 'famous_connection'] },
   football_clubs: { name: 'Football Clubs', icon: '⚽', available: false, rounds: [] },
   sports_players: { name: 'Sports Players', icon: '🏆', available: false, rounds: [] }
 };
@@ -1693,7 +1736,7 @@ io.on('connection', (socket) => {
 
 // ═══ GAME FLOW ═══════════════════════════════════════
 function startRound(r) { r.state = 'round_intro'; const rt = r.activeRounds[r.rIdx]; io.to(r.code).emit('round-intro', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundType: rt, roundLabel: LABELS[rt], roundIcon: ICONS[rt], questionsCount: 10, musicTrack: r.rIdx % 4 }); setTimeout(() => { r.qIdx = 0; sendQ(r); }, 4000); }
-function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hints: q.hints || (q.hint ? [q.hint] : []), timer: r.diff.timer, options: q.options, landscape: q.landscape || false, noBlur: q.noBlur || false, lightBg: q.lightBg || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff, actorImages: q.actorImages || null, actorNames: q.actorNames || null }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', base)); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
+function sendQ(r) { r.state = 'question'; r.answers = {}; const rt = r.activeRounds[r.rIdx], q = r.allQ[rt][r.qIdx]; r.qStart = Date.now(); const base = { questionNumber: r.qIdx + 1, totalQuestions: 10, roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, type: q.type, category: q.category, question: q.question, hints: q.hints || (q.hint ? [q.hint] : []), timer: r.diff.timer, options: q.options, landscape: q.landscape || false, noBlur: q.noBlur || false, lightBg: q.lightBg || false, noImage: q.noImage || false }; if (r.hostId) io.to(r.hostId).emit('question-start', { ...base, image: q.image, difficulty: r.diff, actorImages: q.actorImages || null, actorNames: q.actorNames || null, quoteText: q.quoteText || null, isArabicQuote: q.isArabicQuote || false, clueImages: q.clueImages || null, clueHints: q.clueHints || null }); Object.keys(r.players).forEach(sid => io.to(sid).emit('question-start', { ...base, quoteText: q.quoteText || null, isArabicQuote: q.isArabicQuote || false })); r.qTimer = setTimeout(() => reveal(r), r.diff.timer * 1000); }
 function reveal(r) { r.state = 'question_reveal'; clearTimeout(r.qTimer); const q = r.allQ[r.activeRounds[r.rIdx]][r.qIdx]; const results = {}; Object.entries(r.answers).forEach(([sid, a]) => { const p = r.players[sid]; if (p) results[p.name] = a; }); Object.entries(r.players).forEach(([, p]) => { if (!results[p.name]) results[p.name] = { correct: false, points: 0, time: null, choice: null }; }); const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('question-reveal', { answer: q.answer, info: q.info, year: q.year, image: q.revealImage || q.image, results, leaderboard: pl, questionNumber: r.qIdx + 1, totalQuestions: 10 }); r.autoNext = setTimeout(() => { if (r.state === 'question_reveal') nextQ(r); }, 5000); }
 function nextQ(r) { clearTimeout(r.autoNext); r.qIdx++; r.qIdx >= 10 ? roundResults(r) : sendQ(r); }
 function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); r.autoNext = setTimeout(() => { if (r.state === 'round_results') { r.rIdx++; r.qIdx = 0; r.rIdx >= r.activeRounds.length ? finalResults(r) : startRound(r); } }, 5000); }
