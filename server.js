@@ -1116,124 +1116,146 @@ Object.assign(GENS, ARABIC_GENS);
 
 // ═══ FAMOUS PEOPLE CATEGORY ══════════════════════════
 const famousPeopleCache = { people: [], usedInCurrentRound: new Set() };
+const wikiImageCache = {};
 
-// Hardcoded database of famous people — uses Pexels search queries
-// Pexels works best for generic queries, not specific people
-// For specific people, we search their name + context
+// Fetch person's photo from Wikipedia API — free, no key, CORS-friendly thumbnails
+async function getWikiImage(wikiTitle) {
+  if (wikiImageCache[wikiTitle]) return wikiImageCache[wikiTitle];
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(wikiTitle)}&prop=pageimages&format=json&pithumbsize=600&origin=*`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'PartyGame/1.0' } });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const pages = d.query?.pages;
+    if (!pages) return null;
+    const page = Object.values(pages)[0];
+    if (page?.thumbnail?.source) {
+      wikiImageCache[wikiTitle] = page.thumbnail.source;
+      return page.thumbnail.source;
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Fetch invention photo from Pexels (stock photos work great for objects)
+async function getInventionImage(query) {
+  if (wikiImageCache['inv_' + query]) return wikiImageCache['inv_' + query];
+  const img = await searchImage(query);
+  if (img) { wikiImageCache['inv_' + query] = img; return img; }
+  return null;
+}
+
+// Famous People DB — wiki field is the exact Wikipedia article title
 const FAMOUS_PEOPLE_DB = [
   // ═══ SCIENTISTS ═══
-  { name: 'Albert Einstein', field: 'Scientist', nationality: 'Germany', era: '1900s', achievement: 'Theory of Relativity', searchQuery: 'einstein physics', difficulty: 'easy', gender: 'male' },
-  { name: 'Marie Curie', field: 'Scientist', nationality: 'Poland', era: '1900s', achievement: 'Radioactivity Research', searchQuery: 'marie curie scientist', difficulty: 'medium', gender: 'female' },
-  { name: 'Isaac Newton', field: 'Scientist', nationality: 'United Kingdom', era: '1600s', achievement: 'Laws of Motion & Gravity', searchQuery: 'isaac newton', difficulty: 'easy', gender: 'male' },
-  { name: 'Nikola Tesla', field: 'Scientist', nationality: 'Serbia', era: '1900s', achievement: 'Alternating Current', searchQuery: 'nikola tesla', difficulty: 'medium', gender: 'male' },
-  { name: 'Stephen Hawking', field: 'Scientist', nationality: 'United Kingdom', era: '2000s', achievement: 'Black Hole Theory', searchQuery: 'stephen hawking', difficulty: 'medium', gender: 'male' },
-  { name: 'Ahmed Zewail', field: 'Scientist', nationality: 'Egypt', era: '2000s', achievement: 'Femtochemistry Nobel Prize', searchQuery: 'ahmed zewail', difficulty: 'hard', gender: 'male' },
-  { name: 'Ibn Sina', field: 'Scientist', nationality: 'Persia', era: '1000s', achievement: 'Canon of Medicine', searchQuery: 'avicenna ibn sina', difficulty: 'medium', gender: 'male' },
-  { name: 'Charles Darwin', field: 'Scientist', nationality: 'United Kingdom', era: '1800s', achievement: 'Theory of Evolution', searchQuery: 'charles darwin', difficulty: 'easy', gender: 'male' },
-  { name: 'Galileo Galilei', field: 'Scientist', nationality: 'Italy', era: '1500s', achievement: 'Father of Modern Science', searchQuery: 'galileo astronomer', difficulty: 'medium', gender: 'male' },
-  { name: 'Al-Khwarizmi', field: 'Scientist', nationality: 'Persia', era: '800s', achievement: 'Father of Algebra', searchQuery: 'al khwarizmi mathematician', difficulty: 'hard', gender: 'male' },
-  { name: 'Ibn Al-Haytham', field: 'Scientist', nationality: 'Iraq', era: '1000s', achievement: 'Father of Optics', searchQuery: 'ibn al haytham optics', difficulty: 'hard', gender: 'male' },
-  { name: 'Rosalind Franklin', field: 'Scientist', nationality: 'United Kingdom', era: '1900s', achievement: 'DNA Structure Discovery', searchQuery: 'rosalind franklin', difficulty: 'hard', gender: 'female' },
-  { name: 'Louis Pasteur', field: 'Scientist', nationality: 'France', era: '1800s', achievement: 'Pasteurization & Vaccines', searchQuery: 'louis pasteur', difficulty: 'medium', gender: 'male' },
-  { name: 'Nikola Copernicus', field: 'Scientist', nationality: 'Poland', era: '1500s', achievement: 'Heliocentric Model', searchQuery: 'copernicus astronomer', difficulty: 'medium', gender: 'male' },
+  { name: 'Albert Einstein', wiki: 'Albert_Einstein', field: 'Scientist', nationality: 'Germany', era: '1900s', achievement: 'Theory of Relativity', difficulty: 'easy', gender: 'male' },
+  { name: 'Marie Curie', wiki: 'Marie_Curie', field: 'Scientist', nationality: 'Poland', era: '1900s', achievement: 'Radioactivity Research & Nobel Prize', difficulty: 'medium', gender: 'female' },
+  { name: 'Isaac Newton', wiki: 'Isaac_Newton', field: 'Scientist', nationality: 'United Kingdom', era: '1600s', achievement: 'Laws of Motion & Gravity', difficulty: 'easy', gender: 'male' },
+  { name: 'Nikola Tesla', wiki: 'Nikola_Tesla', field: 'Scientist', nationality: 'Serbia', era: '1900s', achievement: 'Alternating Current Electricity', difficulty: 'medium', gender: 'male' },
+  { name: 'Stephen Hawking', wiki: 'Stephen_Hawking', field: 'Scientist', nationality: 'United Kingdom', era: '2000s', achievement: 'Black Hole Theory', difficulty: 'medium', gender: 'male' },
+  { name: 'Ahmed Zewail', wiki: 'Ahmed_Zewail', field: 'Scientist', nationality: 'Egypt', era: '2000s', achievement: 'Femtochemistry Nobel Prize', difficulty: 'hard', gender: 'male' },
+  { name: 'Ibn Sina', wiki: 'Avicenna', field: 'Scientist', nationality: 'Persia', era: '1000s', achievement: 'Canon of Medicine', difficulty: 'medium', gender: 'male' },
+  { name: 'Charles Darwin', wiki: 'Charles_Darwin', field: 'Scientist', nationality: 'United Kingdom', era: '1800s', achievement: 'Theory of Evolution', difficulty: 'easy', gender: 'male' },
+  { name: 'Galileo Galilei', wiki: 'Galileo_Galilei', field: 'Scientist', nationality: 'Italy', era: '1500s', achievement: 'Father of Modern Astronomy', difficulty: 'medium', gender: 'male' },
+  { name: 'Al-Khwarizmi', wiki: 'Al-Khwarizmi', field: 'Scientist', nationality: 'Persia', era: '800s', achievement: 'Father of Algebra', difficulty: 'hard', gender: 'male' },
+  { name: 'Ibn Al-Haytham', wiki: 'Ibn_al-Haytham', field: 'Scientist', nationality: 'Iraq', era: '1000s', achievement: 'Father of Optics', difficulty: 'hard', gender: 'male' },
+  { name: 'Rosalind Franklin', wiki: 'Rosalind_Franklin', field: 'Scientist', nationality: 'United Kingdom', era: '1900s', achievement: 'DNA Structure Discovery', difficulty: 'hard', gender: 'female' },
+  { name: 'Louis Pasteur', wiki: 'Louis_Pasteur', field: 'Scientist', nationality: 'France', era: '1800s', achievement: 'Pasteurization & Vaccines', difficulty: 'medium', gender: 'male' },
+  { name: 'Thomas Edison', wiki: 'Thomas_Edison', field: 'Scientist', nationality: 'United States', era: '1800s', achievement: 'Invented the Light Bulb', difficulty: 'easy', gender: 'male' },
 
   // ═══ ATHLETES ═══
-  { name: 'Lionel Messi', field: 'Athlete', nationality: 'Argentina', era: '2000s', achievement: 'Football World Cup Champion', searchQuery: 'messi football', difficulty: 'easy', gender: 'male' },
-  { name: 'Cristiano Ronaldo', field: 'Athlete', nationality: 'Portugal', era: '2000s', achievement: 'Football Record Scorer', searchQuery: 'ronaldo football', difficulty: 'easy', gender: 'male' },
-  { name: 'Mohamed Salah', field: 'Athlete', nationality: 'Egypt', era: '2000s', achievement: 'Egyptian Football Star', searchQuery: 'salah liverpool', difficulty: 'easy', gender: 'male' },
-  { name: 'Muhammad Ali', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Greatest Boxer of All Time', searchQuery: 'muhammad ali boxing', difficulty: 'easy', gender: 'male' },
-  { name: 'Usain Bolt', field: 'Athlete', nationality: 'Jamaica', era: '2000s', achievement: 'Fastest Man Ever', searchQuery: 'usain bolt sprinter', difficulty: 'easy', gender: 'male' },
-  { name: 'Serena Williams', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Tennis Legend', searchQuery: 'serena williams tennis', difficulty: 'easy', gender: 'female' },
-  { name: 'Michael Jordan', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Basketball Legend', searchQuery: 'michael jordan basketball', difficulty: 'easy', gender: 'male' },
-  { name: 'Diego Maradona', field: 'Athlete', nationality: 'Argentina', era: '1900s', achievement: 'Football Legend', searchQuery: 'maradona football', difficulty: 'medium', gender: 'male' },
-  { name: 'Pelé', field: 'Athlete', nationality: 'Brazil', era: '1900s', achievement: 'Football King', searchQuery: 'pele brazil football', difficulty: 'easy', gender: 'male' },
-  { name: 'Roger Federer', field: 'Athlete', nationality: 'Switzerland', era: '2000s', achievement: 'Tennis Grand Slam Champion', searchQuery: 'roger federer tennis', difficulty: 'medium', gender: 'male' },
-  { name: 'Michael Phelps', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Most Olympic Gold Medals', searchQuery: 'michael phelps swimming', difficulty: 'medium', gender: 'male' },
-  { name: 'Nadia Comăneci', field: 'Athlete', nationality: 'Romania', era: '1900s', achievement: 'First Perfect 10 in Gymnastics', searchQuery: 'nadia comaneci gymnastics', difficulty: 'hard', gender: 'female' },
-  { name: 'Riyad Mahrez', field: 'Athlete', nationality: 'Algeria', era: '2000s', achievement: 'Premier League Champion', searchQuery: 'riyad mahrez football', difficulty: 'medium', gender: 'male' },
+  { name: 'Lionel Messi', wiki: 'Lionel_Messi', field: 'Athlete', nationality: 'Argentina', era: '2000s', achievement: 'Football World Cup Champion', difficulty: 'easy', gender: 'male' },
+  { name: 'Cristiano Ronaldo', wiki: 'Cristiano_Ronaldo', field: 'Athlete', nationality: 'Portugal', era: '2000s', achievement: 'Football All-Time Top Scorer', difficulty: 'easy', gender: 'male' },
+  { name: 'Mohamed Salah', wiki: 'Mohamed_Salah', field: 'Athlete', nationality: 'Egypt', era: '2000s', achievement: 'Egyptian Football Star', difficulty: 'easy', gender: 'male' },
+  { name: 'Muhammad Ali', wiki: 'Muhammad_Ali', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Greatest Boxer of All Time', difficulty: 'easy', gender: 'male' },
+  { name: 'Usain Bolt', wiki: 'Usain_Bolt', field: 'Athlete', nationality: 'Jamaica', era: '2000s', achievement: 'Fastest Man in History', difficulty: 'easy', gender: 'male' },
+  { name: 'Serena Williams', wiki: 'Serena_Williams', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Tennis Grand Slam Champion', difficulty: 'easy', gender: 'female' },
+  { name: 'Michael Jordan', wiki: 'Michael_Jordan', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Basketball Legend', difficulty: 'easy', gender: 'male' },
+  { name: 'Diego Maradona', wiki: 'Diego_Maradona', field: 'Athlete', nationality: 'Argentina', era: '1900s', achievement: 'Football Hand of God', difficulty: 'medium', gender: 'male' },
+  { name: 'Pelé', wiki: 'Pelé', field: 'Athlete', nationality: 'Brazil', era: '1900s', achievement: 'Football King — 3 World Cups', difficulty: 'easy', gender: 'male' },
+  { name: 'Roger Federer', wiki: 'Roger_Federer', field: 'Athlete', nationality: 'Switzerland', era: '2000s', achievement: 'Tennis Legend', difficulty: 'medium', gender: 'male' },
+  { name: 'Michael Phelps', wiki: 'Michael_Phelps', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Most Olympic Gold Medals Ever', difficulty: 'medium', gender: 'male' },
+  { name: 'Zinedine Zidane', wiki: 'Zinedine_Zidane', field: 'Athlete', nationality: 'France', era: '2000s', achievement: 'Football World Cup Winner', difficulty: 'medium', gender: 'male' },
+  { name: 'Neymar', wiki: 'Neymar', field: 'Athlete', nationality: 'Brazil', era: '2000s', achievement: 'Brazilian Football Star', difficulty: 'easy', gender: 'male' },
+  { name: 'Kobe Bryant', wiki: 'Kobe_Bryant', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Basketball Champion', difficulty: 'medium', gender: 'male' },
 
   // ═══ SINGERS/MUSICIANS ═══
-  { name: 'Michael Jackson', field: 'Singer', nationality: 'United States', era: '1900s', achievement: 'King of Pop', searchQuery: 'michael jackson singer', difficulty: 'easy', gender: 'male' },
-  { name: 'Umm Kulthum', field: 'Singer', nationality: 'Egypt', era: '1900s', achievement: 'Voice of the East', searchQuery: 'umm kulthum singer', difficulty: 'easy', gender: 'female' },
-  { name: 'Fairuz', field: 'Singer', nationality: 'Lebanon', era: '1900s', achievement: 'Lebanese Music Legend', searchQuery: 'fairuz lebanese singer', difficulty: 'medium', gender: 'female' },
-  { name: 'Kadim Al Sahir', field: 'Singer', nationality: 'Iraq', era: '2000s', achievement: 'Caesar of Arabic Song', searchQuery: 'kadim al sahir', difficulty: 'medium', gender: 'male' },
-  { name: 'Beethoven', field: 'Composer', nationality: 'Germany', era: '1700s', achievement: 'Classical Music Genius', searchQuery: 'beethoven composer', difficulty: 'easy', gender: 'male' },
-  { name: 'Mozart', field: 'Composer', nationality: 'Austria', era: '1700s', achievement: 'Classical Music Prodigy', searchQuery: 'mozart composer', difficulty: 'easy', gender: 'male' },
-  { name: 'Freddie Mercury', field: 'Singer', nationality: 'United Kingdom', era: '1900s', achievement: 'Queen Band Lead Singer', searchQuery: 'freddie mercury queen', difficulty: 'easy', gender: 'male' },
-  { name: 'Elvis Presley', field: 'Singer', nationality: 'United States', era: '1900s', achievement: 'King of Rock and Roll', searchQuery: 'elvis presley', difficulty: 'easy', gender: 'male' },
-  { name: 'Abdel Halim Hafez', field: 'Singer', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian Romantic Singer', searchQuery: 'abdel halim hafez', difficulty: 'medium', gender: 'male' },
-  { name: 'Bob Marley', field: 'Singer', nationality: 'Jamaica', era: '1900s', achievement: 'Reggae Legend', searchQuery: 'bob marley reggae', difficulty: 'easy', gender: 'male' },
-  { name: 'Adele', field: 'Singer', nationality: 'United Kingdom', era: '2000s', achievement: 'Grammy-Winning Singer', searchQuery: 'adele singer', difficulty: 'easy', gender: 'female' },
-  { name: 'Warda Al-Jazairia', field: 'Singer', nationality: 'Algeria', era: '1900s', achievement: 'Algerian Rose of Song', searchQuery: 'warda al jazairia', difficulty: 'hard', gender: 'female' },
-  { name: 'Marcel Khalife', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Lebanese Oud Master', searchQuery: 'marcel khalife oud', difficulty: 'hard', gender: 'male' },
+  { name: 'Michael Jackson', wiki: 'Michael_Jackson', field: 'Singer', nationality: 'United States', era: '1900s', achievement: 'King of Pop', difficulty: 'easy', gender: 'male' },
+  { name: 'Umm Kulthum', wiki: 'Umm_Kulthum', field: 'Singer', nationality: 'Egypt', era: '1900s', achievement: 'Voice of the East', difficulty: 'easy', gender: 'female' },
+  { name: 'Fairuz', wiki: 'Fairuz', field: 'Singer', nationality: 'Lebanon', era: '1900s', achievement: 'Jewel of Lebanon', difficulty: 'medium', gender: 'female' },
+  { name: 'Kadim Al Sahir', wiki: 'Kadim_Al_Sahir', field: 'Singer', nationality: 'Iraq', era: '2000s', achievement: 'Caesar of Arabic Song', difficulty: 'medium', gender: 'male' },
+  { name: 'Beethoven', wiki: 'Ludwig_van_Beethoven', field: 'Composer', nationality: 'Germany', era: '1700s', achievement: 'Classical Music Genius', difficulty: 'easy', gender: 'male' },
+  { name: 'Mozart', wiki: 'Wolfgang_Amadeus_Mozart', field: 'Composer', nationality: 'Austria', era: '1700s', achievement: 'Classical Music Prodigy', difficulty: 'easy', gender: 'male' },
+  { name: 'Freddie Mercury', wiki: 'Freddie_Mercury', field: 'Singer', nationality: 'United Kingdom', era: '1900s', achievement: 'Queen Band Lead Singer', difficulty: 'easy', gender: 'male' },
+  { name: 'Elvis Presley', wiki: 'Elvis_Presley', field: 'Singer', nationality: 'United States', era: '1900s', achievement: 'King of Rock and Roll', difficulty: 'easy', gender: 'male' },
+  { name: 'Abdel Halim Hafez', wiki: 'Abdel_Halim_Hafez', field: 'Singer', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian Romantic Singer', difficulty: 'medium', gender: 'male' },
+  { name: 'Bob Marley', wiki: 'Bob_Marley', field: 'Singer', nationality: 'Jamaica', era: '1900s', achievement: 'Reggae Legend', difficulty: 'easy', gender: 'male' },
+  { name: 'Adele', wiki: 'Adele', field: 'Singer', nationality: 'United Kingdom', era: '2000s', achievement: 'Grammy-Winning Singer', difficulty: 'easy', gender: 'female' },
+  { name: 'Warda Al-Jazairia', wiki: 'Warda_Al-Jazairia', field: 'Singer', nationality: 'Algeria', era: '1900s', achievement: 'Algerian Rose of Song', difficulty: 'hard', gender: 'female' },
+  { name: 'Whitney Houston', wiki: 'Whitney_Houston', field: 'Singer', nationality: 'United States', era: '1900s', achievement: 'Greatest Voice in Pop', difficulty: 'easy', gender: 'female' },
+  { name: 'John Lennon', wiki: 'John_Lennon', field: 'Singer', nationality: 'United Kingdom', era: '1900s', achievement: 'Beatles Co-Founder', difficulty: 'medium', gender: 'male' },
 
   // ═══ WORLD LEADERS ═══
-  { name: 'Nelson Mandela', field: 'Leader', nationality: 'South Africa', era: '1900s', achievement: 'Ended Apartheid', searchQuery: 'nelson mandela', difficulty: 'easy', gender: 'male' },
-  { name: 'Mahatma Gandhi', field: 'Leader', nationality: 'India', era: '1900s', achievement: 'Indian Independence Leader', searchQuery: 'mahatma gandhi', difficulty: 'easy', gender: 'male' },
-  { name: 'Winston Churchill', field: 'Leader', nationality: 'United Kingdom', era: '1900s', achievement: 'WWII British Leader', searchQuery: 'winston churchill', difficulty: 'medium', gender: 'male' },
-  { name: 'Queen Elizabeth II', field: 'Leader', nationality: 'United Kingdom', era: '2000s', achievement: 'Longest-Reigning British Monarch', searchQuery: 'queen elizabeth', difficulty: 'easy', gender: 'female' },
-  { name: 'Gamal Abdel Nasser', field: 'Leader', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian President & Arab Nationalist', searchQuery: 'gamal abdel nasser', difficulty: 'medium', gender: 'male' },
-  { name: 'King Hussein', field: 'Leader', nationality: 'Jordan', era: '1900s', achievement: 'Jordanian King & Peacemaker', searchQuery: 'king hussein jordan', difficulty: 'medium', gender: 'male' },
-  { name: 'Martin Luther King Jr.', field: 'Leader', nationality: 'United States', era: '1900s', achievement: 'Civil Rights Leader', searchQuery: 'martin luther king', difficulty: 'easy', gender: 'male' },
-  { name: 'Abraham Lincoln', field: 'Leader', nationality: 'United States', era: '1800s', achievement: 'Abolished Slavery', searchQuery: 'abraham lincoln', difficulty: 'easy', gender: 'male' },
-  { name: 'Cleopatra', field: 'Leader', nationality: 'Egypt', era: '0050 BC', achievement: 'Last Pharaoh of Egypt', searchQuery: 'cleopatra egypt', difficulty: 'easy', gender: 'female' },
-  { name: 'Saladin', field: 'Leader', nationality: 'Syria', era: '1100s', achievement: 'Liberated Jerusalem', searchQuery: 'saladin warrior', difficulty: 'medium', gender: 'male' },
-  { name: 'Queen Rania', field: 'Leader', nationality: 'Jordan', era: '2000s', achievement: 'Queen of Jordan', searchQuery: 'queen rania jordan', difficulty: 'medium', gender: 'female' },
-  { name: 'Napoleon Bonaparte', field: 'Leader', nationality: 'France', era: '1800s', achievement: 'French Emperor', searchQuery: 'napoleon bonaparte', difficulty: 'easy', gender: 'male' },
+  { name: 'Nelson Mandela', wiki: 'Nelson_Mandela', field: 'Leader', nationality: 'South Africa', era: '1900s', achievement: 'Ended Apartheid in South Africa', difficulty: 'easy', gender: 'male' },
+  { name: 'Mahatma Gandhi', wiki: 'Mahatma_Gandhi', field: 'Leader', nationality: 'India', era: '1900s', achievement: 'Led Indian Independence', difficulty: 'easy', gender: 'male' },
+  { name: 'Winston Churchill', wiki: 'Winston_Churchill', field: 'Leader', nationality: 'United Kingdom', era: '1900s', achievement: 'Led Britain Through WWII', difficulty: 'medium', gender: 'male' },
+  { name: 'Queen Elizabeth II', wiki: 'Elizabeth_II', field: 'Leader', nationality: 'United Kingdom', era: '2000s', achievement: 'Longest-Reigning British Monarch', difficulty: 'easy', gender: 'female' },
+  { name: 'Gamal Abdel Nasser', wiki: 'Gamal_Abdel_Nasser', field: 'Leader', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian President & Arab Nationalist', difficulty: 'medium', gender: 'male' },
+  { name: 'King Hussein', wiki: 'Hussein_of_Jordan', field: 'Leader', nationality: 'Jordan', era: '1900s', achievement: 'Jordanian King & Peacemaker', difficulty: 'medium', gender: 'male' },
+  { name: 'Martin Luther King Jr.', wiki: 'Martin_Luther_King_Jr.', field: 'Leader', nationality: 'United States', era: '1900s', achievement: 'Civil Rights Leader', difficulty: 'easy', gender: 'male' },
+  { name: 'Abraham Lincoln', wiki: 'Abraham_Lincoln', field: 'Leader', nationality: 'United States', era: '1800s', achievement: 'Abolished Slavery in America', difficulty: 'easy', gender: 'male' },
+  { name: 'Cleopatra', wiki: 'Cleopatra', field: 'Leader', nationality: 'Egypt', era: '0050 BC', achievement: 'Last Pharaoh of Egypt', difficulty: 'easy', gender: 'female' },
+  { name: 'Saladin', wiki: 'Saladin', field: 'Leader', nationality: 'Syria', era: '1100s', achievement: 'Liberated Jerusalem', difficulty: 'medium', gender: 'male' },
+  { name: 'Queen Rania', wiki: 'Queen_Rania_of_Jordan', field: 'Leader', nationality: 'Jordan', era: '2000s', achievement: 'Queen of Jordan & Humanitarian', difficulty: 'medium', gender: 'female' },
+  { name: 'Napoleon Bonaparte', wiki: 'Napoleon', field: 'Leader', nationality: 'France', era: '1800s', achievement: 'French Emperor & Military Genius', difficulty: 'easy', gender: 'male' },
+  { name: 'John F. Kennedy', wiki: 'John_F._Kennedy', field: 'Leader', nationality: 'United States', era: '1900s', achievement: 'US President During Cold War', difficulty: 'medium', gender: 'male' },
 
   // ═══ AUTHORS/WRITERS ═══
-  { name: 'William Shakespeare', field: 'Author', nationality: 'United Kingdom', era: '1500s', achievement: 'Greatest English Playwright', searchQuery: 'william shakespeare', difficulty: 'easy', gender: 'male' },
-  { name: 'Naguib Mahfouz', field: 'Author', nationality: 'Egypt', era: '1900s', achievement: 'Nobel Prize in Literature', searchQuery: 'naguib mahfouz', difficulty: 'medium', gender: 'male' },
-  { name: 'Ghassan Kanafani', field: 'Author', nationality: 'Palestine', era: '1900s', achievement: 'Palestinian Resistance Writer', searchQuery: 'ghassan kanafani writer', difficulty: 'hard', gender: 'male' },
-  { name: 'Khalil Gibran', field: 'Author', nationality: 'Lebanon', era: '1900s', achievement: 'The Prophet Author', searchQuery: 'khalil gibran', difficulty: 'medium', gender: 'male' },
-  { name: 'Agatha Christie', field: 'Author', nationality: 'United Kingdom', era: '1900s', achievement: 'Queen of Mystery', searchQuery: 'agatha christie', difficulty: 'medium', gender: 'female' },
-  { name: 'Mark Twain', field: 'Author', nationality: 'United States', era: '1800s', achievement: 'Adventures of Tom Sawyer', searchQuery: 'mark twain', difficulty: 'medium', gender: 'male' },
+  { name: 'William Shakespeare', wiki: 'William_Shakespeare', field: 'Author', nationality: 'United Kingdom', era: '1500s', achievement: 'Greatest English Playwright', difficulty: 'easy', gender: 'male' },
+  { name: 'Naguib Mahfouz', wiki: 'Naguib_Mahfouz', field: 'Author', nationality: 'Egypt', era: '1900s', achievement: 'Nobel Prize in Literature', difficulty: 'medium', gender: 'male' },
+  { name: 'Ghassan Kanafani', wiki: 'Ghassan_Kanafani', field: 'Author', nationality: 'Palestine', era: '1900s', achievement: 'Palestinian Resistance Writer', difficulty: 'hard', gender: 'male' },
+  { name: 'Khalil Gibran', wiki: 'Khalil_Gibran', field: 'Author', nationality: 'Lebanon', era: '1900s', achievement: 'Author of The Prophet', difficulty: 'medium', gender: 'male' },
+  { name: 'Agatha Christie', wiki: 'Agatha_Christie', field: 'Author', nationality: 'United Kingdom', era: '1900s', achievement: 'Queen of Mystery Novels', difficulty: 'medium', gender: 'female' },
 
   // ═══ ARTISTS ═══
-  { name: 'Pablo Picasso', field: 'Artist', nationality: 'Spain', era: '1900s', achievement: 'Cubism Founder', searchQuery: 'pablo picasso painter', difficulty: 'easy', gender: 'male' },
-  { name: 'Leonardo da Vinci', field: 'Artist', nationality: 'Italy', era: '1400s', achievement: 'Painted the Mona Lisa', searchQuery: 'leonardo da vinci', difficulty: 'easy', gender: 'male' },
-  { name: 'Vincent van Gogh', field: 'Artist', nationality: 'Netherlands', era: '1800s', achievement: 'Painted Starry Night', searchQuery: 'vincent van gogh', difficulty: 'easy', gender: 'male' },
-  { name: 'Frida Kahlo', field: 'Artist', nationality: 'Mexico', era: '1900s', achievement: 'Mexican Self-Portrait Artist', searchQuery: 'frida kahlo', difficulty: 'medium', gender: 'female' },
-  { name: 'Michelangelo', field: 'Artist', nationality: 'Italy', era: '1400s', achievement: 'Sistine Chapel Ceiling', searchQuery: 'michelangelo artist', difficulty: 'easy', gender: 'male' },
+  { name: 'Pablo Picasso', wiki: 'Pablo_Picasso', field: 'Artist', nationality: 'Spain', era: '1900s', achievement: 'Cubism Founder', difficulty: 'easy', gender: 'male' },
+  { name: 'Leonardo da Vinci', wiki: 'Leonardo_da_Vinci', field: 'Artist', nationality: 'Italy', era: '1400s', achievement: 'Painted the Mona Lisa', difficulty: 'easy', gender: 'male' },
+  { name: 'Vincent van Gogh', wiki: 'Vincent_van_Gogh', field: 'Artist', nationality: 'Netherlands', era: '1800s', achievement: 'Painted Starry Night', difficulty: 'easy', gender: 'male' },
+  { name: 'Frida Kahlo', wiki: 'Frida_Kahlo', field: 'Artist', nationality: 'Mexico', era: '1900s', achievement: 'Mexican Self-Portrait Artist', difficulty: 'medium', gender: 'female' },
+  { name: 'Michelangelo', wiki: 'Michelangelo', field: 'Artist', nationality: 'Italy', era: '1400s', achievement: 'Painted the Sistine Chapel', difficulty: 'easy', gender: 'male' },
 
   // ═══ DIRECTORS ═══
-  { name: 'Steven Spielberg', field: 'Director', nationality: 'United States', era: '2000s', achievement: 'Directed Schindler\'s List & Jurassic Park', searchQuery: 'steven spielberg director', difficulty: 'medium', gender: 'male' },
-  { name: 'Youssef Chahine', field: 'Director', nationality: 'Egypt', era: '1900s', achievement: 'Pioneer of Egyptian Cinema', searchQuery: 'youssef chahine director', difficulty: 'hard', gender: 'male' },
-  { name: 'Alfred Hitchcock', field: 'Director', nationality: 'United Kingdom', era: '1900s', achievement: 'Master of Suspense', searchQuery: 'alfred hitchcock', difficulty: 'medium', gender: 'male' },
-
-  // ═══ INVENTORS ═══ (also in INVENTIONS_DB)
-  { name: 'Thomas Edison', field: 'Inventor', nationality: 'United States', era: '1800s', achievement: 'Invented the Light Bulb', searchQuery: 'thomas edison inventor', difficulty: 'easy', gender: 'male' },
-  { name: 'Nikola Tesla', field: 'Inventor', nationality: 'Serbia', era: '1900s', achievement: 'Invented AC Electricity', searchQuery: 'nikola tesla inventor', difficulty: 'medium', gender: 'male' },
-  { name: 'Alexander Graham Bell', field: 'Inventor', nationality: 'United Kingdom', era: '1800s', achievement: 'Invented the Telephone', searchQuery: 'alexander graham bell', difficulty: 'medium', gender: 'male' },
-  { name: 'Abbas Ibn Firnas', field: 'Inventor', nationality: 'Al-Andalus', era: '800s', achievement: 'First Attempted Flight', searchQuery: 'abbas ibn firnas flight', difficulty: 'hard', gender: 'male' },
+  { name: 'Steven Spielberg', wiki: 'Steven_Spielberg', field: 'Director', nationality: 'United States', era: '2000s', achievement: 'Directed Schindler\'s List & Jurassic Park', difficulty: 'medium', gender: 'male' },
+  { name: 'Youssef Chahine', wiki: 'Youssef_Chahine', field: 'Director', nationality: 'Egypt', era: '1900s', achievement: 'Pioneer of Egyptian Cinema', difficulty: 'hard', gender: 'male' },
+  { name: 'Alfred Hitchcock', wiki: 'Alfred_Hitchcock', field: 'Director', nationality: 'United Kingdom', era: '1900s', achievement: 'Master of Suspense Films', difficulty: 'medium', gender: 'male' },
 
   // ═══ EXPLORERS ═══
-  { name: 'Neil Armstrong', field: 'Explorer', nationality: 'United States', era: '1900s', achievement: 'First Man on the Moon', searchQuery: 'neil armstrong astronaut', difficulty: 'easy', gender: 'male' },
-  { name: 'Ibn Battuta', field: 'Explorer', nationality: 'Morocco', era: '1300s', achievement: 'Greatest Medieval Traveler', searchQuery: 'ibn battuta traveler', difficulty: 'medium', gender: 'male' },
-  { name: 'Christopher Columbus', field: 'Explorer', nationality: 'Italy', era: '1400s', achievement: 'Discovered the Americas', searchQuery: 'christopher columbus explorer', difficulty: 'easy', gender: 'male' },
-  { name: 'Marco Polo', field: 'Explorer', nationality: 'Italy', era: '1200s', achievement: 'Explored the Silk Road', searchQuery: 'marco polo explorer', difficulty: 'medium', gender: 'male' },
+  { name: 'Neil Armstrong', wiki: 'Neil_Armstrong', field: 'Explorer', nationality: 'United States', era: '1900s', achievement: 'First Man on the Moon', difficulty: 'easy', gender: 'male' },
+  { name: 'Ibn Battuta', wiki: 'Ibn_Battuta', field: 'Explorer', nationality: 'Morocco', era: '1300s', achievement: 'Greatest Medieval Traveler', difficulty: 'medium', gender: 'male' },
+  { name: 'Christopher Columbus', wiki: 'Christopher_Columbus', field: 'Explorer', nationality: 'Italy', era: '1400s', achievement: 'Discovered the Americas', difficulty: 'easy', gender: 'male' },
+  { name: 'Marco Polo', wiki: 'Marco_Polo', field: 'Explorer', nationality: 'Italy', era: '1200s', achievement: 'Explored the Silk Road to China', difficulty: 'medium', gender: 'male' },
 ];
 
-// Inventions database for Round 4 — expanded
+// Inventions DB — uses Pexels for object photos (works great for things, not people)
 const INVENTIONS_DB = [
   { name: 'Thomas Edison', invention: 'Light Bulb', year: '1879', category: 'Technology', nationality: 'United States', searchQuery: 'light bulb glowing', difficulty: 'easy' },
   { name: 'Alexander Graham Bell', invention: 'Telephone', year: '1876', category: 'Communication', nationality: 'United States', searchQuery: 'vintage telephone', difficulty: 'easy' },
   { name: 'Wright Brothers', invention: 'Airplane', year: '1903', category: 'Transport', nationality: 'United States', searchQuery: 'vintage airplane flying', difficulty: 'easy' },
   { name: 'Karl Benz', invention: 'Automobile', year: '1886', category: 'Transport', nationality: 'Germany', searchQuery: 'vintage car automobile', difficulty: 'medium' },
-  { name: 'Johannes Gutenberg', invention: 'Printing Press', year: '1440', category: 'Technology', nationality: 'Germany', searchQuery: 'printing press old', difficulty: 'medium' },
-  { name: 'Abbas Ibn Firnas', invention: 'Flying Machine', year: '875', category: 'Transport', nationality: 'Al-Andalus', searchQuery: 'hang glider wings', difficulty: 'hard' },
-  { name: 'Al-Jazari', invention: 'Mechanical Clock', year: '1206', category: 'Technology', nationality: 'Mesopotamia', searchQuery: 'antique mechanical clock', difficulty: 'hard' },
-  { name: 'Tim Berners-Lee', invention: 'World Wide Web', year: '1989', category: 'Technology', nationality: 'United Kingdom', searchQuery: 'world wide web internet', difficulty: 'medium' },
-  { name: 'Louis Pasteur', invention: 'Pasteurization', year: '1864', category: 'Medicine', nationality: 'France', searchQuery: 'pasteurization milk', difficulty: 'medium' },
-  { name: 'Marie Curie', invention: 'Radium Discovery', year: '1898', category: 'Science', nationality: 'Poland', searchQuery: 'radioactive symbol', difficulty: 'medium' },
-  { name: 'Nikola Tesla', invention: 'AC Motor', year: '1888', category: 'Technology', nationality: 'Serbia', searchQuery: 'electric motor', difficulty: 'medium' },
-  { name: 'Alexander Fleming', invention: 'Penicillin', year: '1928', category: 'Medicine', nationality: 'United Kingdom', searchQuery: 'penicillin medicine', difficulty: 'medium' },
-  { name: 'Guglielmo Marconi', invention: 'Radio', year: '1895', category: 'Communication', nationality: 'Italy', searchQuery: 'vintage radio', difficulty: 'medium' },
-  { name: 'Alfred Nobel', invention: 'Dynamite', year: '1867', category: 'Science', nationality: 'Sweden', searchQuery: 'dynamite explosives', difficulty: 'hard' },
-  { name: 'James Watt', invention: 'Steam Engine', year: '1769', category: 'Technology', nationality: 'United Kingdom', searchQuery: 'steam engine train', difficulty: 'medium' },
-  { name: 'Galileo Galilei', invention: 'Telescope', year: '1609', category: 'Science', nationality: 'Italy', searchQuery: 'telescope astronomy', difficulty: 'medium' },
-  { name: 'Steve Jobs', invention: 'iPhone', year: '2007', category: 'Technology', nationality: 'United States', searchQuery: 'smartphone iphone', difficulty: 'easy' },
-  { name: 'Henry Ford', invention: 'Assembly Line Production', year: '1913', category: 'Transport', nationality: 'United States', searchQuery: 'car factory assembly', difficulty: 'medium' },
+  { name: 'Johannes Gutenberg', invention: 'Printing Press', year: '1440', category: 'Technology', nationality: 'Germany', searchQuery: 'old printing press', difficulty: 'medium' },
+  { name: 'Abbas Ibn Firnas', invention: 'Flying Machine', year: '875', category: 'Transport', nationality: 'Al-Andalus', searchQuery: 'hang glider flying', difficulty: 'hard' },
+  { name: 'Al-Jazari', invention: 'Mechanical Clock', year: '1206', category: 'Technology', nationality: 'Mesopotamia', searchQuery: 'antique mechanical clock gears', difficulty: 'hard' },
+  { name: 'Tim Berners-Lee', invention: 'World Wide Web', year: '1989', category: 'Technology', nationality: 'United Kingdom', searchQuery: 'internet web browser', difficulty: 'medium' },
+  { name: 'Alexander Fleming', invention: 'Penicillin', year: '1928', category: 'Medicine', nationality: 'United Kingdom', searchQuery: 'penicillin medicine pills', difficulty: 'medium' },
+  { name: 'Nikola Tesla', invention: 'AC Motor', year: '1888', category: 'Technology', nationality: 'Serbia', searchQuery: 'electric motor coil', difficulty: 'medium' },
+  { name: 'Guglielmo Marconi', invention: 'Radio', year: '1895', category: 'Communication', nationality: 'Italy', searchQuery: 'vintage radio antique', difficulty: 'medium' },
+  { name: 'James Watt', invention: 'Steam Engine', year: '1769', category: 'Technology', nationality: 'United Kingdom', searchQuery: 'steam engine locomotive', difficulty: 'medium' },
+  { name: 'Galileo Galilei', invention: 'Telescope', year: '1609', category: 'Science', nationality: 'Italy', searchQuery: 'telescope astronomy stars', difficulty: 'medium' },
+  { name: 'Steve Jobs', invention: 'iPhone', year: '2007', category: 'Technology', nationality: 'United States', searchQuery: 'smartphone mobile phone', difficulty: 'easy' },
+  { name: 'Henry Ford', invention: 'Assembly Line', year: '1913', category: 'Transport', nationality: 'United States', searchQuery: 'car factory assembly line', difficulty: 'medium' },
+  { name: 'Louis Pasteur', invention: 'Pasteurization', year: '1864', category: 'Medicine', nationality: 'France', searchQuery: 'milk bottle dairy', difficulty: 'medium' },
+  { name: 'Alfred Nobel', invention: 'Dynamite', year: '1867', category: 'Science', nationality: 'Sweden', searchQuery: 'mining explosion', difficulty: 'hard' },
+  { name: 'Marie Curie', invention: 'Radium Discovery', year: '1898', category: 'Science', nationality: 'Poland', searchQuery: 'radiation laboratory', difficulty: 'medium' },
 ];
 
 // Reuse existing searchImage function for famous people photos
@@ -1263,7 +1285,7 @@ async function genFamousPersonQ(diff) {
   }
   
   const person = available[Math.floor(Math.random() * available.length)];
-  const image = await searchImage(person.searchQuery);
+  const image = await getWikiImage(person.wiki);
   
   // Get wrong options from same field
   const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
@@ -1304,7 +1326,7 @@ async function genFamousNationalityQ(diff) {
   }
   
   const person = available[Math.floor(Math.random() * available.length)];
-  const image = await searchImage(person.searchQuery);
+  const image = await getWikiImage(person.wiki);
   
   // Get wrong nationalities from same region
   const regions = {
@@ -1363,7 +1385,7 @@ async function genFamousForQ(diff) {
   }
   
   const person = available[Math.floor(Math.random() * available.length)];
-  const image = await searchImage(person.searchQuery);
+  const image = await getWikiImage(person.wiki);
   
   // Get wrong achievements from same field
   const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
@@ -1404,7 +1426,7 @@ async function genFamousInventorQ(diff) {
   }
   
   const inventor = available[Math.floor(Math.random() * available.length)];
-  const image = await searchImage(inventor.searchQuery);
+  const image = await getInventionImage(inventor.searchQuery);
   
   // Get wrong inventors from same era or category
   const sameCategory = pool.filter(i => i.name !== inventor.name && i.category === inventor.category);
@@ -1447,7 +1469,7 @@ async function genFamousChildhoodQ(diff) {
   const person = available[Math.floor(Math.random() * available.length)];
   // For childhood photos, use the regular photo (Pexels doesn't have childhood photos)
   // In production, you'd have hardcoded Wikipedia URLs for specific people
-  const image = await searchImage(person.searchQuery + ' young');
+  const image = await getWikiImage(person.wiki);
   
   // Get wrong options from same profession and era
   const sameProfession = pool.filter(p => p.name !== person.name && p.field === person.field && p.era === person.era);
@@ -1467,8 +1489,8 @@ async function genFamousChildhoodQ(diff) {
     category: 'Guess the Childhood Photo',
     question: 'Who is this person?',
     hints: [person.field, person.nationality, `Became famous in the ${person.era}`],
-    image: image || await searchImage(person.searchQuery), // Fallback to regular photo
-    revealImage: image || await searchImage(person.searchQuery),
+    image: image || 'fallback', // Fallback to regular photo
+    revealImage: image || 'fallback',
     answer: person.name,
     options: shuffle([person.name, ...wrongOptions]),
     year: '',
