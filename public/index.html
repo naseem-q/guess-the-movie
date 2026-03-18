@@ -312,7 +312,7 @@ body{font-family:'Outfit',sans-serif;background:linear-gradient(145deg,var(--bg)
       const r=await fetch('/api/categories');
       categories=await r.json();
     }catch(e){
-      categories={movies_tv:{name:'Movies & TV Shows',icon:'🎬',available:true},flags:{name:'Flags',icon:'🚩',available:false},famous_people:{name:'Famous People',icon:'👤',available:false},football_clubs:{name:'Football Clubs',icon:'⚽',available:false},sports_players:{name:'Sports Players',icon:'🏆',available:false}};
+      categories={movies_tv:{name:'Movies & TV Shows',icon:'🎬',available:true},arabic_tv:{name:'Arabic Movies & TV',icon:'🎭',available:true},flags:{name:'Flags & Countries',icon:'🚩',available:true},famous_people:{name:'Famous People',icon:'👤',available:true},football_clubs:{name:'Football Clubs',icon:'⚽',available:false},sports_players:{name:'Sports Players',icon:'🏆',available:false}};
     }
     renderCats();
   }
