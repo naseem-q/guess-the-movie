@@ -1115,7 +1115,7 @@ Object.assign(GENS, ARABIC_GENS);
 
 
 // ═══ FAMOUS PEOPLE CATEGORY ══════════════════════════
-const famousPeopleCache = { people: [], usedInCurrentRound: new Set() };
+const famousPeopleCache = { people: [], usedInGame: new Set() }; // Track across ALL rounds in same game
 const wikiImageCache = {};
 
 // Fetch person's photo from Wikipedia API — free, no key, CORS-friendly thumbnails
@@ -1244,6 +1244,71 @@ const FAMOUS_PEOPLE_DB = [
   { name: 'Mahmoud Darwish', wiki: 'Mahmoud_Darwish', field: 'Poet', nationality: 'Palestine', era: '2000s', achievement: 'Palestinian National Poet', difficulty: 'easy', gender: 'male' },
   { name: 'Ibrahim Touqan', wiki: 'Ibrahim_Touqan', field: 'Poet', nationality: 'Palestine', era: '1900s', achievement: 'Poet of Palestinian Resistance', difficulty: 'hard', gender: 'male' },
   { name: 'Hafez Ibrahim', wiki: 'Hafez_Ibrahim', field: 'Poet', nationality: 'Egypt', era: '1900s', achievement: 'Poet of the Nile', difficulty: 'hard', gender: 'male' },
+
+  // ═══ ENTREPRENEURS & FOUNDERS ═══
+  { name: 'Steve Jobs', wiki: 'Steve_Jobs', field: 'Entrepreneur', nationality: 'United States', era: '2000s', achievement: 'Co-Founded Apple', difficulty: 'easy', gender: 'male' },
+  { name: 'Elon Musk', wiki: 'Elon_Musk', field: 'Entrepreneur', nationality: 'South Africa', era: '2000s', achievement: 'Founded Tesla & SpaceX', difficulty: 'easy', gender: 'male' },
+  { name: 'Bill Gates', wiki: 'Bill_Gates', field: 'Entrepreneur', nationality: 'United States', era: '2000s', achievement: 'Co-Founded Microsoft', difficulty: 'easy', gender: 'male' },
+  { name: 'Mark Zuckerberg', wiki: 'Mark_Zuckerberg', field: 'Entrepreneur', nationality: 'United States', era: '2000s', achievement: 'Founded Facebook', difficulty: 'easy', gender: 'male' },
+  { name: 'Jeff Bezos', wiki: 'Jeff_Bezos', field: 'Entrepreneur', nationality: 'United States', era: '2000s', achievement: 'Founded Amazon', difficulty: 'medium', gender: 'male' },
+  { name: 'Walt Disney', wiki: 'Walt_Disney', field: 'Entrepreneur', nationality: 'United States', era: '1900s', achievement: 'Created Disney Empire', difficulty: 'easy', gender: 'male' },
+  { name: 'Oprah Winfrey', wiki: 'Oprah_Winfrey', field: 'Entrepreneur', nationality: 'United States', era: '2000s', achievement: 'Media Mogul & Talk Show Host', difficulty: 'easy', gender: 'female' },
+  { name: 'Jack Ma', wiki: 'Jack_Ma', field: 'Entrepreneur', nationality: 'China', era: '2000s', achievement: 'Founded Alibaba', difficulty: 'medium', gender: 'male' },
+
+  // ═══ MORE SINGERS & MUSICIANS ═══
+  { name: 'Beyoncé', wiki: 'Beyoncé', field: 'Singer', nationality: 'United States', era: '2000s', achievement: 'Queen B — Pop Icon', difficulty: 'easy', gender: 'female' },
+  { name: 'Taylor Swift', wiki: 'Taylor_Swift', field: 'Singer', nationality: 'United States', era: '2000s', achievement: 'Best-Selling Pop Artist', difficulty: 'easy', gender: 'female' },
+  { name: 'Drake', wiki: 'Drake_(musician)', field: 'Singer', nationality: 'Canada', era: '2000s', achievement: 'Most Streamed Artist', difficulty: 'easy', gender: 'male' },
+  { name: 'Ed Sheeran', wiki: 'Ed_Sheeran', field: 'Singer', nationality: 'United Kingdom', era: '2000s', achievement: 'Shape of You Singer', difficulty: 'easy', gender: 'male' },
+  { name: 'Eminem', wiki: 'Eminem', field: 'Singer', nationality: 'United States', era: '2000s', achievement: 'Rap God', difficulty: 'easy', gender: 'male' },
+  { name: 'Rihanna', wiki: 'Rihanna', field: 'Singer', nationality: 'Barbados', era: '2000s', achievement: 'Pop & Fashion Icon', difficulty: 'easy', gender: 'female' },
+  { name: 'Shakira', wiki: 'Shakira', field: 'Singer', nationality: 'Colombia', era: '2000s', achievement: 'Hips Don\'t Lie Singer', difficulty: 'easy', gender: 'female' },
+  { name: 'Amr Diab', wiki: 'Amr_Diab', field: 'Singer', nationality: 'Egypt', era: '2000s', achievement: 'Father of Mediterranean Music', difficulty: 'easy', gender: 'male' },
+  { name: 'Nancy Ajram', wiki: 'Nancy_Ajram', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Lebanese Pop Star', difficulty: 'easy', gender: 'female' },
+  { name: 'Tamer Hosny', wiki: 'Tamer_Hosny', field: 'Singer', nationality: 'Egypt', era: '2000s', achievement: 'Egyptian Pop Star', difficulty: 'medium', gender: 'male' },
+  { name: 'Elissa', wiki: 'Elissa_(singer)', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Lebanese Music Queen', difficulty: 'medium', gender: 'female' },
+  { name: 'Assala Nasri', wiki: 'Assala_Nasri', field: 'Singer', nationality: 'Syria', era: '2000s', achievement: 'Syrian Singing Star', difficulty: 'medium', gender: 'female' },
+  { name: 'George Wassouf', wiki: 'George_Wassouf', field: 'Singer', nationality: 'Syria', era: '2000s', achievement: 'Sultan of Romance', difficulty: 'medium', gender: 'male' },
+  { name: 'Majida El Roumi', wiki: 'Majida_El_Roumi', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Lebanese Classical Singer', difficulty: 'medium', gender: 'female' },
+  { name: 'Sabah', wiki: 'Sabah_(singer)', field: 'Singer', nationality: 'Lebanon', era: '1900s', achievement: 'Shahroura of Lebanon', difficulty: 'medium', gender: 'female' },
+  { name: 'Mohamed Mounir', wiki: 'Mohamed_Mounir', field: 'Singer', nationality: 'Egypt', era: '2000s', achievement: 'The King of Egyptian Music', difficulty: 'medium', gender: 'male' },
+  { name: 'Ragheb Alama', wiki: 'Ragheb_Alama', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Prince of Arabic Pop', difficulty: 'medium', gender: 'male' },
+  { name: 'Sherine', wiki: 'Sherine', field: 'Singer', nationality: 'Egypt', era: '2000s', achievement: 'Egyptian Vocal Powerhouse', difficulty: 'medium', gender: 'female' },
+  { name: 'Wael Kfoury', wiki: 'Wael_Kfoury', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Lebanese Romantic Singer', difficulty: 'medium', gender: 'male' },
+  { name: 'Kazem El Saher', wiki: 'Kadim_Al_Sahir', field: 'Singer', nationality: 'Iraq', era: '2000s', achievement: 'Caesar of Arabic Song', difficulty: 'medium', gender: 'male' },
+  { name: 'Diana Haddad', wiki: 'Diana_Haddad', field: 'Singer', nationality: 'Lebanon', era: '2000s', achievement: 'Lebanese Pop Diva', difficulty: 'hard', gender: 'female' },
+  { name: 'Hussain Al Jassmi', wiki: 'Hussain_Al_Jassmi', field: 'Singer', nationality: 'United Arab Emirates', era: '2000s', achievement: 'Emirati Singing Star', difficulty: 'medium', gender: 'male' },
+
+  // ═══ MORE ATHLETES ═══
+  { name: 'LeBron James', wiki: 'LeBron_James', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Basketball King', difficulty: 'easy', gender: 'male' },
+  { name: 'Rafael Nadal', wiki: 'Rafael_Nadal', field: 'Athlete', nationality: 'Spain', era: '2000s', achievement: 'King of Clay Tennis', difficulty: 'medium', gender: 'male' },
+  { name: 'Tiger Woods', wiki: 'Tiger_Woods', field: 'Athlete', nationality: 'United States', era: '2000s', achievement: 'Golf Legend', difficulty: 'medium', gender: 'male' },
+  { name: 'Ronaldinho', wiki: 'Ronaldinho', field: 'Athlete', nationality: 'Brazil', era: '2000s', achievement: 'Football Magician', difficulty: 'easy', gender: 'male' },
+  { name: 'Kylian Mbappé', wiki: 'Kylian_Mbappé', field: 'Athlete', nationality: 'France', era: '2000s', achievement: 'French Football Prodigy', difficulty: 'easy', gender: 'male' },
+  { name: 'Mike Tyson', wiki: 'Mike_Tyson', field: 'Athlete', nationality: 'United States', era: '1900s', achievement: 'Boxing Champion', difficulty: 'easy', gender: 'male' },
+  { name: 'Novak Djokovic', wiki: 'Novak_Djokovic', field: 'Athlete', nationality: 'Serbia', era: '2000s', achievement: 'Tennis Grand Slam Record', difficulty: 'medium', gender: 'male' },
+  { name: 'Riyad Mahrez', wiki: 'Riyad_Mahrez', field: 'Athlete', nationality: 'Algeria', era: '2000s', achievement: 'Algerian Football Star', difficulty: 'medium', gender: 'male' },
+
+  // ═══ POLITICIANS & MODERN LEADERS ═══
+  { name: 'Barack Obama', wiki: 'Barack_Obama', field: 'Leader', nationality: 'United States', era: '2000s', achievement: 'First African American US President', difficulty: 'easy', gender: 'male' },
+  { name: 'Angela Merkel', wiki: 'Angela_Merkel', field: 'Leader', nationality: 'Germany', era: '2000s', achievement: 'German Chancellor 16 Years', difficulty: 'medium', gender: 'female' },
+  { name: 'Yasser Arafat', wiki: 'Yasser_Arafat', field: 'Leader', nationality: 'Palestine', era: '1900s', achievement: 'Palestinian Liberation Leader', difficulty: 'medium', gender: 'male' },
+  { name: 'Anwar Sadat', wiki: 'Anwar_Sadat', field: 'Leader', nationality: 'Egypt', era: '1900s', achievement: 'Egyptian President & Nobel Peace Prize', difficulty: 'medium', gender: 'male' },
+  { name: 'King Abdullah II', wiki: 'Abdullah_II_of_Jordan', field: 'Leader', nationality: 'Jordan', era: '2000s', achievement: 'King of Jordan', difficulty: 'easy', gender: 'male' },
+  { name: 'Margaret Thatcher', wiki: 'Margaret_Thatcher', field: 'Leader', nationality: 'United Kingdom', era: '1900s', achievement: 'Iron Lady of Britain', difficulty: 'medium', gender: 'female' },
+  { name: 'Che Guevara', wiki: 'Che_Guevara', field: 'Leader', nationality: 'Argentina', era: '1900s', achievement: 'Revolutionary Icon', difficulty: 'medium', gender: 'male' },
+
+  // ═══ TV SHOW HOSTS & MEDIA ═══
+  { name: 'Bassem Youssef', wiki: 'Bassem_Youssef', field: 'TV Host', nationality: 'Egypt', era: '2000s', achievement: 'Egypt\'s Jon Stewart', difficulty: 'easy', gender: 'male' },
+  { name: 'Ellen DeGeneres', wiki: 'Ellen_DeGeneres', field: 'TV Host', nationality: 'United States', era: '2000s', achievement: 'Famous Talk Show Host', difficulty: 'easy', gender: 'female' },
+  { name: 'Adel Imam', wiki: 'Adel_Imam', field: 'Actor', nationality: 'Egypt', era: '2000s', achievement: 'King of Arabic Comedy', difficulty: 'easy', gender: 'male' },
+  { name: 'Ahmed Helmy', wiki: 'Ahmed_Helmy', field: 'Actor', nationality: 'Egypt', era: '2000s', achievement: 'Egyptian Comedy Star', difficulty: 'easy', gender: 'male' },
+  { name: 'Mohamed Henedy', wiki: 'Mohamed_Henedy', field: 'Actor', nationality: 'Egypt', era: '2000s', achievement: 'Egyptian Comedy Legend', difficulty: 'easy', gender: 'male' },
+
+  // ═══ MORE SCIENTISTS & INVENTORS ═══
+  { name: 'Alexander Fleming', wiki: 'Alexander_Fleming', field: 'Scientist', nationality: 'United Kingdom', era: '1900s', achievement: 'Discovered Penicillin', difficulty: 'medium', gender: 'male' },
+  { name: 'Ada Lovelace', wiki: 'Ada_Lovelace', field: 'Scientist', nationality: 'United Kingdom', era: '1800s', achievement: 'First Computer Programmer', difficulty: 'hard', gender: 'female' },
+  { name: 'Alan Turing', wiki: 'Alan_Turing', field: 'Scientist', nationality: 'United Kingdom', era: '1900s', achievement: 'Father of Computer Science', difficulty: 'medium', gender: 'male' },
 ];
 
 // Inventions DB — uses Pexels for object photos (works great for things, not people)
@@ -1311,10 +1376,10 @@ function getInventionsPool(diff) {
 // Round 1: Guess the Famous Person
 async function genFamousPersonQ(diff, _depth=0) {
   const pool = getFamousPeoplePool(diff);
-  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
+  const available = pool.filter(p => !famousPeopleCache.usedInGame.has(p.name));
   
   if (available.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
+    famousPeopleCache.usedInGame.clear();
     if (_depth > 2) { /* use full pool */ } else return genFamousPersonQ(diff, _depth+1);
   }
   
@@ -1330,7 +1395,7 @@ async function genFamousPersonQ(diff, _depth=0) {
       if (others.length === 0) break;
       wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
     }
-    famousPeopleCache.usedInCurrentRound.add(person.name);
+    famousPeopleCache.usedInGame.add(person.name);
     return {
       type: 'famous_person', category: 'Guess the Famous Person', question: 'Who is this famous person?',
       hints: [person.field, person.era, person.achievement],
@@ -1340,16 +1405,16 @@ async function genFamousPersonQ(diff, _depth=0) {
     };
   }
   // All failed — pick anyone with an image from cache
-  const fallback = pool.find(p => validatedPeople.has(p.name) && !famousPeopleCache.usedInCurrentRound.has(p.name));
-  if (fallback) { famousPeopleCache.usedInCurrentRound.add(fallback.name); const img = await getWikiImage(fallback.wiki); return { type:'famous_person',category:'Guess the Famous Person',question:'Who is this famous person?',hints:[fallback.field,fallback.era,fallback.achievement],image:img,revealImage:img,answer:fallback.name,options:shuffle([fallback.name,...shuffle(pool.filter(p=>p.name!==fallback.name)).slice(0,3).map(p=>p.name)]),year:'',info:fallback.name,landscape:false }; }
+  const fallback = pool.find(p => validatedPeople.has(p.name) && !famousPeopleCache.usedInGame.has(p.name));
+  if (fallback) { famousPeopleCache.usedInGame.add(fallback.name); const img = await getWikiImage(fallback.wiki); return { type:'famous_person',category:'Guess the Famous Person',question:'Who is this famous person?',hints:[fallback.field,fallback.era,fallback.achievement],image:img,revealImage:img,answer:fallback.name,options:shuffle([fallback.name,...shuffle(pool.filter(p=>p.name!==fallback.name)).slice(0,3).map(p=>p.name)]),year:'',info:fallback.name,landscape:false }; }
   return genFamousPersonQ(diff);
 }
 
 // Round 2: Guess Their Nationality
 async function genFamousNationalityQ(diff, _depth=0) {
   const pool = getFamousPeoplePool(diff);
-  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); if (_depth > 2) {} else return genFamousNationalityQ(diff, _depth+1); }
+  const available = pool.filter(p => !famousPeopleCache.usedInGame.has(p.name));
+  if (available.length < 4) { famousPeopleCache.usedInGame.clear(); if (_depth > 2) {} else return genFamousNationalityQ(diff, _depth+1); }
 
   const regions = {
     'Middle East': ['Egypt', 'Syria', 'Lebanon', 'Jordan', 'Palestine', 'Iraq', 'Tunisia', 'Algeria', 'Morocco'],
@@ -1374,7 +1439,7 @@ async function genFamousNationalityQ(diff, _depth=0) {
       const c = fallbackCountries[Math.floor(Math.random() * fallbackCountries.length)];
       if (c !== person.nationality && !wrongOptions.includes(c)) wrongOptions.push(c);
     }
-    famousPeopleCache.usedInCurrentRound.add(person.name);
+    famousPeopleCache.usedInGame.add(person.name);
     return {
       type: 'famous_nationality', category: 'Guess Their Nationality', question: 'What nationality is this person?',
       hints: [person.field, person.era, person.achievement],
@@ -1389,8 +1454,8 @@ async function genFamousNationalityQ(diff, _depth=0) {
 // Round 3: Guess Why They're Famous
 async function genFamousForQ(diff, _depth=0) {
   const pool = getFamousPeoplePool(diff);
-  const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); if (_depth > 2) {} else return genFamousForQ(diff, _depth+1); }
+  const available = pool.filter(p => !famousPeopleCache.usedInGame.has(p.name));
+  if (available.length < 4) { famousPeopleCache.usedInGame.clear(); if (_depth > 2) {} else return genFamousForQ(diff, _depth+1); }
 
   for (const person of shuffle(available).slice(0, 5)) {
     const image = await getWikiImage(person.wiki);
@@ -1403,7 +1468,7 @@ async function genFamousForQ(diff, _depth=0) {
       if (others.length === 0) break;
       wrongOptions.push(others[Math.floor(Math.random() * others.length)].achievement);
     }
-    famousPeopleCache.usedInCurrentRound.add(person.name);
+    famousPeopleCache.usedInGame.add(person.name);
     return {
       type: 'famous_for', category: 'Guess Why They\'re Famous', question: `What is ${person.name} famous for?`,
       hints: [person.nationality, person.era, person.field],
@@ -1479,8 +1544,8 @@ const QUOTES_DB = [
 async function genFamousQuoteQ(diff) {
   // Use ALL quotes regardless of difficulty to avoid running out
   const allPool = QUOTES_DB;
-  const available = allPool.filter(q => !famousPeopleCache.usedInCurrentRound.has(q.quote));
-  if (available.length === 0) { famousPeopleCache.usedInCurrentRound.clear(); }
+  const available = allPool.filter(q => !famousPeopleCache.usedInGame.has(q.quote));
+  if (available.length === 0) { famousPeopleCache.usedInGame.clear(); }
   const pool = available.length > 0 ? available : allPool;
   const q = available[Math.floor(Math.random() * available.length)];
   const sameFieldGender = pool.filter(x => x.person !== q.person && x.field === q.field && x.gender === q.gender);
@@ -1491,7 +1556,7 @@ async function genFamousQuoteQ(diff) {
     if (fb.length === 0) break;
     wrongNames.push(fb[Math.floor(Math.random() * fb.length)].name);
   }
-  famousPeopleCache.usedInCurrentRound.add(q.quote);
+  famousPeopleCache.usedInGame.add(q.quote);
   const isArabicQuote = /[\u0600-\u06FF]/.test(q.quote);
   const translation = q.translation || '';
 
@@ -1532,12 +1597,41 @@ const CLUES_DB = [
   { person: 'Stephen Hawking', field: 'Scientist', gender: 'male', difficulty: 'medium', clues: ['black hole space galaxy','wheelchair disability','stars universe cosmos','book physics science'], clueHints: ['His theory','His chair','What he studied','His bestseller'] },
   { person: 'King Hussein', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['jordan flag','peace handshake diplomacy','royal crown gold','desert wadi rum jordan'], clueHints: ['His kingdom','His mission','His title','His land'] },
   { person: 'Queen Rania', field: 'Leader', gender: 'female', difficulty: 'medium', clues: ['jordan flag','school children education','crown tiara jewels','children charity humanitarian'], clueHints: ['Her country','Her passion','Her symbol','Her work'] },
+  // NEW — Entrepreneurs
+  { person: 'Steve Jobs', field: 'Entrepreneur', gender: 'male', difficulty: 'easy', clues: ['apple fruit logo','smartphone mobile phone','turtleneck black clothing','silicon valley california'], clueHints: ['His company logo','His invention','His outfit','His home base'] },
+  { person: 'Elon Musk', field: 'Entrepreneur', gender: 'male', difficulty: 'easy', clues: ['rocket space launch','electric car tesla','mars planet red','twitter bird logo'], clueHints: ['His rockets','His cars','His dream destination','He bought this'] },
+  { person: 'Bill Gates', field: 'Entrepreneur', gender: 'male', difficulty: 'easy', clues: ['windows computer screen','glasses nerd','charity donation money','books stack reading'], clueHints: ['His software','His look','His philanthropy','His hobby'] },
+  { person: 'Walt Disney', field: 'Entrepreneur', gender: 'male', difficulty: 'easy', clues: ['castle theme park','mouse cartoon','animation cartoon movie','american flag usa'], clueHints: ['His park','His character','His art form','His country'] },
+  { person: 'Oprah Winfrey', field: 'Entrepreneur', gender: 'female', difficulty: 'easy', clues: ['tv studio talk show','book reading club','microphone interview','charity donation'], clueHints: ['Her show','Her club','Her tool','Her mission'] },
+  // NEW — More Singers
+  { person: 'Beyoncé', field: 'Singer', gender: 'female', difficulty: 'easy', clues: ['microphone concert stage','dance performance','grammy music award','crown queen bee'], clueHints: ['Her instrument','Her moves','Her awards','Her nickname'] },
+  { person: 'Amr Diab', field: 'Singer', gender: 'male', difficulty: 'easy', clues: ['egypt pyramids','guitar acoustic music','beach summer','mediterranean sea'], clueHints: ['His country','His instrument','His music vibe','His music style'] },
+  { person: 'Nancy Ajram', field: 'Singer', gender: 'female', difficulty: 'medium', clues: ['lebanon flag cedar','microphone concert pop','coca cola bottle','children kids'], clueHints: ['Her country','Her career','Her famous ad','She judges for them'] },
+  { person: 'Elvis Presley', field: 'Singer', gender: 'male', difficulty: 'easy', clues: ['guitar rock music','dance moves hips','sunglasses gold costume','american flag usa'], clueHints: ['His instrument','His moves','His style','His country'] },
+  { person: 'Adele', field: 'Singer', gender: 'female', difficulty: 'easy', clues: ['microphone singing voice','piano keyboard','rain umbrella weather','grammy award gold'], clueHints: ['Her voice','Her instrument','Her song theme','Her trophies'] },
+  // NEW — More Athletes
+  { person: 'LeBron James', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['basketball court hoop','crown king gold','los angeles city skyline','sneakers shoes nike'], clueHints: ['His sport','His nickname','His city','His brand'] },
+  { person: 'Kylian Mbappé', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['football soccer sprint','france flag','paris eiffel tower','turtle ninja fast'], clueHints: ['His sport','His country','His city','His speed'] },
+  { person: 'Ronaldinho', field: 'Athlete', gender: 'male', difficulty: 'easy', clues: ['football soccer tricks','brazil flag green yellow','smile teeth happy','barcelona stadium'], clueHints: ['His skills','His country','His trademark','His club'] },
+  { person: 'Tiger Woods', field: 'Athlete', gender: 'male', difficulty: 'medium', clues: ['golf course green','trophy cup gold','red shirt polo','american flag usa'], clueHints: ['His sport','His wins','His game day look','His country'] },
+  // NEW — Leaders & Politicians
+  { person: 'Barack Obama', field: 'Leader', gender: 'male', difficulty: 'easy', clues: ['white house washington','american flag usa','hope poster art','basketball sport'], clueHints: ['His office','His country','His campaign','His hobby'] },
+  { person: 'Yasser Arafat', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['palestine flag','keffiyeh scarf traditional','olive branch peace','united nations building'], clueHints: ['His cause','His trademark','His symbol','He spoke here'] },
+  { person: 'Anwar Sadat', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['egypt flag','peace handshake diplomacy','military uniform medal','nobel prize medal'], clueHints: ['His country','His achievement','His background','His honor'] },
+  { person: 'Che Guevara', field: 'Leader', gender: 'male', difficulty: 'medium', clues: ['beret hat military','revolution fist raised','motorcycle journey road','cuba flag'], clueHints: ['His iconic look','His cause','His famous trip','His adopted country'] },
+  { person: 'King Abdullah II', field: 'Leader', gender: 'male', difficulty: 'easy', clues: ['jordan flag','military special forces','crown royal gold','desert landscape jordan'], clueHints: ['His country','His training','His title','His land'] },
+  // NEW — TV Hosts & Actors
+  { person: 'Bassem Youssef', field: 'TV Host', gender: 'male', difficulty: 'easy', clues: ['microphone comedy stage','egypt pyramids flag','tv television screen','satire comedy humor'], clueHints: ['His tool','His country','His medium','His style'] },
+  { person: 'Adel Imam', field: 'Actor', gender: 'male', difficulty: 'easy', clues: ['egypt pyramids','comedy laugh theater','movie camera film','mustache face man'], clueHints: ['His country','His genre','His industry','His look'] },
+  // NEW — Scientists
+  { person: 'Alan Turing', field: 'Scientist', gender: 'male', difficulty: 'medium', clues: ['computer code binary','enigma machine war','apple bite logo','mathematics equation'], clueHints: ['His field','His wartime work','A sad symbol','His language'] },
+  { person: 'Charles Darwin', field: 'Scientist', gender: 'male', difficulty: 'easy', clues: ['monkey ape evolution','ship boat sailing','galapagos islands turtle','tree of life nature'], clueHints: ['His theory','His voyage ship','His islands','His diagram'] },
 ];
 
 async function genFamousConnectionQ(diff) {
   // Use ALL clues regardless of difficulty to avoid running out
-  const available = CLUES_DB.filter(c => !famousPeopleCache.usedInCurrentRound.has(c.person));
-  if (available.length === 0) { famousPeopleCache.usedInCurrentRound.clear(); }
+  const available = CLUES_DB.filter(c => !famousPeopleCache.usedInGame.has(c.person));
+  if (available.length === 0) { famousPeopleCache.usedInGame.clear(); }
   const pool = available.length > 0 ? available : CLUES_DB;
   const clue = pool[Math.floor(Math.random() * pool.length)];
   // Fetch 4 clue images from Pexels
@@ -1554,7 +1648,7 @@ async function genFamousConnectionQ(diff) {
     if (others.length === 0) break;
     wrongNames.push(others[Math.floor(Math.random() * others.length)].name);
   }
-  famousPeopleCache.usedInCurrentRound.add(clue.person);
+  famousPeopleCache.usedInGame.add(clue.person);
   const wikiTitle = FAMOUS_PEOPLE_DB.find(p => p.name === clue.person)?.wiki || clue.person.replace(/ /g, '_');
   return {
     type: 'famous_connection', category: 'Guess the Connection', question: 'Who do these clues point to?',
@@ -1581,14 +1675,9 @@ async function genRound(type, n = 10) {
   // Reset actor tracking when starting actor round
   if (type === 'ar_actor') {
     actorPhotoCache.usedInCurrentRound.clear();
-    console.log('[ACTORS] Starting new round - reset tracking');
   }
   
-  // Reset famous people tracking when starting any famous people round
-  if (type.startsWith('famous_')) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    console.log('[FAMOUS] Starting new round - reset tracking');
-  }
+  // Do NOT clear famous people tracking between rounds — prevents repeats across rounds
   
   const qs = [], used = new Set(); 
   for (let i = 0; i < n; i++) { 
@@ -1654,6 +1743,7 @@ io.on('connection', (socket) => {
     } else if (category === 'famous_people') {
       console.log('[FAMOUS] Using hardcoded famous people database');
       await validateFamousPeopleImages();
+      famousPeopleCache.usedInGame.clear(); // Fresh start for new game
       const validCount = FAMOUS_PEOPLE_DB.filter(p => !invalidPeople.has(p.name)).length;
       if (validCount < 10) return cb({ error: 'Not enough famous people with photos available.' });
     }
@@ -1737,7 +1827,7 @@ io.on('connection', (socket) => {
     if (category === 'movies_tv') { await loadTMDB(); }
     else if (category === 'flags') { await loadFlags(); }
     else if (category === 'arabic_tv') { await loadArabic(); }
-    else if (category === 'famous_people') { await validateFamousPeopleImages(); }
+    else if (category === 'famous_people') { await validateFamousPeopleImages(); famousPeopleCache.usedInGame.clear(); }
     currentDifficulty = difficulty || 'medium';
 
     const diff = DIFF[difficulty] || DIFF.medium;
