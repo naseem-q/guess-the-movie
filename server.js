@@ -1271,11 +1271,35 @@ const INVENTIONS_DB = [
 // Reuse existing searchImage function for famous people photos
 const pexelsCache = {};
 
-// Get difficulty pool
+// Pre-validate Wikipedia images — cache which people have photos
+const validatedPeople = new Set(); // names of people with confirmed images
+const invalidPeople = new Set(); // names of people WITHOUT images
+let famousValidated = false;
+
+async function validateFamousPeopleImages() {
+  if (famousValidated) return;
+  console.log('[FAMOUS] Pre-validating Wikipedia images for all people...');
+  const batches = [];
+  for (let i = 0; i < FAMOUS_PEOPLE_DB.length; i += 10) {
+    batches.push(FAMOUS_PEOPLE_DB.slice(i, i + 10));
+  }
+  for (const batch of batches) {
+    await Promise.all(batch.map(async (p) => {
+      const img = await getWikiImage(p.wiki);
+      if (img) { validatedPeople.add(p.name); }
+      else { invalidPeople.add(p.name); console.log(`  [NO PHOTO] ${p.name} (${p.wiki})`); }
+    }));
+  }
+  famousValidated = true;
+  console.log(`[FAMOUS] ${validatedPeople.size} people with photos, ${invalidPeople.size} without`);
+}
+
+// Get difficulty pool — ONLY people with validated photos
 function getFamousPeoplePool(diff) {
-  if (diff === 'easy') return FAMOUS_PEOPLE_DB.filter(p => p.difficulty === 'easy');
-  if (diff === 'hard') return FAMOUS_PEOPLE_DB.filter(p => p.difficulty === 'hard');
-  return FAMOUS_PEOPLE_DB; // medium = all
+  const all = FAMOUS_PEOPLE_DB.filter(p => !invalidPeople.has(p.name));
+  if (diff === 'easy') return all.filter(p => p.difficulty === 'easy');
+  if (diff === 'hard') return all.filter(p => p.difficulty === 'hard');
+  return all; // medium = all
 }
 
 function getInventionsPool(diff) {
@@ -1294,135 +1318,101 @@ async function genFamousPersonQ(diff) {
     return genFamousPersonQ(diff);
   }
   
-  const person = available[Math.floor(Math.random() * available.length)];
-  const image = await getWikiImage(person.wiki);
+  // Try up to 5 people to find one with a working image
+  for (const person of shuffle(available).slice(0, 5)) {
+    const image = await getWikiImage(person.wiki);
+    if (!image) { invalidPeople.add(person.name); continue; }
   
-  // Get wrong options from same field
-  const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
-  const wrongOptions = shuffle(sameField).slice(0, 3).map(p => p.name);
-  
-  // Fallback if not enough same-field options
-  while (wrongOptions.length < 3) {
-    const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.name));
-    if (others.length === 0) break;
-    wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
+    const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
+    const wrongOptions = shuffle(sameField).slice(0, 3).map(p => p.name);
+    while (wrongOptions.length < 3) {
+      const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.name));
+      if (others.length === 0) break;
+      wrongOptions.push(others[Math.floor(Math.random() * others.length)].name);
+    }
+    famousPeopleCache.usedInCurrentRound.add(person.name);
+    return {
+      type: 'famous_person', category: 'Guess the Famous Person', question: 'Who is this famous person?',
+      hints: [person.field, person.era, person.achievement],
+      image, revealImage: image, answer: person.name,
+      options: shuffle([person.name, ...wrongOptions]),
+      year: '', info: `${person.name} — ${person.achievement}`, landscape: false
+    };
   }
-  
-  famousPeopleCache.usedInCurrentRound.add(person.name);
-  
-  return {
-    type: 'famous_person',
-    category: 'Guess the Famous Person',
-    question: 'Who is this famous person?',
-    hints: [person.field, person.era, person.achievement],
-    image: image || 'fallback',
-    revealImage: image || 'fallback',
-    answer: person.name,
-    options: shuffle([person.name, ...wrongOptions]),
-    year: '',
-    info: `${person.name} — ${person.achievement}`,
-    landscape: false
-  };
+  // All failed — pick anyone with an image from cache
+  const fallback = pool.find(p => validatedPeople.has(p.name) && !famousPeopleCache.usedInCurrentRound.has(p.name));
+  if (fallback) { famousPeopleCache.usedInCurrentRound.add(fallback.name); const img = await getWikiImage(fallback.wiki); return { type:'famous_person',category:'Guess the Famous Person',question:'Who is this famous person?',hints:[fallback.field,fallback.era,fallback.achievement],image:img,revealImage:img,answer:fallback.name,options:shuffle([fallback.name,...shuffle(pool.filter(p=>p.name!==fallback.name)).slice(0,3).map(p=>p.name)]),year:'',info:fallback.name,landscape:false }; }
+  return genFamousPersonQ(diff);
 }
 
 // Round 2: Guess Their Nationality
 async function genFamousNationalityQ(diff) {
   const pool = getFamousPeoplePool(diff);
   const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  
-  if (available.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousNationalityQ(diff);
-  }
-  
-  const person = available[Math.floor(Math.random() * available.length)];
-  const image = await getWikiImage(person.wiki);
-  
-  // Get wrong nationalities from same region
+  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousNationalityQ(diff); }
+
   const regions = {
-    'Middle East': ['Egypt', 'Syria', 'Lebanon', 'Jordan', 'Palestine', 'Iraq', 'Saudi Arabia', 'Qatar'],
-    'Europe': ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'Austria', 'Netherlands', 'Poland', 'Serbia'],
+    'Middle East': ['Egypt', 'Syria', 'Lebanon', 'Jordan', 'Palestine', 'Iraq', 'Tunisia', 'Algeria', 'Morocco'],
+    'Europe': ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'Austria', 'Netherlands', 'Poland', 'Serbia', 'Romania', 'Switzerland', 'Sweden'],
     'Americas': ['United States', 'Argentina', 'Jamaica', 'Brazil', 'Mexico'],
-    'Africa': ['Egypt', 'South Africa', 'Morocco'],
-    'Asia': ['India', 'Japan', 'China']
+    'Africa': ['Egypt', 'South Africa', 'Morocco', 'Tunisia', 'Algeria'],
+    'Asia': ['India', 'Japan', 'China', 'Persia', 'Iraq', 'Mesopotamia']
   };
-  
-  let region = 'Other';
-  for (const [r, countries] of Object.entries(regions)) {
-    if (countries.includes(person.nationality)) {
-      region = r;
-      break;
+
+  for (const person of shuffle(available).slice(0, 5)) {
+    const image = await getWikiImage(person.wiki);
+    if (!image) { invalidPeople.add(person.name); continue; }
+
+    let region = 'Other';
+    for (const [r, countries] of Object.entries(regions)) {
+      if (countries.includes(person.nationality)) { region = r; break; }
     }
-  }
-  
-  const sameRegion = regions[region] || [];
-  const wrongOptions = shuffle(sameRegion.filter(c => c !== person.nationality && c !== 'Israel')).slice(0, 3);
-  
-  // Fallback
-  const fallbackCountries = ['United States', 'United Kingdom', 'France', 'Germany', 'Egypt', 'Spain'];
-  while (wrongOptions.length < 3) {
-    const country = fallbackCountries[Math.floor(Math.random() * fallbackCountries.length)];
-    if (country !== person.nationality && !wrongOptions.includes(country)) {
-      wrongOptions.push(country);
+    const sameRegion = regions[region] || [];
+    const wrongOptions = shuffle(sameRegion.filter(c => c !== person.nationality && c !== 'Israel')).slice(0, 3);
+    const fallbackCountries = ['United States', 'United Kingdom', 'France', 'Germany', 'Egypt', 'Spain', 'Italy', 'India'];
+    while (wrongOptions.length < 3) {
+      const c = fallbackCountries[Math.floor(Math.random() * fallbackCountries.length)];
+      if (c !== person.nationality && !wrongOptions.includes(c)) wrongOptions.push(c);
     }
+    famousPeopleCache.usedInCurrentRound.add(person.name);
+    return {
+      type: 'famous_nationality', category: 'Guess Their Nationality', question: 'What nationality is this person?',
+      hints: [person.field, person.era, person.achievement],
+      image, revealImage: image, answer: person.nationality,
+      options: shuffle([person.nationality, ...wrongOptions]),
+      year: '', info: `${person.name} is from ${person.nationality}`, landscape: false
+    };
   }
-  
-  famousPeopleCache.usedInCurrentRound.add(person.name);
-  
-  return {
-    type: 'famous_nationality',
-    category: 'Guess Their Nationality',
-    question: 'What nationality is this person?',
-    hints: [person.field, person.era, person.achievement],
-    image: image || 'fallback',
-    revealImage: image || 'fallback',
-    answer: person.nationality,
-    options: shuffle([person.nationality, ...wrongOptions]),
-    year: '',
-    info: `${person.name} is from ${person.nationality}`,
-    landscape: false
-  };
+  return genFamousPersonQ(diff);
 }
 
 // Round 3: Guess Why They're Famous
 async function genFamousForQ(diff) {
   const pool = getFamousPeoplePool(diff);
   const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  
-  if (available.length < 4) {
-    famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousForQ(diff);
+  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousForQ(diff); }
+
+  for (const person of shuffle(available).slice(0, 5)) {
+    const image = await getWikiImage(person.wiki);
+    if (!image) { invalidPeople.add(person.name); continue; }
+
+    const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
+    const wrongOptions = shuffle(sameField).slice(0, 3).map(p => p.achievement);
+    while (wrongOptions.length < 3) {
+      const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.achievement));
+      if (others.length === 0) break;
+      wrongOptions.push(others[Math.floor(Math.random() * others.length)].achievement);
+    }
+    famousPeopleCache.usedInCurrentRound.add(person.name);
+    return {
+      type: 'famous_for', category: 'Guess Why They\'re Famous', question: `What is ${person.name} famous for?`,
+      hints: [person.nationality, person.era, person.field],
+      image, revealImage: image, answer: person.achievement,
+      options: shuffle([person.achievement, ...wrongOptions]),
+      year: '', info: `${person.name} — ${person.achievement}`, landscape: false
+    };
   }
-  
-  const person = available[Math.floor(Math.random() * available.length)];
-  const image = await getWikiImage(person.wiki);
-  
-  // Get wrong achievements from same field
-  const sameField = pool.filter(p => p.name !== person.name && p.field === person.field);
-  const wrongOptions = shuffle(sameField).slice(0, 3).map(p => p.achievement);
-  
-  // Fallback
-  while (wrongOptions.length < 3) {
-    const others = pool.filter(p => p.name !== person.name && !wrongOptions.includes(p.achievement));
-    if (others.length === 0) break;
-    wrongOptions.push(others[Math.floor(Math.random() * others.length)].achievement);
-  }
-  
-  famousPeopleCache.usedInCurrentRound.add(person.name);
-  
-  return {
-    type: 'famous_for',
-    category: 'Guess Why They\'re Famous',
-    question: `What is ${person.name} famous for?`,
-    hints: [person.nationality, person.era, person.field],
-    image: image || 'fallback',
-    revealImage: image || 'fallback',
-    answer: person.achievement,
-    options: shuffle([person.achievement, ...wrongOptions]),
-    year: '',
-    info: `${person.name} — ${person.achievement}`,
-    landscape: false
-  };
+  return genFamousPersonQ(diff);
 }
 
 // ═══ Round 4: Guess Who Said It — Famous Quotes ═══
@@ -1660,7 +1650,9 @@ io.on('connection', (socket) => {
       if (!arabicCache.movies?.length && !arabicCache.tv?.length) return cb({ error: 'Cannot load Arabic content.' });
     } else if (category === 'famous_people') {
       console.log('[FAMOUS] Using hardcoded famous people database');
-      if (!PEXELS_KEY) console.log('[FAMOUS] Warning: No Pexels API key - images may be limited');
+      await validateFamousPeopleImages();
+      const validCount = FAMOUS_PEOPLE_DB.filter(p => !invalidPeople.has(p.name)).length;
+      if (validCount < 10) return cb({ error: 'Not enough famous people with photos available.' });
     }
 
     // Set difficulty for generators that need it
@@ -1742,6 +1734,7 @@ io.on('connection', (socket) => {
     if (category === 'movies_tv') { await loadTMDB(); }
     else if (category === 'flags') { await loadFlags(); }
     else if (category === 'arabic_tv') { await loadArabic(); }
+    else if (category === 'famous_people') { await validateFamousPeopleImages(); }
     currentDifficulty = difficulty || 'medium';
 
     const diff = DIFF[difficulty] || DIFF.medium;
