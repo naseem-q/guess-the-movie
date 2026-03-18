@@ -1309,13 +1309,13 @@ function getInventionsPool(diff) {
 }
 
 // Round 1: Guess the Famous Person
-async function genFamousPersonQ(diff) {
+async function genFamousPersonQ(diff, _depth=0) {
   const pool = getFamousPeoplePool(diff);
   const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
   
   if (available.length < 4) {
     famousPeopleCache.usedInCurrentRound.clear();
-    return genFamousPersonQ(diff);
+    if (_depth > 2) { /* use full pool */ } else return genFamousPersonQ(diff, _depth+1);
   }
   
   // Try up to 5 people to find one with a working image
@@ -1346,10 +1346,10 @@ async function genFamousPersonQ(diff) {
 }
 
 // Round 2: Guess Their Nationality
-async function genFamousNationalityQ(diff) {
+async function genFamousNationalityQ(diff, _depth=0) {
   const pool = getFamousPeoplePool(diff);
   const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousNationalityQ(diff); }
+  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); if (_depth > 2) {} else return genFamousNationalityQ(diff, _depth+1); }
 
   const regions = {
     'Middle East': ['Egypt', 'Syria', 'Lebanon', 'Jordan', 'Palestine', 'Iraq', 'Tunisia', 'Algeria', 'Morocco'],
@@ -1387,10 +1387,10 @@ async function genFamousNationalityQ(diff) {
 }
 
 // Round 3: Guess Why They're Famous
-async function genFamousForQ(diff) {
+async function genFamousForQ(diff, _depth=0) {
   const pool = getFamousPeoplePool(diff);
   const available = pool.filter(p => !famousPeopleCache.usedInCurrentRound.has(p.name));
-  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousForQ(diff); }
+  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); if (_depth > 2) {} else return genFamousForQ(diff, _depth+1); }
 
   for (const person of shuffle(available).slice(0, 5)) {
     const image = await getWikiImage(person.wiki);
@@ -1477,9 +1477,11 @@ const QUOTES_DB = [
   { quote: "That's one small step for man, one giant leap for mankind.", translation: '\u0647\u0630\u0647 \u062e\u0637\u0648\u0629 \u0635\u063a\u064a\u0631\u0629 \u0644\u0625\u0646\u0633\u0627\u0646\u060c \u0648\u0642\u0641\u0632\u0629 \u0639\u0645\u0644\u0627\u0642\u0629 \u0644\u0644\u0628\u0634\u0631\u064a\u0629', person: 'Neil Armstrong', field: 'Explorer', gender: 'male', difficulty: 'easy' },
 ];
 async function genFamousQuoteQ(diff) {
-  const pool = diff === 'easy' ? QUOTES_DB.filter(q => q.difficulty === 'easy') : diff === 'hard' ? QUOTES_DB.filter(q => q.difficulty === 'hard') : QUOTES_DB;
-  const available = pool.filter(q => !famousPeopleCache.usedInCurrentRound.has(q.quote));
-  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousQuoteQ(diff); }
+  // Use ALL quotes regardless of difficulty to avoid running out
+  const allPool = QUOTES_DB;
+  const available = allPool.filter(q => !famousPeopleCache.usedInCurrentRound.has(q.quote));
+  if (available.length === 0) { famousPeopleCache.usedInCurrentRound.clear(); }
+  const pool = available.length > 0 ? available : allPool;
   const q = available[Math.floor(Math.random() * available.length)];
   const sameFieldGender = pool.filter(x => x.person !== q.person && x.field === q.field && x.gender === q.gender);
   const allOthers = pool.filter(x => x.person !== q.person);
@@ -1533,10 +1535,11 @@ const CLUES_DB = [
 ];
 
 async function genFamousConnectionQ(diff) {
-  const pool = diff === 'easy' ? CLUES_DB.filter(c => c.difficulty === 'easy') : diff === 'hard' ? CLUES_DB.filter(c => c.difficulty === 'hard') : CLUES_DB;
-  const available = pool.filter(c => !famousPeopleCache.usedInCurrentRound.has(c.person));
-  if (available.length < 4) { famousPeopleCache.usedInCurrentRound.clear(); return genFamousConnectionQ(diff); }
-  const clue = available[Math.floor(Math.random() * available.length)];
+  // Use ALL clues regardless of difficulty to avoid running out
+  const available = CLUES_DB.filter(c => !famousPeopleCache.usedInCurrentRound.has(c.person));
+  if (available.length === 0) { famousPeopleCache.usedInCurrentRound.clear(); }
+  const pool = available.length > 0 ? available : CLUES_DB;
+  const clue = pool[Math.floor(Math.random() * pool.length)];
   // Fetch 4 clue images from Pexels
   const clueImages = [];
   for (const q of clue.clues) {
