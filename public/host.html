@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guess The... — TV Display</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#08081a;--gold:#FFE66D;--orange:#FB923C;--green:#34D399;--red:#FF6B6B;--blue:#60A5FA;--text:#E8E8F0;--text2:rgba(232,232,240,0.45)}
@@ -135,7 +135,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   <div class="q-text" id="g-q"></div>
   <div class="poster-area" id="poster-area">
     <div class="tv-opts side-opts" id="tv-opts-left" style="display:none"></div>
-    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas><img id="map-shape-img" style="display:none;width:100%;height:100%;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(10deg) brightness(1.1);padding:40px" crossorigin="anonymous"><div id="actors-display" style="display:none;width:100%;height:100%;flex-direction:row;align-items:center;justify-content:center;gap:20px;padding:20px;background:#1a1a2e"></div></div>
+    <div class="poster-box" id="poster-box"><canvas id="poster-canvas"></canvas><img id="map-shape-img" style="display:none;width:100%;height:100%;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(10deg) brightness(1.1);padding:40px" crossorigin="anonymous"><div id="actors-display" style="display:none;width:100%;height:100%;flex-direction:row;align-items:center;justify-content:center;gap:20px;padding:20px;background:#1a1a2e"></div><div id="quote-display" style="display:none;width:100%;height:100%;flex-direction:column;align-items:center;justify-content:center;padding:40px;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border-radius:16px;text-align:center"></div><div id="clues-display" style="display:none;width:100%;height:100%;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:16px;background:#1a1a2e"></div></div>
     <div class="sidebar" id="sidebar"></div>
   </div>
   <div class="tv-opts" id="tv-opts-bottom" style="display:none"></div>
@@ -356,11 +356,51 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
 
       const mapImg=document.getElementById('map-shape-img');
       const actorsDiv=document.getElementById('actors-display');
+      const quoteDiv=document.getElementById('quote-display');
+      const cluesDiv=document.getElementById('clues-display');
 
+      // Helper to hide all special displays
+      function hideAllSpecial(){canvas.style.display='none';mapImg.style.display='none';actorsDiv.style.display='none';quoteDiv.style.display='none';cluesDiv.style.display='none'}
+
+      // Quote round: show quote text in styled box
+      if(d.noImage && d.quoteText){
+        hideAllSpecial();
+        quoteDiv.style.display='flex';
+        box.style.background='linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)';
+        const isAr=d.isArabicQuote;
+        const dir=isAr?'rtl':'ltr';
+        const fontFamily=isAr?"'Tajawal','Noto Naskh Arabic',serif":"Georgia,'Times New Roman',serif";
+        quoteDiv.innerHTML=`
+          <div style="font-size:70px;opacity:0.2;color:#FFE66D;margin-bottom:8px">\u275D</div>
+          <div style="font-size:${isAr?'30':'28'}px;font-weight:700;color:#FFE66D;line-height:1.8;direction:${dir};font-family:${fontFamily};max-width:88%;text-align:center;text-shadow:0 2px 10px rgba(0,0,0,0.3)">${d.quoteText}</div>
+          ${d.quoteTranslation?`<div style="font-size:16px;color:rgba(255,255,255,0.55);margin-top:14px;font-style:italic;max-width:80%;text-align:center;line-height:1.5;direction:${isAr?'ltr':'rtl'};font-family:${isAr?"Georgia,serif":"'Tajawal',serif"}">${d.quoteTranslation}</div>`:''}
+          <div style="font-size:70px;opacity:0.2;color:#FFE66D;margin-top:8px">\u275E</div>
+        `;
+        curImg=null;curNoBlur=true;curLightBg=false;
+        revActive=true;animFrame=requestAnimationFrame(function tick(){if(!revActive)return;animFrame=requestAnimationFrame(tick)});
+      }
+      // Connection round: show 4 clue images in 2x2 grid
+      else if(d.clueImages && d.clueImages.length >= 4){
+        hideAllSpecial();
+        cluesDiv.style.display='flex';
+        box.style.background='#1a1a2e';
+        cluesDiv.innerHTML='';
+        d.clueImages.forEach((src,i)=>{
+          const card=document.createElement('div');
+          card.style.cssText='width:calc(50% - 8px);aspect-ratio:4/3;position:relative;border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.4)';
+          if(src){
+            card.innerHTML=`<img src="${src}" style="width:100%;height:100%;object-fit:cover" crossorigin="anonymous"><div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.8));padding:8px 12px;font-size:13px;color:var(--gold);font-weight:600">${d.clueHints?.[i]||''}</div>`;
+          } else {
+            card.innerHTML=`<div style="width:100%;height:100%;background:#2a2a4e;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--gold);padding:10px;text-align:center">${d.clueHints?.[i]||'?'}</div>`;
+          }
+          cluesDiv.appendChild(card);
+        });
+        curImg=null;curNoBlur=true;curLightBg=false;
+        revActive=true;animFrame=requestAnimationFrame(function tick(){if(!revActive)return;animFrame=requestAnimationFrame(tick)});
+      }
       // Shared cast: show 3 actor photos side by side
-      if(d.actorImages && d.actorImages.length >= 3){
-        canvas.style.display='none';
-        mapImg.style.display='none';
+      else if(d.actorImages && d.actorImages.length >= 3){
+        hideAllSpecial();
         actorsDiv.style.display='flex';
         actorsDiv.innerHTML='';
         d.actorImages.forEach((src,i)=>{
@@ -375,17 +415,15 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
       }
       // Map shape: use <img> with CSS filter
       else if(d.lightBg){
-        canvas.style.display='none';
+        hideAllSpecial();
         mapImg.style.display='block';
-        actorsDiv.style.display='none';
         mapImg.src=d.image;
         box.style.background='#1a1a2e';
         curImg=null;curNoBlur=true;
         revActive=true;animFrame=requestAnimationFrame(function tick(){if(!revActive)return;animFrame=requestAnimationFrame(tick)});
       } else {
+        hideAllSpecial();
         canvas.style.display='block';
-        mapImg.style.display='none';
-        actorsDiv.style.display='none';
         box.style.background='#111';
         const img=new Image();img.crossOrigin='anonymous';
         canvas.width=isL?960:520;canvas.height=isL?540:780;
