@@ -372,8 +372,8 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
         const fontFamily=isAr?"'Tajawal','Noto Naskh Arabic',serif":"Georgia,'Times New Roman',serif";
         quoteDiv.innerHTML=`
           <div style="font-size:70px;opacity:0.2;color:#FFE66D;margin-bottom:8px">\u275D</div>
-          <div style="font-size:${isAr?'30':'28'}px;font-weight:700;color:#FFE66D;line-height:1.8;direction:${dir};font-family:${fontFamily};max-width:88%;text-align:center;text-shadow:0 2px 10px rgba(0,0,0,0.3)">${d.quoteText}</div>
-          ${d.quoteTranslation?`<div style="font-size:16px;color:rgba(255,255,255,0.55);margin-top:14px;font-style:italic;max-width:80%;text-align:center;line-height:1.5;direction:${isAr?'ltr':'rtl'};font-family:${isAr?"Georgia,serif":"'Tajawal',serif"}">${d.quoteTranslation}</div>`:''}
+          <div style="font-size:24px;font-weight:700;color:#FFE66D;line-height:1.8;direction:${dir};font-family:${fontFamily};max-width:88%;text-align:center;text-shadow:0 2px 10px rgba(0,0,0,0.3)">${d.quoteText}</div>
+          ${d.quoteTranslation?`<div style="font-size:24px;color:rgba(255,255,255,0.6);margin-top:16px;font-style:italic;max-width:85%;text-align:center;line-height:1.7;direction:${isAr?'ltr':'rtl'};font-family:${isAr?"Georgia,'Times New Roman',serif":"'Tajawal','Noto Naskh Arabic',serif"}">${d.quoteTranslation}</div>`:''}
           <div style="font-size:70px;opacity:0.2;color:#FFE66D;margin-top:8px">\u275E</div>
         `;
         curImg=null;curNoBlur=true;curLightBg=false;
