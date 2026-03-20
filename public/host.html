@@ -193,6 +193,30 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
   const canvas=document.getElementById('poster-canvas'),ctx=canvas.getContext('2d');
   let revActive=false;
 
+  // ═══ WAKE LOCK — prevent screen sleep ═══
+  let wakeLock=null;
+  async function requestWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        wakeLock=await navigator.wakeLock.request('screen');
+        console.log('[WakeLock] Active');
+        wakeLock.addEventListener('release',()=>{console.log('[WakeLock] Released')});
+      }
+    }catch(e){console.log('[WakeLock] Failed:',e.message)}
+  }
+  // Re-acquire wake lock when page becomes visible again
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') requestWakeLock();
+  });
+  requestWakeLock();
+
+  // Also use a video hack for older browsers that don't support Wake Lock
+  const noSleepVideo=document.createElement('video');
+  noSleepVideo.setAttribute('playsinline','');noSleepVideo.setAttribute('muted','');noSleepVideo.muted=true;
+  noSleepVideo.src='data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhmcmVlAAAACG1kYXQAAAAA';
+  noSleepVideo.loop=true;
+  try{noSleepVideo.play().catch(()=>{})}catch(e){}
+
   // Fill canvas black initially
   function fillBlack(){ctx.fillStyle='#111';ctx.fillRect(0,0,canvas.width||100,canvas.height||100)}
   fillBlack();
@@ -268,7 +292,7 @@ body{font-family:'Outfit',sans-serif;background:radial-gradient(ellipse at 30% 5
     const code=document.getElementById('connect-code').value.trim().toUpperCase();
     if(!code||code.length!==6)return alert('Enter 6-digit room code');
     document.getElementById('connect-status').textContent='Connecting...';roomCode=code;
-    socket=io({reconnection:true,timeout:10000});
+    socket=io({reconnection:true,reconnectionAttempts:50,reconnectionDelay:1000,reconnectionDelayMax:5000,timeout:60000});
     socket.on('connect',()=>{
       document.getElementById('connect-status').textContent='Joining room...';
       socket.emit('host-connect',{code:roomCode},(res)=>{
