@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, { cors: { origin: '*' }, pingTimeout: 120000, pingInterval: 25000, connectTimeout: 60000, maxHttpBufferSize: 1e7 });
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
@@ -1824,30 +1824,60 @@ io.on('connection', (socket) => {
     const r = rooms[code]; if (r.masterId !== socket.id) return cb?.({ error: 'Only master can restart' });
     const cat = CATEGORIES[category]; if (!cat || !cat.available) return cb?.({ error: 'Invalid category' });
 
-    if (category === 'movies_tv') { await loadTMDB(); }
-    else if (category === 'flags') { await loadFlags(); }
-    else if (category === 'arabic_tv') { await loadArabic(); }
-    else if (category === 'famous_people') { await validateFamousPeopleImages(); famousPeopleCache.usedInGame.clear(); }
-    currentDifficulty = difficulty || 'medium';
+    // Tell everyone we're loading
+    io.to(code).emit('loading-state', { message: `Loading ${cat.name}...` });
 
-    const diff = DIFF[difficulty] || DIFF.medium;
-    console.log(`[${code}] New game: ${cat.name} (${difficulty})`);
-    const allQ = {}; for (const rd of cat.rounds) { allQ[rd] = await genRound(rd, 10); }
-    r.diff = diff; r.diffName = difficulty; r.category = category; r.categoryName = cat.name;
-    r.activeRounds = cat.rounds; r.allQ = allQ; r.state = 'lobby'; r.rIdx = 0; r.qIdx = 0; r.answers = {}; clearTimeout(r.qTimer);
-    Object.values(r.players).forEach(p => { p.score = 0; });
-    const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster }));
-    io.to(code).emit('new-game-ready', { categoryName: cat.name, players: pl });
-    cb?.({ ok: true, categoryName: cat.name }); console.log(`[${code}] New game ready!`);
+    try {
+      if (category === 'movies_tv') { await loadTMDB(); }
+      else if (category === 'flags') { await loadFlags(); }
+      else if (category === 'arabic_tv') { await loadArabic(); }
+      else if (category === 'famous_people') {
+        if (typeof validateFamousPeopleImages === 'function') await validateFamousPeopleImages();
+        famousPeopleCache.usedInCurrentRound.clear();
+      }
+      currentDifficulty = difficulty || 'medium';
+
+      const diff = DIFF[difficulty] || DIFF.medium;
+      console.log(`[${code}] New game: ${cat.name} (${difficulty})`);
+      const allQ = {};
+      for (const rd of cat.rounds) {
+        console.log(`[${code}] Generating ${LABELS[rd]}...`);
+        allQ[rd] = await genRound(rd, 10);
+      }
+      r.diff = diff; r.diffName = difficulty; r.category = category; r.categoryName = cat.name;
+      r.activeRounds = cat.rounds; r.allQ = allQ; r.state = 'lobby'; r.rIdx = 0; r.qIdx = 0; r.answers = {}; clearTimeout(r.qTimer); clearTimeout(r.autoNext);
+      Object.values(r.players).forEach(p => { p.score = 0; });
+      const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster }));
+      io.to(code).emit('new-game-ready', { categoryName: cat.name, players: pl });
+      cb?.({ ok: true, categoryName: cat.name }); console.log(`[${code}] New game ready!`);
+    } catch (e) {
+      console.error(`[${code}] New game error:`, e.message);
+      io.to(code).emit('loading-state', { message: '' });
+      cb?.({ error: 'Failed to load. Try again.' });
+    }
   });
 
   socket.on('play-again', () => { const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code]; if (r.masterId !== socket.id) return; io.to(code).emit('game-reset'); clearTimeout(r.qTimer); delete rooms[code]; });
 
   socket.on('disconnect', () => {
     const code = socket.roomCode; if (!code || !rooms[code]) return; const r = rooms[code];
-    if (socket.isHost) r.hostId = null;
-    else if (r.players[socket.id]) { r.players[socket.id].connected = false; io.to(code).emit('player-list-update', Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster }))); if (r.state === 'question') { const c = Object.entries(r.players).filter(([, p]) => p.connected); if (c.every(([id]) => r.answers[id]) && c.length > 0) { clearTimeout(r.qTimer); setTimeout(() => reveal(r), 500); } } }
-    if (Object.values(r.players).filter(p => p.connected).length === 0 && !r.hostId) setTimeout(() => { if (rooms[code] && Object.values(rooms[code].players).filter(p => p.connected).length === 0) delete rooms[code]; }, 300000);
+    if (socket.isHost) { r.hostId = null; console.log(`[${code}] Host disconnected`); }
+    else if (r.players[socket.id]) {
+      r.players[socket.id].connected = false;
+      console.log(`[${code}] Player ${r.players[socket.id].name} disconnected`);
+      io.to(code).emit('player-list-update', Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })));
+      // If everyone answered or disconnected during a question, reveal
+      if (r.state === 'question') {
+        const connected = Object.entries(r.players).filter(([, p]) => p.connected);
+        if (connected.length === 0 || connected.every(([id]) => r.answers[id])) {
+          clearTimeout(r.qTimer); setTimeout(() => reveal(r), 500);
+        }
+      }
+    }
+    // Keep room alive for 10 minutes even if all players disconnect (was 5 min)
+    if (Object.values(r.players).filter(p => p.connected).length === 0 && !r.hostId) {
+      setTimeout(() => { if (rooms[code] && Object.values(rooms[code].players).filter(p => p.connected).length === 0) { console.log(`[${code}] Room expired — no players`); delete rooms[code]; } }, 600000);
+    }
   });
 });
 
@@ -1859,5 +1889,5 @@ function nextQ(r) { clearTimeout(r.autoNext); r.qIdx++; r.qIdx >= 10 ? roundResu
 function roundResults(r) { r.state = 'round_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('round-results', { roundNumber: r.rIdx + 1, totalRounds: r.activeRounds.length, roundLabel: LABELS[r.activeRounds[r.rIdx]], leaderboard: pl, isLastRound: r.rIdx + 1 >= r.activeRounds.length }); r.autoNext = setTimeout(() => { if (r.state === 'round_results') { r.rIdx++; r.qIdx = 0; r.rIdx >= r.activeRounds.length ? finalResults(r) : startRound(r); } }, 5000); }
 function finalResults(r) { r.state = 'final_results'; const pl = Object.values(r.players).map(p => ({ name: p.name, score: p.score, connected: p.connected, isMaster: p.isMaster })).sort((a, b) => b.score - a.score); io.to(r.code).emit('final-results', { leaderboard: pl }); }
 
-setInterval(() => { Object.entries(rooms).forEach(([c, r]) => { if (Date.now() - r.created > 5400000) { clearTimeout(r.qTimer); delete rooms[c]; } }); }, 60000);
+setInterval(() => { Object.entries(rooms).forEach(([c, r]) => { if (Date.now() - r.created > 10800000) { clearTimeout(r.qTimer); delete rooms[c]; console.log(`[${c}] Room expired — 3hr limit`); } }); }, 60000);
 server.listen(PORT, () => { console.log(`\n🎮 Party Game on port ${PORT}`); if (!TMDB_KEY || TMDB_KEY === 'your_tmdb_api_key_here') console.log('⚠️ Set TMDB_API_KEY!\n'); });
